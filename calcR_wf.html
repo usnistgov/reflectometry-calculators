@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!-- Enable IE9 Standards mode -->
+<meta http-equiv="X-UA-Compatible" content="IE=9" >
+<title>Reflectivity and wavefunction for a slab profile</title>
+<style type="text/css">
+  label { display: block; font-family: consolas, monospace; text-align: center; }
+  //canvas { border: 1px dotted #888; }
+  .bk { float: left; margin-right: 4px; }
+</style>
+<!-- JQPLOT -->
+<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
+
+<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css"
+            type="text/css" rel="Stylesheet" />
+            
+        <!-- Reference jQuery and jQuery UI from the CDN. Remember
+           that the order of these two elements is important -->
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+<!--        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+<!--        <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>-->
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js" type="text/javascript"></script>
+
+<!--<script type="text/javascript" src="jquery-1.5.1.min.js"></script>-->
+<script type="text/javascript" src="jquery.jqplot.min.js"></script>
+<script type="text/javascript" src="jqplot.canvasTextRenderer.min.js"></script>
+<script type="text/javascript" src="jqplot.canvasAxisLabelRenderer.min.js"></script>
+<script type="text/javascript" src="jqplot.canvasAxisTickRenderer.min.js"></script>
+<script type="text/javascript" src="jqplot.cursor.js"></script>
+<script type="text/javascript" src="interactors_nonprototype.js"></script>
+<script type="text/javascript" src="interactor_plugin_base.js"></script>
+<script type="text/javascript" src="reflectivity_sim.js"></script>
+<script type="text/javascript" src="complex.js"></script>
+<script type="text/javascript" src="wavefunction.js"></script>
+<script type="text/javascript"> 
+initial_sld = [
+    {thickness: 100, sld: 0, mu: 0},
+    {thickness: 1250, sld: 4.5e-6, mu: 0},
+    {thickness: 100, sld: 1.027e-6, mu: 0}
+];
+
+OMEGA = Math.PI/30;
+t0 = 0.0; // time for time-dependent psi - will be updated with function animate()
+dt0 = 1.0; // delta t0 for each call of animate()
+
+show_psi = true;
+
+// boilerplate from html5canvastutorials.com
+window.requestAnimFrame = (function(callback){
+    return window.requestAnimationFrame ||
+    window.webkitRequestAnimationFrame ||
+    window.mozRequestAnimationFrame ||
+    window.oRequestAnimationFrame ||
+    window.msRequestAnimationFrame ||
+    function(callback){
+        window.setTimeout(callback, 1000 / 60);
+    };
+})();
+// end boilerplate from html5canvastutorials.com
+
+window.onload = function() {
+    plot1 = null;
+    plot2 = null;
+    r = [];
+    sld = [];
+    
+    function phase_diff(a,b) {
+        return Math.asin((a.x * b.y - a.y * b.x) / (a.magnitude() * b.magnitude() ));
+    };
+    
+    
+    plot_choices = {'reflectivity':   {data: 'xy', xlabel: 'Q (inverse Å)', ylabel: 'log₁₀(R)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
+                    'phase':          {data: 'phase', xlabel: 'Q (inverse Å)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
+                    //'spin asymmetry': {data: 'sa', xlabel: 'Q (inverse Å)', ylabel: '(R1 - R2)/(R1 + R2)', title: 'Asymmetry'}
+                    };
+    current_choice = 'reflectivity';
+    
+    function calc_r(sld, qmin, qmax, qstep) {
+        var qmin = qmin || 0.0001;
+        var qmax = qmax || 0.1;
+        var qstep = qstep || 0.0003;
+        var rlist = [];
+        var qlist = [];
+        var xy = [];
+        var phase_int = [];
+        var phase = [];
+        var sa = [];
+        var dp, r;
+        var wf = new neutron_wavefunction();
+        wf.init(qmin/2.0, sld);
+        
+        for (var q=qmin; q<qmax; q+=qstep) {
+            qlist.push(q);
+            //wf1.init(q/2.0, sld1);
+            wf.set_kz_in(q/2.0);
+            r = wf.calculateR();
+            rlist.push(r);
+            xy.push([q, Math.log(Math.pow(r.magnitude(),2)) / Math.LN10]);
+            phase.push([q, r.phase()]);
+        }
+        
+        return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile(), wf: wf };
+    }
+    
+    function make_plots( xy1, xy2 ) {
+        
+        plot1 = $.jqplot ('rplot', [xy1], {
+            title: 'Reflectivity R=|Ψ←(z=-∞)|²',
+            series: [ {shadow: false, color: 'red', markerOptions: {shadow: false, size: 4}},
+                      {shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}} ],
+            grid: {shadow: false},
+            axes:{
+              xaxis:{
+                label: 'Q (inverse Å)', 
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+                tickOptions: {
+                    formatString: "%.2g"
+                }
+              },
+              yaxis:{
+                label: 'log₁₀(R)',
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+                tickOptions: {
+                    formatString: "%.2g",
+                    // fix for ticks drifting to the left in accordionview!
+                    _styles: {right: 0}
+                }
+              }
+            },
+            cursor: {show:true, zoom:false},
+            interactors: [{type: 'VerticalLine',
+                       name: 'vcursor',
+                       x0: 0.0,
+                       color1: 'green',
+                       color2: 'green'
+                       }]
+        });
+        
+        
+        /*plot3 = $.jqplot ('psi_plot', [xy2], {
+            title: 'Wavefunction of neutron (I_0 = 1)',
+            series: [ {shadow: false, color: 'red', markerOptions: {shadow: false, size: 4}},
+                      {shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}} ],
+            grid: {shadow: false},
+            axes:{
+              xaxis:{
+                label: 'z (Å)', 
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+                tickOptions: {
+                    formatString: "%.2g"
+                }
+              },
+              yaxis:{
+                label: 'Psi (amplitude)',
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+                tickOptions: {
+                    formatString: "%.2g",
+                    // fix for ticks drifting to the left in accordionview!
+                    _styles: {right: 0}
+                }
+              }
+            },
+            cursor: {show:true, zoom:false},
+            interactors: []
+        });
+        */
+
+    };
+    
+    var sld = initial_sld;
+    var profilexy = calc_r(sld).profile;
+    for (var i in profilexy) { profilexy[i][1] *= 1e6; }
+    
+    
+    leftpoints = [];
+    var z = 0;
+    for (var i in sld) {
+        var layer = sld[i]
+        leftpoints.push( {x: z, y: layer.sld * 1e6, segwidth: layer.thickness} );
+        z += layer.thickness;
+    }
+    
+    plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy], {
+        series: [ {shadow: false} ],
+        grid: {shadow: false},
+        title: 'Profile (double-click to add/remove nodes)',
+        series: [ {shadow: false, color: 'grey', markerOptions: {shadow: false, size: 4}},
+                  {shadow: false, color: 'orange', markerOptions: {shadow: false, size: 4}},
+                  {shadow: false, color: 'purple', markerOptions: {shadow: false, size: 4, show: false}},
+                  {shadow: false, color: 'black', markerOptions: {shadow: false, size: 4, show: false}} ],
+        axes:{
+          xaxis:{
+            label: 'z (Å) Beam direction is left-to-right (zero near top of sample) ', 
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            tickOptions: {
+                formatString: "%.0f"
+            }
+          },
+          yaxis:{
+            label: 'SLD (10⁻⁶ Å⁻²) and amplitude Ψ (arb.) ',
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            tickOptions: {
+                formatString: "%.2g",
+                // fix for ticks drifting to the left in accordionview!
+                _styles: {right: 0}
+            }
+          }
+        },
+        cursor: {show:true, zoom:false}, 
+        interactors: [{type: 'RightAngleSegment',
+                       name: 'profile1',
+                       leftpoints: leftpoints.slice(),
+                       color1: 'blue',
+                       color2: 'blue'
+                       },
+                       {type: 'HorizontalLine', 
+                       name: 'e0',
+                       y0: 0,
+                       color1: 'green', 
+                       color2: 'green'}]
+    });
+    
+    plot2.series[0].data = [];
+    plot2.series[1].data = [];
+    plot2.series[2].data = [];
+    plot2.series[3].data = [];
+    
+    
+    var e0cursor = plot2.plugins.interactors.e0;
+    e0cursor.update = function (pos) {
+        this.p.coords.y = 1.0e6 * Math.pow((pos.x/2.0), 2) / (4 * Math.PI);
+        this.redraw();
+        this.redraw();
+    }
+    
+    function render_text(ctx, texts, startx, starty) {
+        var x_offset = 0, t;
+        for (var i in texts) {
+            t = texts[i];
+            if (t.mod && t.mod == 'sup') {
+                ctx.font = "7pt Arial";
+                ctx.textBaseline = "bottom";
+            } else if (t.mod && t.mod == 'sub') {
+                ctx.font = "7pt Arial";
+                ctx.textBaseline = "middle";
+            } else {
+                ctx.font = "10pt Arial";
+                ctx.textBaseline = "alphabetic";
+            }
+            ctx.fillText(t.text, startx + x_offset, starty);
+            x_offset += ctx.measureText(t.text).width;
+        }
+    }
+        
+    e0cursor.p.render = function(ctx) {
+            var height = ctx.canvas.height;
+            var width = ctx.canvas.width;
+            ctx.fillStyle = this.color;
+            ctx.strokeStyle = 'transparent';
+            ctx.beginPath();
+            this.putCoords();
+            this.pos.x = this.r/2;
+            this.getCoords();
+            render_text(ctx, [{text:'k'}, 
+                              {text:'0', mod:'sub'}, 
+                              {text:'2', mod:'sup'},
+                              {text:' / 4π = '},
+                              {text:this.coords.y.toPrecision(4), mod:''}
+                              ], 5, this.pos.y - 5);
+            
+            //ctx.fillText("ko^2/(4 Pi) = " + this.coords.y.toPrecision(4), 5, this.pos.y - 5);
+            ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill(); 
+        }
+    
+    plot2.replot();
+
+    var profile = plot2.plugins.interactors.profile1;
+    get_sld = function(profile) {
+        var sld = [];
+        for (var i in profile.leftpoints) {
+            var lcoord = profile.getCoords(profile.lp[i].pos);
+            var rcoord = profile.getCoords(profile.rp[i].pos);
+            profile.leftpoints[i].x = lcoord.x;
+            profile.leftpoints[i].y = lcoord.y;
+            profile.leftpoints[i].segwidth = (Math.abs(lcoord.x - rcoord.x));
+            sld.push({ sld: profile.leftpoints[i].y * 1e-6, thickness: profile.leftpoints[i].segwidth, mu: 0 });
+        }
+        return sld;
+    };
+    
+    switch_plots = function() {
+        var new_choice = this.value;
+        if (new_choice != current_choice) {
+            current_choice = new_choice;
+            var plot_select = plot_choices[current_choice]['data'];
+            for (var i in r) {
+                plot1.series[i].data = r[i][plot_select];
+            }
+
+            plot1.title.text = plot_choices[current_choice]['title'];
+            plot1.axes.xaxis.labelOptions.label = plot_choices[current_choice]['xlabel'];
+            plot1.axes.yaxis.labelOptions.label = plot_choices[current_choice]['ylabel'];
+            plot1.resetAxesScale();
+            plot1.replot();
+        }
+        //console.log('switching');
+    };
+    
+    calc_sa = function() {
+        var sa = [];
+        var rpp, rmm, q, sum;
+        r[0]['sa'] = [];
+        r[1]['sa'] = [];
+        
+        for (var i in r[0]['rlist']) {
+            q = r[0]['qlist'][i];
+            rpp = Math.pow(r[0]['rlist'][i].magnitude(), 2);
+            rmm = Math.pow(r[1]['rlist'][i].magnitude(), 2);
+            sum = rpp + rmm;
+            r[0]['sa'].push([q, (rpp - rmm)/sum]);
+            r[1]['sa'].push([q, (rmm - rpp)/sum]);
+        }
+    };
+      
+    update_plot = function(series, sld, plot_select) {
+        r[series] = calc_r(sld);
+        //calc_sa();
+        
+        //plot1.series[series].data = r[series][plot_select];
+        plot1.series[0].data = r[0][plot_select];
+        //plot1.series[1].data = r[1][plot_select];
+        plot1.resetAxesScale();
+        plot1.replot();  
+    }
+    
+    plot2.plugins.interactors.profile1.update = function() {
+        var sld = get_sld(plot2.plugins.interactors.profile1);
+        update_plot(0, sld, plot_choices[current_choice]['data']);
+        po.update();
+        plot2.replot();
+    }
+    
+    plot2.plugins.interactors.profile1.onDoubleClick = function(grobnum, pos) {
+        var grob = this.grobs[grobnum];
+        
+        // check to see if it is a point in left-points (lp)
+        // or right-points (rp):
+        var leftpoint_num = null;
+        var i=0;
+        while (leftpoint_num == null && i < this.lp.length) {
+            if (grob == this.lp[i]) { leftpoint_num = i; }
+            i++;
+        }
+        var j=0;
+        while (leftpoint_num == null && j < this.rp.length) {
+            if (grob == this.rp[j]) { 
+                if (j == this.rp.length - 1)  { leftpoint_num = j; }
+                else { leftpoint_num = j + 1 }
+            }
+            j++;
+        }
+        
+        if (leftpoint_num != null) {
+            var leftpoint = this.leftpoints[leftpoint_num];
+            if (leftpoint_num > 0) {
+                this.leftpoints[leftpoint_num -1].segwidth += this.leftpoints[leftpoint_num].segwidth;
+            }
+            this.leftpoints.splice(leftpoint_num, 1);
+            this.build_segments();
+            this.redraw();
+            this.update();
+        }
+        
+        // now, what if it is a segment instead?
+        else {
+            var coords = grob.parent.getCoords(pos);
+            var leftpoint_num = null;
+            var i=0;
+            while (leftpoint_num == null && i < this.lp.length) {
+                if (grob.p1 == this.lp[i]) { leftpoint_num = i; }
+                i++;
+            }
+            var sum_up_to = this.x_offset;
+            for (var i=0; i<leftpoint_num; i++) { sum_up_to += this.leftpoints[i].segwidth };
+            var is_hseg = false;
+            var is_vseg = false;
+            for  (var i=0; i<this.hseg.length; i++) {
+                if (grob == this.hseg[i]) is_hseg = true;
+            }
+            for  (var i=0; i<this.vseg.length; i++) {
+                if (grob == this.vseg[i]) is_vseg = true;
+            }
+            if (is_vseg) {
+                var new_leftpoint = {segwidth: 0, x: coords.x, y: coords.y}
+                this.leftpoints.splice(leftpoint_num, 0, new_leftpoint);
+            }
+            else if (is_hseg) {
+                var leftpoint = this.leftpoints[leftpoint_num];
+                var new_segwidth = coords.x - sum_up_to; 
+                leftpoint.segwidth -= new_segwidth;
+                var new_leftpoint = {segwidth: new_segwidth, x: coords.x, y: leftpoint.y}
+                this.leftpoints.splice(leftpoint_num, 0, new_leftpoint);
+            }
+            this.build_segments();
+            this.redraw();
+            this.update();
+            
+            //console.log('coords:', coords, leftpoint_num, is_hseg, is_vseg);
+        }
+        
+        
+    }
+    
+    //plot2.plugins.interactors.profile2.update = function() {
+    //    var sld = get_sld(plot2.plugins.interactors.profile2);
+    //    update_plot(1, sld, plot_choices[current_choice]['data']);
+    //    plot2.replot();
+    //}
+    
+    sld[0] = get_sld(plot2.plugins.interactors.profile1);
+    r[0] = calc_r(sld[0])
+    
+    //sld[1] = get_sld(plot2.plugins.interactors.profile2);
+    //r[1] = calc_r(sld[1]);
+    //calc_sa();
+    make_plots( r[0].xy, profilexy );
+    
+    /* plot3 may not get used...
+    plot3.series[0].data = [];
+    plot3.axes.xaxis.min = plot2.axes.xaxis.min;
+    plot3.axes.xaxis.max = plot2.axes.xaxis.max;
+    plot3.axes.yaxis.min = -2.5;
+    plot3.axes.yaxis.max = 2.5;
+    plot3.replot();
+    */
+    
+    var vc = plot1.plugins.interactors.vcursor;
+    vc.update = function(pos) {
+        this.p.coords.x = 2 * Math.sqrt(4 * Math.PI * pos.y / 1.0e6);
+        this.redraw();
+        this.redraw();
+    }
+    
+    function get_cdkz(z) {
+        var leftpoints = plot2.plugins.interactors.profile1.leftpoints;
+    };
+    
+    var psi_obj = function() {
+        this.wavefunction = null;
+        
+        this.update = function(pos, use_cached_wf) {
+            var any_checked = false;
+            var show_psi = document.getElementById('psi_toggle').checked;
+            var show_psi_magsq = document.getElementById('psi_magsq_toggle').checked;
+            var show_psi_f = document.getElementById('psi_f_toggle').checked;
+            var show_psi_r = document.getElementById('psi_r_toggle').checked;
+            if (!(show_psi || show_psi_f || show_psi_r || show_psi_magsq)) {
+                plot2.series[0].data = [];
+                plot2.series[1].data = [];
+                plot2.series[2].data = [];
+                plot2.series[3].data = [];
+                plot2.replot();
+                return
+            }
+            var q = vc.p.coords.x;
+            var x;
+            var psi;
+            var pfr = []; // psi in the forward direction, real component
+            var prr = []; // psi in the backward direction, real component
+            var pmagsq = []; // magnitude of psi
+            var preal = []; // real part of psi
+            if (!(use_cached_wf) || this.wavefunction == null) {
+                var sld =  get_sld(plot2.plugins.interactors.profile1);
+                var wf = new neutron_wavefunction();
+                wf.init(q/2.0, sld);
+                wf.calculateCD();
+                this.wavefunction = wf;
+            } else {
+                var wf = this.wavefunction;
+            }
+            var c, d;
+            var leftpoints = plot2.plugins.interactors.profile1.leftpoints;
+            var xzero = leftpoints[0].x + leftpoints[0].segwidth;
+            var xrange = Math.abs(plot2.axes.xaxis.max - plot2.axes.xaxis.min);
+            var xstep = xrange/500.0;
+            var xx = plot2.axes.xaxis.min;
+            var xx_max = plot2.axes.xaxis.max;
+            var eiwt = Complex.exp(Complex.multiply(Complex.i.negative(), (OMEGA * t0)));
+            //var eiwt = 1.0;
+            for (var i in leftpoints) {
+                var rightpoint = leftpoints[i].x + leftpoints[i].segwidth;
+                c = wf.c[i];
+                d = wf.d[i];
+                while ((xx <= rightpoint) && (xx < xx_max)) {
+                    var ikzz = Complex.multiply(Complex.i, Complex.multiply(wf.kz_array[i], (xx-xzero)));
+                    var pforward = Complex.multiply(Complex.multiply(c, Complex.exp(ikzz)), eiwt);
+                    var pbackward = Complex.multiply(Complex.multiply(d, Complex.exp(ikzz.negative())), eiwt);
+                    pfr.push([xx, pforward.x]);
+                    prr.push([xx, pbackward.x]);
+                    psi = Complex.add(pforward, pbackward);
+                    pmagsq.push([xx, psi.magnitude() * psi.magnitude()]);
+                    preal.push([xx, psi.x]);
+                    xx += xstep;
+                }
+            }
+            while (xx < xx_max) {
+                var ikzz = Complex.multiply(Complex.i, Complex.multiply(wf.kz_array[i], (xx-xzero)));
+                var pforward = Complex.multiply(Complex.multiply(c, Complex.exp(ikzz)), eiwt);
+                var pbackward = Complex.multiply(Complex.multiply(d, Complex.exp(ikzz.negative())), eiwt);
+                pfr.push([xx, pforward.x]);
+                prr.push([xx, pbackward.x]);
+                psi = Complex.add(pforward, pbackward);
+                pmagsq.push([xx, psi.magnitude() * psi.magnitude()]);
+                preal.push([xx, psi.x]);
+                xx += xstep;
+            }
+            //for (var xx = plot2.axes.xaxis.min; xx < plot2.axes.xaxis.max; xx += xstep) {
+            //    x.push(xx);
+            //    psi.push(Math.sin(xx * Math.Pi/500));
+            //    xy.push([xx, Math.sin(xx * Math.PI/500)]);
+            //}
+            
+            if (show_psi_f) { plot2.series[0].data = pfr; }
+            else { plot2.series[0].data = []; }
+            
+            if (show_psi_r) { plot2.series[1].data = prr; }
+            else { plot2.series[1].data = []; }
+            
+            if (show_psi) { plot2.series[2].data = preal; }
+            else { plot2.series[2].data = []; }
+            
+            if (show_psi_magsq) { plot2.series[3].data = pmagsq; }
+            else { plot2.series[3].data = []; }
+            //plot2.series[1].data = prr;
+            //plot2.series[2].data = preal;
+            
+            //plot2.replot();
+            plot2.redraw();
+                      
+        }
+        return this;
+    }
+    
+    po = new psi_obj();
+    vc.p.listeners.push(e0cursor);
+    vc.p.listeners.push(po);
+    e0cursor.p.listeners.push(vc);
+    e0cursor.p.listeners.push(po); // wavefunction update!
+    
+    
+    for (var i in plot_choices) {
+        var choicediv = document.getElementById('choices');
+        var choice = document.createElement('input');
+        choice.setAttribute('id', i + '_choice');
+        choice.setAttribute('type', 'radio');
+        choice.setAttribute('name', 'plots');
+        choice.setAttribute('value', i);
+        choice.onclick = switch_plots;
+      
+        choicediv.appendChild(choice);
+        choicediv.appendChild(document.createTextNode(i));
+    }
+    document.getElementById('reflectivity_choice').checked = true;
+    
+    animate = function(){
+        //var canvas = document.getElementById("myCanvas");
+        //var context = canvas.getContext("2d");
+     
+        // update
+     
+        // clear
+        //context.clearRect(0, 0, canvas.width, canvas.height);
+     
+        // draw
+     
+        // request new frame
+        if (animation_on && show_psi == true) {
+            t0 += dt0;
+            po.update(null, true); // use cached wf if possible
+            requestAnimFrame(function(){
+                animate();
+            });
+        }
+    };
+    
+    toggle_animation_action = function() {
+        if (document.getElementById('animation_toggle').checked == true) {
+            animation_on = true;
+            animate();
+        } else {
+            animation_on = false;
+        }
+    }
+    
+    var psi_choices = document.getElementById('psi_choices');
+    
+    var psi_f_toggle = document.createElement('input');
+    psi_f_toggle.setAttribute('id', 'psi_f_toggle');
+    psi_f_toggle.setAttribute('type', 'checkbox');
+    psi_f_toggle.setAttribute('name', 'psi_f_toggle');
+    psi_f_toggle.setAttribute('value', 'Show forward-moving psi');
+    psi_f_toggle.onclick = po.update;
+    psi_choices.appendChild(psi_f_toggle);
+    psi_choices.appendChild(document.createTextNode('Show Re(Ψ→)'));
+    psi_choices.appendChild(document.createElement('br'));
+    
+    var psi_r_toggle = document.createElement('input');
+    psi_r_toggle.setAttribute('id', 'psi_r_toggle');
+    psi_r_toggle.setAttribute('type', 'checkbox');
+    psi_r_toggle.setAttribute('name', 'psi_r_toggle');
+    psi_r_toggle.setAttribute('value', 'Show backward-moving psi');
+    psi_r_toggle.onclick = po.update;
+    psi_choices.appendChild(psi_r_toggle);
+    psi_choices.appendChild(document.createTextNode('Show Re(Ψ←)'));
+    psi_choices.appendChild(document.createElement('br'));
+    
+    var psi_toggle = document.createElement('input');
+    psi_toggle.setAttribute('id', 'psi_toggle');
+    psi_toggle.setAttribute('type', 'checkbox');
+    psi_toggle.setAttribute('name', 'psi_toggle');
+    psi_toggle.setAttribute('value', 'Show Psi (wavefunction)');
+    psi_toggle.onclick = po.update;
+    psi_choices.appendChild(psi_toggle);
+    psi_choices.appendChild(document.createTextNode('Show Re(Ψ) = Re(Ψ→ + Ψ←)'));
+    psi_choices.appendChild(document.createElement('br'));
+    
+    var psi_magsq_toggle = document.createElement('input');
+    psi_magsq_toggle.setAttribute('id', 'psi_magsq_toggle');
+    psi_magsq_toggle.setAttribute('type', 'checkbox');
+    psi_magsq_toggle.setAttribute('name', 'psi_magsq_toggle');
+    psi_magsq_toggle.setAttribute('value', 'Show Psi (wavefunction)');
+    psi_magsq_toggle.onclick = po.update;
+    psi_choices.appendChild(psi_magsq_toggle);
+    psi_choices.appendChild(document.createTextNode('Show |ΨΨ*|'));
+    psi_choices.appendChild(document.createElement('br'));
+    
+    var animation_toggle = document.createElement('input');
+    animation_toggle.setAttribute('id', 'animation_toggle');
+    animation_toggle.setAttribute('type', 'checkbox');
+    animation_toggle.setAttribute('name', 'animation_toggle');
+    animation_toggle.setAttribute('value', 'Animate (include time-dependence)');
+    animation_toggle.onclick = toggle_animation_action;
+    psi_choices.appendChild(animation_toggle);
+    psi_choices.appendChild(document.createTextNode('Animate (include time-dependence)'));
+    
+ 
+}
+</script>
+</head>
+<body bgcolor="#ffffcc"> 
+    <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
+    <div id='choices'></div>
+    <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
+    <div id='psi_choices'></div>
+    <div id='psi_plot'></div>
+</body>
+</html>
