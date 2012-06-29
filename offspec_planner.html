@@ -143,6 +143,17 @@ window.onload = function() {
     //pI.oldinit(plot1, true, true);
     var pI = plot1.plugins.interactors.realspace;
     var cR = plot1.plugins.interactors.rcursor;
+    cR.update = function(pos, updated_already) {
+        if (updated_already && updated_already.indexOf && updated_already.indexOf(this) == -1) {
+	    updated_already.push(this);
+    	    cR.p1.coords.y = -180.0/Math.PI * samp_ctl.spinor.angle;
+	    cR.p1.coords.x = -180.0/Math.PI * kf_ctl.Arrow.angle;
+	    cR.redraw();
+    	    cQ.update(null, updated_already);
+	    kf_ctl.update(null, updated_already);
+	    samp_ctl.update(null, updated_already);
+	}
+    }
 
 /*    
     ymax1 = document.createElement('input');
@@ -286,7 +297,16 @@ window.onload = function() {
     pQ.qspace_patch.updateQPoints();
     pQ.redraw();
     
-    var cQ = plot2.plugins.interactors.qcursor;
+    cQ = plot2.plugins.interactors.qcursor;
+    cQ.onDrag = function(pos) {
+    	$.jqplot.QCursorInteractor.prototype.onDrag.call(this, pos);
+        new_th_twoth = this.get_th_twoth(this.p1.coords, wl_ctl.value*10);
+	cR.p1.coords.x = new_th_twoth.x;
+	cR.p1.coords.y = new_th_twoth.y;
+	cR.redraw();
+	cR.p1.updateListeners();
+	//cR.update(null, [cQ]);
+    }
     cR.p1.listeners.push(cQ);
     
     
@@ -393,7 +413,7 @@ window.onload = function() {
         ki_ctl.Arrow.rotate_around_p2(ki_ctl.Arrow.angle);
         kf_ctl.Arrow.len = new_klen;
         kf_ctl.Arrow.rotate_around_p1(kf_ctl.Arrow.angle);        
-        q_ctl.update();
+        q_ctl.update(null, []);
     }
     //wl_slider.onchange = function(bounced) {
     //    wl_ctl.value = wl_slider.value;
@@ -429,7 +449,7 @@ window.onload = function() {
     qzoom_ctl.value = qzoom_factor; // AND/R and MAGIK, in nm
     qzoom_ctl.onchange = function() { 
         qzoom_factor = qzoom_ctl.value;
-        q_ctl.update();
+        q_ctl.update(null, []);
     }
     
     
@@ -446,7 +466,7 @@ window.onload = function() {
     ki_ctl.p1.show_pos = ki_ctl.p2.show_pos = false;
     ki_ctl.p1.r = 0;
     setNonInteractive(ki_ctl.grobs);
-    ki_ctl.redraw();
+    //ki_ctl.redraw();
     
     kf_ctl = new $.jqplot.ArrowInteractor();
     var kfang = 0.1;
@@ -458,14 +478,18 @@ window.onload = function() {
     kf_ctl.fixed_len = true;
     kf_ctl.p1.show_pos = kf_ctl.p2.show_pos = false;
     setNonInteractive([kf_ctl.p1, kf_ctl.Arrow])
-    kf_ctl.update = function(pos) {
-        angles = cR.p1.getCoords();
-        A3 = angles.y;
-        A4 = angles.x;
-        this.Arrow.rotate_around_p1(-A4 * Math.PI/180.0);
-        instr_ctl.redraw();
+    kf_ctl.update = function(pos, updated_already) {
+    	if (updated_already && updated_already.indexOf && updated_already.indexOf(this) == -1) {
+   	    updated_already.push(this);
+	    angles = cR.p1.getCoords();
+            A3 = angles.y;
+            A4 = angles.x;
+            this.Arrow.rotate_around_p1(-A4 * Math.PI/180.0);
+            instr_ctl.redraw();
+	}
     }
     cR.p1.listeners.push(kf_ctl);
+    kf_ctl.p2.listeners.push(cR);
         
     samp_ctl = new $.jqplot.SpinorInteractor();
     samp_ctl.init('instr_ctl', {x:instrw/2.0, y:instrh/2.0}, 0.0, 200, true);
@@ -477,15 +501,19 @@ window.onload = function() {
     samp_ctl.spinor.offset = samp_ctl.spinor.width/2.0;
     samp_ctl.spinor.color = samp_ctl.spinor.color1 = "DarkGreen";
     samp_ctl.spinor.color2 = "LimeGreen";
-    samp_ctl.update = function(pos) {
-        angles = cR.p1.getCoords();
-        A3 = angles.y;
-        A4 = angles.x;
-        this.spinor.angle = -A3 * Math.PI/180.0;
-        q_ctl.update();
-        instr_ctl.redraw();
+    samp_ctl.update = function(pos, updated_already) {
+    	if (updated_already && updated_already.indexOf && updated_already.indexOf(this) == -1) {
+   	    updated_already.push(this);
+            angles = cR.p1.getCoords();
+            A3 = angles.y;
+            A4 = angles.x;
+            this.spinor.angle = -A3 * Math.PI/180.0;
+            q_ctl.update(null, updated_already);
+            instr_ctl.redraw();
+	}
     }
     cR.p1.listeners.push(samp_ctl);
+    samp_ctl.spinor.listeners.push(cR);
 
     q_ctl = new $.jqplot.ArrowInteractor();
     q_ctl.init('instr_ctl', {x:instrw/2.0, y:instrh/2.0}, {x:instrw/2.0, y:instrh/2.0 - 40}, true);
@@ -569,6 +597,46 @@ window.onload = function() {
     //q_ctl.p2.listeners.push(qx_ctl);
     //samp_ctl.spinor.listeners.push(qx_ctl);
     
+    /*
+    k_range = new $.jqplot.LimitLineInteractor();
+    k_range.init('instr_ctl', {x:instrw/2.0, y:instrh/2.0+50}, {x:instrw/2.0 -100, y:instrh/2.0 +50}, true);
+    k_range.p1.r = k_range.p2.r = 0;
+    k_range.p1.show_pos = k_range.p2.show_pos = false;
+    k_range.Arrow.color = k_range.Arrow.color1 = "black";
+    k_range.Arrow.color2 = "grey";
+    setNonInteractive(k_range.grobs);
+    */
+    
+    ka_range = new $.jqplot.LimitArcInteractor();
+    ka_range.init('instr_ctl', {x:instrw/2.0, y:instrh/2.0}, 0.02, -0.02, arrow_default_len, true);
+    ka_range.limit_arc.color = ka_range.limit_arc.color1 = "black";
+    ka_range.limit_arc.color2 = "grey";
+    setNonInteractive(ka_range.grobs);
+    ka_range.update = function(pos) {
+    	var limits = [-Math.PI/180.0 * pI.p1.getCoords().x, -Math.PI/180.0 * pI.p3.getCoords().x];
+	limits.sort(function(a,b){return b-a});
+    	this.limit_arc.angle1 = limits[0];
+	this.limit_arc.angle2 = limits[1];
+	instr_ctl.redraw();
+    }
+    pI.p1.listeners.push(ka_range);
+    pI.p3.listeners.push(ka_range);
+    
+    sa_range = new $.jqplot.LimitArcInteractor();
+    sa_range.init('instr_ctl', {x:instrw/2.0, y:instrh/2.0}, 0.02, -0.02, samp_ctl.spinor.len/2.0, true);
+    sa_range.limit_arc.color = ka_range.limit_arc.color1 = "black";
+    sa_range.limit_arc.color2 = "grey";
+    setNonInteractive(sa_range.grobs);
+    sa_range.update = function(pos) {
+    	var limits = [-Math.PI/180.0 * pI.p1.getCoords().y, -Math.PI/180.0 * pI.p3.getCoords().y];
+	limits.sort(function(a,b){return b-a});
+    	this.limit_arc.angle1 = limits[0];
+	this.limit_arc.angle2 = limits[1];
+	instr_ctl.redraw();
+    }
+    pI.p1.listeners.push(sa_range);
+    pI.p3.listeners.push(sa_range);
+    
     instr_ctl = new $.jqplot.MasterInteractor();
     instr_ctl.init('instr_ctl');
     instr_ctl.addInteractor(ki_ctl);
@@ -577,6 +645,12 @@ window.onload = function() {
     instr_ctl.addInteractor(q_ctl);
     instr_ctl.addInteractor(qz_ctl);
     instr_ctl.addInteractor(qx_ctl);
+    //instr_ctl.addInteractor(k_range);
+    instr_ctl.addInteractor(ka_range);
+    instr_ctl.addInteractor(sa_range);
+
+    ka_range.update();
+    sa_range.update();
     q_ctl.update();
     instr_ctl.redraw();
 
