@@ -464,8 +464,7 @@
     };
     
     $.jqplot.GratingInteractor.prototype = new $.jqplot.Interactor();
-    $.jqplot.GratingInteractor.prototype.constructor = $.jqplot.GratingInteractor;
-    
+    $.jqplot.GratingInteractor.prototype.constructor = $.jqplot.GratingInteractor;    
     $.jqplot.GratingInteractor.prototype.init = function(canvasid) {
         $.jqplot.Interactor.prototype.init.call(this, 'Grating', 'Grating.png', 0, canvasid);
         var x_center = this.canvas.width / 2.0;
@@ -482,6 +481,179 @@
         this.grobs.push(this.grating, this.p1);
         //this.redraw();
     };
+    
+    $.jqplot.LimitLineInteractor = function() {
+    	//$.jqplot.ArrowInteractor.call(this)
+    }
+    
+    $.jqplot.LimitLineInteractor.prototype = new $.jqplot.ArrowInteractor(); 
+    $.jqplot.LimitLineInteractor.prototype.constructor = $.jqplot.LimitLineInteractor;
+    $.jqplot.LimitLineInteractor.prototype.init = function(canvasid, p1xy, p2xy, notMaster) {
+    	$.jqplot.ArrowInteractor.prototype.init.call(this, canvasid, p1xy, p2xy, notMaster);
+	this.endWidth = 10;
+	//this.Arrow.show_label = true;
+	this.Arrow.render = function(ctx) {
+	    $.jqplot.Segment.prototype.render.call(this, ctx);
+            ctx.save();
+	    ctx.translate(this.parent.p1.pos.x, this.parent.p1.pos.y);
+	    ctx.rotate(this.angle);
+	    
+	    if (this.show_label && this.label != null) {
+	    	ctx.font = "italic 16pt Calibri";
+	    	var label_offset = (this.label_offset == null) ? 20 : this.label_offset;
+                ctx.textAlign = "center";
+                var label = this.label;
+                
+                ctx.fillText(this.label, this.len/2.0, label_offset);
+                if (this.show_angle) { 
+                    ctx.font = "italic 12pt Calibri";
+                    ctx.textAlign = "right";
+                    // need minus sign here because canvas coords y increases in down direction
+                    // this leads to angles increasing in cw direction - non-physicsy
+                    ctx.fillText("(" + (this.angle/Math.PI * -180.0).toFixed(1) + "°)", this.len, label_offset);
+                }
+	    } 
+	         
+            ctx.beginPath();
+	    // draw near end marker:
+	    ctx.moveTo(0, this.parent.endWidth/2.0);
+	    ctx.lineTo(0, -this.parent.endWidth/2.0);
+	    ctx.closePath();
+            ctx.stroke();
+	    
+	    // now draw far end marker:
+	    ctx.beginPath();
+	    ctx.moveTo(this.len, this.parent.endWidth/2.0);
+	    ctx.lineTo(this.len, -this.parent.endWidth/2.0);
+            ctx.closePath();
+            ctx.stroke();
+	    
+	    ctx.restore();      
+        }
+    }
+    
+    $.jqplot.LimitLineInteractor.prototype.redraw = function() {
+    	this.Arrow.update_angle();
+	this.Arrow.update_len();
+	$.jqplot.ArrowInteractor.prototype.redraw.call(this);
+    }
+    
+    $.jqplot.LimitArc = function() {};
+    $.jqplot.LimitArc.prototype = new $.jqplot.GrobConnector();
+    $.jqplot.LimitArc.prototype.constructor = $.jqplot.LimitArc;    
+    $.extend($.jqplot.LimitArc.prototype, {        
+        initialize: function(parent, c, angle1, angle2, len, width) {
+            $.jqplot.GrobConnector.prototype.initialize.call(this, parent, width);
+            this.name = 'limit_arc';
+            this.translatable = false;
+            this.rotatable = true;
+            this.connectortranslatable = false;
+            this.points = { c: c };
+            this.c = c;
+            this.angle1 = angle1;
+	    this.angle2 = angle2;
+            this.len = len;
+        },
+
+        getEndPoints: function() {
+            var p1 = {pos: {x: (this.c.pos.x + Math.cos(this.angle1) * this.len),
+                        y: (this.c.pos.y + Math.sin(this.angle1) * this.len)} }
+            var p2 = {pos: {x: (this.c.pos.x + Math.cos(this.angle2) * this.len),
+                        y: (this.c.pos.y + Math.sin(this.angle2) * this.len)} }
+            return {p1: p1, p2: p2}
+        },
+        
+        render: function(ctx) {
+            $.jqplot.GrobConnector.prototype.render.call(this, ctx);
+	    var endPoints = this.getEndPoints();
+	    
+            ctx.save();
+	    ctx.translate(endPoints.p1.pos.x, endPoints.p1.pos.y);
+	    ctx.rotate(this.angle1);
+	    ctx.beginPath();
+	    ctx.moveTo(-this.parent.endWidth/2.0, 0);
+	    ctx.lineTo(this.parent.endWidth/2.0, 0);
+	    ctx.stroke();
+	    ctx.restore();
+	    
+	    ctx.save();
+	    ctx.translate(endPoints.p2.pos.x, endPoints.p2.pos.y);
+	    ctx.rotate(this.angle2);
+	    ctx.beginPath();
+	    ctx.moveTo(-this.parent.endWidth/2.0, 0);
+	    ctx.lineTo(this.parent.endWidth/2.0, 0);
+	    ctx.stroke();
+	    ctx.restore();
+	    
+	    ctx.beginPath();
+	    ctx.arc(this.c.pos.x, this.c.pos.y, this.len, this.angle1, this.angle2, true);
+            ctx.stroke();
+	      
+        },
+        
+        distanceToLine: function(c, p1_pos, p2_pos) {
+            // taken from mathworld
+            var d = (p2_pos.x - p1_pos.x) * (p1_pos.y - c.y) - (p1_pos.x - c.x) * (p2_pos.y - p1_pos.y);
+            d = Math.abs(d)/Math.sqrt(Math.pow((p2_pos.x - p1_pos.x), 2) + Math.pow((p2_pos.y - p1_pos.y), 2));
+            return d
+        },
+        
+        distanceTo: function(c) {
+            var new_angle = Math.atan2(c.y - this.c.pos.y, c.x - this.c.pos.x);
+            var endPoints = this.getEndPoints();
+            var r_proj = Math.abs(dist(c, this.c.pos) * Math.cos(new_angle - this.angle));
+            // if the point is farther away from the center than the endpoints, then 
+            // the distanceTo is the distance to the nearest endpoint:
+            var d;
+            if (r_proj > this.len/2) {
+                var dp1 = dist(c, endPoints.p1.pos);
+                var dp2 = dist(c, endPoints.p2.pos);
+                d = Math.min(dp1, dp2);
+            } else {
+                d = this.distanceToLine(c, endPoints.p1.pos, endPoints.p2.pos);
+            }
+            return d
+        },
+        
+        onDrag: function(e, pos) {
+            //$.jqplot.GrobConnector.prototype.onDrag.call(this, e, pos);
+            var new_angle = Math.atan2(pos.y - this.c.pos.y, pos.x - this.c.pos.x);
+            if (this.rotatable) {
+                this.angle = new_angle;
+                this.c.angle = new_angle;
+                this.updateListeners();
+            };
+        },
+        
+        translateBy: function(dpos) {}
+        
+    });
+    
+    $.jqplot.LimitArcInteractor = function() {
+        $.jqplot.Interactor.call(this)
+    };
+    
+    $.jqplot.LimitArcInteractor.prototype = new $.jqplot.Interactor();
+    $.jqplot.LimitArcInteractor.prototype.constructor = $.jqplot.LimitArcInteractor;
+    
+    $.jqplot.LimitArcInteractor.prototype.init = function(canvasid, centerxy, angle1, angle2, len, notMaster) {
+        $.jqplot.Interactor.prototype.init.call(this, 'LimitArc', 'limit_arc.png', 0, canvasid, notMaster);
+        var centerxy = $.extend(true, {x: 200, y: 150}, centerxy); // default values for p1        
+        var c = new $.jqplot.RotationAxis(); c.initialize(this, centerxy.x, centerxy.y);
+        c.translatable = false;
+	this.endWidth = 10;
+        var angle1 = angle1 || 0.0;
+	var angle2 = angle2 || Math.PI/2.0;
+        var len = len || 200;
+        var limit_arc = new $.jqplot.LimitArc(); limit_arc.initialize(this, c, angle1, angle2, len, 4);
+        this.grobs.push(limit_arc, c);
+        // the order matters!!  if you push(c, spinor) the spinor is the last to get checked for isInside
+        // so it becomes the selected object (put items in order of increasing z-value!)
+        this.limit_arc = limit_arc;
+        
+        this.redraw();
+    };
+    
     
     $.jqplot.MasterInteractor = function() {
         //$.jqplot.Interactor.call(this);
