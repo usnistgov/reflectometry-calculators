@@ -231,23 +231,26 @@
             
             var pos = this.getMouse(e);
             var sel_grob = null;
+	    var sel_grob_num = null;
+	    //console.log(pos);
             for (var i = 0; i < this.grobs.length; i ++) {
                 var g = this.grobs[i];
                 var inside = g.isInside(pos);
                 
                 if (inside) {
                     //this.prevpos = pos;
-                    sel_grob = i;
+                    sel_grob_num = i;
+		    sel_grob = g;
                 }
             }
-            //console.log("double-clicked:", sel_grob);
-            if (sel_grob == null) {
+            //console.log("double-clicked:", sel_grob.parent);
+            if (sel_grob_num == null) {
                 // then we're double-clicking outside all the interactors
                 this.zoomMax();
             } else {
-                g.parent.reset();
-                this.redraw();
-                this.redraw();
+	    	sel_grob.parent.onDoubleClick(sel_grob, pos);
+                //this.redraw();
+                //this.redraw();
             }
                 
             return false;
@@ -322,16 +325,20 @@
         },
         
         zoomMax: function() {
-            // zoom to the limits of the data, with good tick locations
-            var xmin = this.plot.series[0]._xaxis._dataBounds.min;
-            var xmax = this.plot.series[0]._xaxis._dataBounds.max;
-            var ymin = this.plot.series[0]._yaxis._dataBounds.min;
-            var ymax = this.plot.series[0]._yaxis._dataBounds.max;
-            var xtransf = this.plot.series[0]._xaxis.transform || 'lin';
-            var ytransf = this.plot.series[0]._yaxis.transform || 'lin';
-            this.plot.series[0]._xaxis.ticks = generate_ticks({min:xmin, max:xmax}, xtransf);
-            this.plot.series[0]._yaxis.ticks = generate_ticks({min:ymin, max:ymax}, ytransf);
-            this.plot.replot();
+	    var xdb = this.plot.series[0]._xaxis._dataBounds;
+	    var ydb = this.plot.series[0]._yaxis._dataBounds;
+	    if ((xdb.min != null) && (xdb.max != null) && (ydb.min != null) && (ydb.max != null)) {
+                // zoom to the limits of the data, with good tick locations
+                var xmin = xdb.min;
+                var xmax = xdb.max;
+                var ymin = ydb.min;
+                var ymax = ydb.max;
+                var xtransf = this.plot.series[0]._xaxis.transform || 'lin';
+                var ytransf = this.plot.series[0]._yaxis.transform || 'lin';
+                this.plot.series[0]._xaxis.ticks = generate_ticks({min:xmin, max:xmax}, xtransf);
+                this.plot.series[0]._yaxis.ticks = generate_ticks({min:ymin, max:ymax}, ytransf);
+                this.plot.replot();
+            }
         },
         
         zoomPlot: function(dzoom, centerpos) {
@@ -544,11 +551,11 @@
         
         updateListeners: function() {
             for (var i in this.listeners) {
-                this.listeners[i].update(this.coords);
+                this.listeners[i].update(this.coords, [this]);
             }
         },
         
-        putCoords: function(coords) {
+        putCoords: function(coords, setPos) {
             var coords = coords || this.coords;
             var pos = {};
             if ('x' in coords) {
@@ -559,6 +566,7 @@
                 pos.y = this.parent.plot.axes.yaxis.u2p(coords.y);
                 pos.y -= this.parent.canvas.offsetTop;
             }
+	    if (setPos) { this.pos = pos; } 
             return pos     
         },
         

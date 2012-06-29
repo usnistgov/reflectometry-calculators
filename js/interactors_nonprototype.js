@@ -3,6 +3,7 @@
 // # by Ophir Lifshitz #
 // # Aug, 2011         #
 // #####################
+debug = true;
 
 (function($) {
     function toArray(obj) {
@@ -18,14 +19,43 @@
     $.jqplot.Interactor = function(){
     };
     
+    var touchToMouse = function(event) {
+        //if (event.touches.length > 1) return; //allow default multi-touch gestures to work
+        var touch = event.changedTouches[0];
+        touch.data = event.data;
+        var type = "";
+        
+        switch (event.type) {
+        case "touchstart": 
+            type = "mousedown"; break;
+        case "touchmove":  
+            type="mousemove";   break;
+        case "touchend":   
+            type="mouseup";     break;
+        default: 
+            return;
+        }
+        
+        // https://developer.mozilla.org/en/DOM/event.initMouseEvent for API
+        var simulatedEvent = document.createEvent("MouseEvent");
+        simulatedEvent.initMouseEvent(type, true, true, window, 1, 
+                touch.screenX, touch.screenY, 
+                touch.clientX, touch.clientY, false, 
+                false, false, false, 0, null);
+        
+        touch.target.dispatchEvent(simulatedEvent);
+        event.preventDefault();
+    };
+    
     // called with scope of a series
     $.jqplot.Interactor.prototype = {
-    init: function(name, icon, state, canvasid) {
+    init: function(name, icon, state, canvasid, notMaster) {
         //console.log("nInteractor init", this, name, icon, state, canvasid)
         this.name = name;
         this.icon = icon;
         this.state = state;
         this.translatable = true;
+        this.notMaster = notMaster || false;
         
         this.canvas = document.getElementById(canvasid);
         this.context = this.getContext(canvasid);
@@ -35,17 +65,23 @@
         this.mousedown = false;
         this.curgrob = null;
         
-        this.color1 = '#69f';
-        this.color2 = '#f69';
+        this.color1 = '#6699ff';
+        this.color2 = '#ff6699';
         this.color = this.color1;
         
         this.rc = 1;//Math.random();
         
         //this.canvas.onmouseover = this.onMouseOver.bind(this);
         //this.canvas.onmousemove = this.onMouseMove.bind(this);
-        this.canvas.onmousemove = bind(this, this.onMouseMove);
-        this.canvas.onmousedown = bind(this, this.onMouseDown);
-        this.canvas.onmouseup   = bind(this, this.onMouseUp);
+        if (!this.notMaster) {
+            this.canvas.onmousemove = bind(this, this.onMouseMove);
+            this.canvas.onmousedown = bind(this, this.onMouseDown);
+            this.canvas.onmouseup   = bind(this, this.onMouseUp);
+            
+            this.canvas.ontouchstart = touchToMouse;
+            this.canvas.ontouchmove = touchToMouse;
+            this.canvas.ontouchend = touchToMouse;
+        }
     },
 
     getMouse: function(e) {
@@ -63,6 +99,7 @@
     getContext: function(id) {
         var elem = document.getElementById(id);
         if (!elem || !elem.getContext) {
+            if (debug) { console.log('no elem or elem.getContext', elem, id); }
             return;
         }
 
@@ -75,7 +112,7 @@
     },
 
     redraw: function() {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (!this.notMaster) { this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); }
         for (var i = 0; i < this.grobs.length; i ++) {
             var grob = this.grobs[i];
             grob.render(this.context);
@@ -630,7 +667,7 @@
         updateListeners: function() {
             for (var i in this.listeners) {
                 var pos = this.getCoords? this.getCoords() : this.pos;
-                this.listeners[i].update(pos);
+                this.listeners[i].update(pos, [this]);
             }
         },
         

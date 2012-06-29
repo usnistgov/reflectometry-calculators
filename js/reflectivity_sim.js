@@ -43,7 +43,7 @@
             ctx.fillStyle = this.color;
             ctx.strokeStyle = 'transparent';
             ctx.beginPath();
-            this.putCoords();
+            this.putCoords(null, true);
             this.pos.y = height/2.0;
             this.getCoords();
             ctx.fillText(this.coords.x.toPrecision(4) , this.pos.x + 5, this.pos.y - 5);
@@ -85,7 +85,7 @@
             ctx.fillStyle = this.color;
             ctx.strokeStyle = 'transparent';
             ctx.beginPath();
-            this.putCoords();
+            this.putCoords(null, true);
             this.pos.x = width/2.0;
             this.getCoords();
             ctx.fillText(this.coords.y.toPrecision(4) , this.pos.x + 5, this.pos.y - 5);
@@ -179,7 +179,7 @@
 	            ctx.strokeStyle = 'transparent';
                 ctx.beginPath();
 	            //var coords = this.getCoords();
-	            this.putCoords();
+		    this.pos = this.putCoords();
 	            ctx.fillText('(' + this.coords.x.toFixed() + ', ' + this.coords.y.toPrecision(4) + ')', this.pos.x, this.pos.y - 5);
 	            ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
 	            ctx.closePath();
@@ -203,7 +203,8 @@
 	            ctx.strokeStyle = 'transparent';
                 ctx.beginPath();
 	            //var coords = this.getCoords();
-	            this.putCoords();
+	            this.pos = this.putCoords();
+		    //this.putCoords();
 	            ctx.fillText('(' + this.coords.x.toFixed() + ', ' + this.coords.y.toPrecision(4) + ')', this.pos.x, this.pos.y - 5);
 	            ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
 	            ctx.closePath();
