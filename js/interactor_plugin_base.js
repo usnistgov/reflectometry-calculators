@@ -92,6 +92,18 @@
             }
         },
         
+        redraw: function() {
+            // unlike the non-plugin interactors, each plugin interactor has
+            // its own context and canvas, so clear them at each redraw:
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            if (this.show) {
+                for (var i = 0; i < this.grobs.length; i ++) {
+                    var grob = this.grobs[i];
+                    grob.render(this.context);
+                }
+            }
+        }
+        
         getCoords: function(pos) {
             // have to correct for the fact that jqplot p2u calculates
             // in terms of pixels with respect to outer (containing) canvas
@@ -297,7 +309,6 @@
             this.grobs = [];
             for (var i in this.interactors) {
                 var I = this.interactors[i];
-                I.context.clearRect(0, 0, I.canvas.width, I.canvas.height);
                 if (I.show) {
                     this.grobs = this.grobs.concat(I.grobs);
                     I.redraw();
