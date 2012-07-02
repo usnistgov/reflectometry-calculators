@@ -102,7 +102,7 @@
                     grob.render(this.context);
                 }
             }
-        }
+        },
         
         getCoords: function(pos) {
             // have to correct for the fact that jqplot p2u calculates
