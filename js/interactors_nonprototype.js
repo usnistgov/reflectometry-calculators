@@ -112,7 +112,8 @@ debug = true;
     },
 
     redraw: function() {
-        if (!this.notMaster) { this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); }
+        //if (!this.notMaster) { this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); }
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         for (var i = 0; i < this.grobs.length; i ++) {
             var grob = this.grobs[i];
             grob.render(this.context);
