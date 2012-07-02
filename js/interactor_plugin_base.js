@@ -18,6 +18,34 @@
         };
     };
     
+    var touchToMouse = function(event) {
+        //if (event.touches.length > 1) return; //allow default multi-touch gestures to work
+        var touch = event.changedTouches[0];
+        touch.data = event.data;
+        var type = "";
+        
+        switch (event.type) {
+        case "touchstart": 
+            type = "mousedown"; break;
+        case "touchmove":  
+            type="mousemove";   break;
+        case "touchend":   
+            type="mouseup";     break;
+        default: 
+            return;
+        }
+        
+        // https://developer.mozilla.org/en/DOM/event.initMouseEvent for API
+        var simulatedEvent = document.createEvent("MouseEvent");
+        simulatedEvent.initMouseEvent(type, true, true, window, 1, 
+                touch.screenX, touch.screenY, 
+                touch.clientX, touch.clientY, false, 
+                false, false, false, 0, null);
+        
+        touch.target.dispatchEvent(simulatedEvent);
+        event.preventDefault();
+    };
+    
     $.jqplot.InteractorPlugin = function() {
         //$.jqplot.Interactor.call(this);
     };
@@ -33,6 +61,7 @@
             this.state = null;
             this.plot = null;
             this.translatable = true;
+            this.notMaster = true;
 
             this.grobs = [];
             this.mousedown = false;
@@ -114,7 +143,6 @@
             this.state = null;
             this.plot = null;
             this.translatable = true;
-            
 
             this.grobs = [];
             this.mousedown = false;
@@ -126,6 +154,7 @@
             
             this.rc = 1;//Math.random();
             $.extend(true, this, options);
+            this.notMaster = false;
             this.interactors = []; // number of interactors
             this.generate_ticks = generate_ticks;
         },
@@ -405,6 +434,12 @@
             ec.ondblclick = bind(master, master.onDoubleClick);
             ec.onselectstart = function() { return false; };
             
+            ec.ontouchstart = touchToMouse;
+            ec.ontouchmove = touchToMouse;
+            ec.ontouchend = touchToMouse;
+            
+            /*
+            
             if (!ec._touchstartregistered && ec.addEventListener) {
                 ec.addEventListener('touchstart', function(event) {
                     ec.onmousedown(event.touches[0]);
@@ -425,6 +460,8 @@
                 }, false);
                 ec._touchendregistered = true;
             }
+            
+            */
             
             if (!ec._scrollregistered && ec.addEventListener) {
                 ec.addEventListener('DOMMouseScroll', function(event) {
