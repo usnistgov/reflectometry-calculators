@@ -293,6 +293,7 @@
         },
         
         redraw: function() {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.grobs = [];
             for (var i in this.interactors) {
                 var I = this.interactors[i];

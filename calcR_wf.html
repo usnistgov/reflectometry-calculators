@@ -234,7 +234,8 @@ window.onload = function() {
     e0cursor.update = function (pos) {
         console.log("updating e0", pos, this.p.coords.y);
         this.p.coords.y = 1.0e6 * Math.pow((pos.x/2.0), 2) / (4 * Math.PI);
-        plot2.plugins._interactor.redraw();
+        plot2.replot();
+        //plot2.plugins._interactor.redraw();
         //this.redraw();
     }
     
@@ -449,8 +450,9 @@ window.onload = function() {
     var vc = plot1.plugins.interactors.vcursor;
     vc.update = function(pos) {
         this.p.coords.x = 2 * Math.sqrt(4 * Math.PI * pos.y / 1.0e6);
-        this.redraw();
-        this.redraw();
+        plot1.replot();
+        //this.redraw();
+        //this.redraw();
     }
     
     function get_cdkz(z) {
