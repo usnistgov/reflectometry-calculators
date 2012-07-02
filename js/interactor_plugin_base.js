@@ -296,6 +296,7 @@
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.grobs = [];
             for (var i in this.interactors) {
+                I.context.clearRect(0, 0, I.canvas.width, I.canvas.height);
                 var I = this.interactors[i];
                 if (I.show) {
                     this.grobs = this.grobs.concat(I.grobs);
