@@ -232,11 +232,8 @@ window.onload = function() {
     
     var e0cursor = plot2.plugins.interactors.e0;
     e0cursor.update = function (pos) {
-        console.log("updating e0", pos, this.p.coords.y);
         this.p.coords.y = 1.0e6 * Math.pow((pos.x/2.0), 2) / (4 * Math.PI);
-        plot2.replot();
-        //plot2.plugins._interactor.redraw();
-        //this.redraw();
+        this.redraw();
     }
     
     function render_text(ctx, texts, startx, starty) {
@@ -264,7 +261,7 @@ window.onload = function() {
             ctx.fillStyle = this.color;
             ctx.strokeStyle = 'transparent';
             ctx.beginPath();
-            this.putCoords();
+            this.putCoords(null, true);
             this.pos.x = this.r/2;
             this.getCoords();
             render_text(ctx, [{text:'k'}, 
