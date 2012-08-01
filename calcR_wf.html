@@ -74,10 +74,10 @@ window.onload = function() {
                     };
     current_choice = 'reflectivity';
     
-    function calc_r(sld, qmin, qmax, qstep) {
-        var qmin = qmin || 0.0001;
-        var qmax = qmax || 0.1;
-        var qstep = qstep || 0.0003;
+    calc_r = function(sld, qmin, qmax, qstep) {
+        var qmin = (qmin == null) ? 0.0001 : qmin;
+        var qmax = (qmax == null) ? 0.1 : qmax;
+        var qstep = (qstep == null) ? 0.0003 : qstep;
         var rlist = [];
         var qlist = [];
         var xy = [];
@@ -108,6 +108,7 @@ window.onload = function() {
             series: [ {shadow: false, color: 'red', markerOptions: {shadow: false, size: 4}},
                       {shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}} ],
             grid: {shadow: false},
+            sortData: false,
             axes:{
               xaxis:{
                 label: 'Q (inverse Å)', 
@@ -131,7 +132,7 @@ window.onload = function() {
             cursor: {show:true, zoom:false},
             interactors: [{type: 'VerticalLine',
                        name: 'vcursor',
-                       x0: 0.0,
+                       x0: 0.0001,
                        color1: 'green',
                        color2: 'green'
                        }]
@@ -184,13 +185,11 @@ window.onload = function() {
     }
         
     plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy], {
-        series: [ {shadow: false} ],
+        //series: [ {shadow: false} ],
+        seriesDefaults: {shadow: false, markerOptions: {shadow: false, size: 4}},
         grid: {shadow: false},
         title: 'Profile (double-click to add/remove nodes)',
-        series: [ {shadow: false, color: 'grey', markerOptions: {shadow: false, size: 4}},
-                  {shadow: false, color: 'orange', markerOptions: {shadow: false, size: 4}},
-                  {shadow: false, color: 'purple', markerOptions: {shadow: false, size: 4, show: false}},
-                  {shadow: false, color: 'black', markerOptions: {shadow: false, size: 4, show: false}} ],
+        series: [{color: 'grey'}, {color: 'orange'}, {color: 'purple'}, {color: 'black'}],
         axes:{
           xaxis:{
             label: 'z (Å) Beam direction is left-to-right (zero near top of sample) ', 
@@ -331,7 +330,15 @@ window.onload = function() {
     };
       
     update_plot = function(series, sld, plot_select) {
-        r[series] = calc_r(sld);
+        var qmin, qmax, qstep;
+        mydata = plot1.series[1].data;
+        if (mydata.length > 1) {
+            qmin = mydata[0][0];
+            qmax = mydata[mydata.length-1][0];
+            qstep = (qmax - qmin)/250.0;
+            
+        }
+        r[series] = calc_r(sld, qmin, qmax, qstep);
         //calc_sa();
         
         //plot1.series[series].data = r[series][plot_select];
@@ -458,6 +465,7 @@ window.onload = function() {
     
     var psi_obj = function() {
         this.wavefunction = null;
+        var me = this;
         
         this.update = function(pos, already_updated, use_cached_wf) {
             var any_checked = false;
@@ -480,14 +488,14 @@ window.onload = function() {
             var prr = []; // psi in the backward direction, real component
             var pmagsq = []; // magnitude of psi
             var preal = []; // real part of psi
-            if (!(use_cached_wf) || this.wavefunction == null) {
+            if (!(use_cached_wf) || me.wavefunction == null) {
                 var sld =  get_sld(plot2.plugins.interactors.profile1);
                 var wf = new neutron_wavefunction();
                 wf.init(q/2.0, sld);
                 wf.calculateCD();
-                this.wavefunction = wf;
+                me.wavefunction = wf;
             } else {
-                var wf = this.wavefunction;
+                var wf = me.wavefunction;
             }
             var c, d;
             var leftpoints = plot2.plugins.interactors.profile1.leftpoints;
@@ -496,8 +504,9 @@ window.onload = function() {
             var xstep = xrange/500.0;
             var xx = plot2.axes.xaxis.min;
             var xx_max = plot2.axes.xaxis.max;
-	    var t = new Date();
-	    var t_sec = t.getTime() / 1000 - t0_sec;
+            
+	        var t = new Date();
+	        var t_sec = t.getTime() / 1000 - t0_sec;
             var eiwt = Complex.exp(Complex.multiply(Complex.i.negative(), (OMEGA * t_sec)));
             //var eiwt = 1.0;
             for (var i in leftpoints) {
@@ -607,19 +616,26 @@ window.onload = function() {
 
     function set_data(raw_data) {
         var output_data = [];
+        var x, y, y_out, row;
         var lines = raw_data.split(/\r\n|\r|\n/g);
         //var lines = raw_data.split('\n');
         for (var i in lines) {
-            var row = lines[i];
+            row = lines[i];
             if (row[0] != '#') {
-                var rowdata = row.split(' ');
-                var x = Number(rowdata[0]);
-                var y = Number(rowdata[1]);
-                var y_out = Math.log(y) / Math.LN10;
-                output_data.push([x, y_out]);
+                var rowdata = row.split(/[\s,]+/)
+                //row.split(' ');
+                if (rowdata.length >= 2) {
+                    x = Number(rowdata[0]);
+                    y = Number(rowdata[1]);
+                    y_out = Math.log(y) / Math.LN10;
+                    output_data.push([x, y_out]);
+                }
             }
         }
-        plot1.series[1].data = output_data;
+        plot1.series[1].data = output_data;        
+        plot2.plugins.interactors.profile1.update();
+        plot1.axes.xaxis.resetScale();
+        plot1.axes.yaxis.resetScale();
         plot1.replot();
     }
     
