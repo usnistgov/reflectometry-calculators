@@ -604,6 +604,37 @@ window.onload = function() {
             animation_on = false;
         }
     }
+
+    function set_data(raw_data) {
+        var output_data = [];
+        var lines = raw_data.split(/\r\n|\r|\n/g);
+        //var lines = raw_data.split('\n');
+        for (var i in lines) {
+            var row = lines[i];
+            if (row[0] != '#') {
+                var rowdata = row.split(' ');
+                var x = Number(rowdata[0]);
+                var y = Number(rowdata[1]);
+                var y_out = Math.log(y) / Math.LN10;
+                output_data.push([x, y_out]);
+            }
+        }
+        plot1.series[1].data = output_data;
+        plot1.replot();
+    }
+    
+    function loadData() {
+        var file = document.getElementById('datafile').files[0]; // only one file allowed
+        var result = null;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            set_data(this.result);
+        }
+        reader.readAsText(file);
+    }
+    
+    var fileinput = document.getElementById('datafile');
+    fileinput.onchange = loadData;    
     
     var psi_choices = document.getElementById('psi_choices');
     
@@ -661,6 +692,7 @@ window.onload = function() {
 </script>
 </head>
 <body bgcolor="#ffffcc"> 
+    Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
     <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='choices'></div>
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
