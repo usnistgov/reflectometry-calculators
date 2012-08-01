@@ -103,7 +103,7 @@ window.onload = function() {
     
     function make_plots( xy1, xy2 ) {
         
-        plot1 = $.jqplot ('rplot', [xy1], {
+        plot1 = $.jqplot ('rplot', [xy1,  [[0, 0]]], {
             title: 'Reflectivity R=|Ψ←(z=-∞)|²',
             series: [ {shadow: false, color: 'red', markerOptions: {shadow: false, size: 4}},
                       {shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}} ],
