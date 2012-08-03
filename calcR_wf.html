@@ -31,6 +31,7 @@
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/js/reflectivity_sim.js"></script>
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/js/complex.js"></script>
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/js/wavefunction.js"></script>
+<script type="text/javascript" src="js/generate_slab_script.js"></script>
 <script type="text/javascript"> 
 initial_sld = [
     {thickness: 100, sld: 0, mu: 0},
@@ -58,6 +59,7 @@ window.requestAnimFrame = (function(callback){
 // end boilerplate from html5canvastutorials.com
 
 window.onload = function() {
+    datafilename = "";
     plot1 = null;
     plot2 = null;
     r = [];
@@ -641,6 +643,7 @@ window.onload = function() {
     
     function loadData() {
         var file = document.getElementById('datafile').files[0]; // only one file allowed
+        datafilename = file.name;
         var result = null;
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -703,12 +706,28 @@ window.onload = function() {
     psi_choices.appendChild(animation_toggle);
     psi_choices.appendChild(document.createTextNode('Animate (include time-dependence)'));
     
- 
+    show_script = function() {
+        var sldarray = get_sld(plot2.plugins.interactors.profile1);
+        //var datafilename = datafilename || "";
+        var pyscript = generate_slab_script(sldarray, datafilename);
+        scriptwin = window.open("", "_blank");
+        scriptwin.pyscript = pyscript;
+        /*scriptwin.onload = function() {
+            this.document.title = "Refl1D script: " + datafilename;
+            this.document.write(this.pyscript);
+        }*/
+        scriptwin.document.title = "Refl1D script: " + datafilename;
+        var code = scriptwin.document.createElement('pre');
+        scriptwin.document.body.appendChild(code);
+        code.innerHTML = pyscript;
+    }
+    document.getElementById("scriptbutton").onclick = show_script;
 }
 </script>
 </head>
 <body bgcolor="#ffffcc"> 
     Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
+    <input type="button" value="generate Refl1D script" id="scriptbutton">
     <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='choices'></div>
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
