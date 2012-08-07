@@ -57,7 +57,6 @@ Complex.prototype.magnitude = function() {
 Complex.prototype.phase = function() {
     return Math.atan2(this.y, this.x);
 };
-
 // Return a complex number that is the negative of this one.
 Complex.prototype.negative = function() {
     return new Complex(-this.x, -this.y);
@@ -71,6 +70,10 @@ Complex.prototype.copy = function() {
 Complex.prototype.inverse = function() {
     var denom = Math.pow(this.x, 2) + Math.pow(this.y, 2);
     return new Complex( this.x / denom, -this.y / denom );
+};
+
+Complex.prototype.conjugate = function() {
+    return new Complex( this.x, -this.y );
 };
 
 // Convert a Complex object to a string in a useful way.
@@ -154,6 +157,14 @@ Complex.sqrt = function(a) {
     var phase = 0.5 * a.phase();
     return new Complex( mag * Math.cos(phase), mag * Math.sin(phase));
     // sqrt(r*e^ia) = sqrt(r) * e^i(a/2)
+};
+
+Complex.sum = function(alist) {
+    var result = new Complex(0,0);
+    for (var i = 0; i<alist.length; i++) {
+        result = Complex.add(result, alist[i]);
+    }
+    return result
 };
     
     
