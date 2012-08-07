@@ -72,6 +72,8 @@
             this.color = this.color1;
             
             this.rc = 1;//Math.random();
+            this.scrollZoom = true;
+            this.dragPan = true;
             this.show = true;
             $.extend(true, this, options);
             
@@ -315,16 +317,17 @@
                 }
             }
         },
-        
         onMouseWheel: function(e) {
-            if (e.preventDefault) e.preventDefault();
-            if (e.stopPropagation) e.stopPropagation();
-            var pos = this.getMouse(e);
-            var dzoom;
-            if (e.wheelDelta) { dzoom = e.wheelDelta; }
-            else if (e.detail) { dzoom = e.detail * -40; }
-            else { dzoom = 0 } 
-            this.zoomPlot(dzoom, pos);
+            if (this.scrollZoom) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                var pos = this.getMouse(e);
+                var dzoom;
+                if (e.wheelDelta) { dzoom = e.wheelDelta; }
+                else if (e.detail) { dzoom = e.detail * -40; }
+                else { dzoom = 0 } 
+                this.zoomPlot(dzoom, pos);
+            }
         },
         
         onMouseMove: function(e) {
@@ -335,6 +338,8 @@
             if (this.mousedown) {
                 if (this.curgrob != null) {
                     var cg = this.grobs[this.curgrob];
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
                     cg.onDrag(e, pos);
                     //cg.parent.redraw();
                     this.redraw();
@@ -363,7 +368,7 @@
         },
         
         onEmptyDrag: function(pos) {
-            this.panPlot(pos);
+            if (this.dragPan == true) this.panPlot(pos);
         },
         
         zoomMax: function() {
@@ -521,6 +526,46 @@
         if (options.interactors) {
             if (!this.plugins.interactors) this.plugins.interactors = {};
             this.plugins._interactor = new $.jqplot.MasterInteractorPlugin();
+            var master_opts = {}
+            for (var i in options.interactors) {
+                var iopts = options.interactors[i];
+                var itype = iopts.type;
+                if (itype == 'master') {
+                    master_opts = iopts;
+                    break
+                }
+            }
+            this.plugins._interactor.init(master_opts);
+            this.plugins._interactor.plot = this;
+            this.plugins._interactor.name = "master";
+            //var master = this.plugins._interactor;
+            //this.eventListenerHooks.addOnce('jqplotMouseDown', bind(master, master.handleMouseDown));
+            
+            
+            for (var i in options.interactors) {
+                var iopts = options.interactors[i];
+                var itype = iopts.type;
+                if (itype != 'master') {
+                    var name = iopts.name || String(this.plugins.interactors.length);
+                    var newi = new $.jqplot.InteractorPluginSubtypes[itype]();
+                    this.plugins.interactors[name] = newi;
+                    newi.init(iopts);
+                    newi.plot = this;
+                    //for (var j in newi.grobs) {
+                    //    this.plugins._interactor.grobs.push(newi.grobs[j]);
+                    //}
+                    this.plugins._interactor.interactors.push(newi);
+                }
+            }
+        }    
+    };
+    /*
+    $.jqplot.InteractorPlugin.pluginit = function (target, data, opts) {
+        // add an interactor attribute to the plot
+        var options = opts || {};
+        if (options.interactors) {
+            if (!this.plugins.interactors) this.plugins.interactors = {};
+            this.plugins._interactor = new $.jqplot.MasterInteractorPlugin();
             this.plugins._interactor.init();
             this.plugins._interactor.plot = this;
             this.plugins._interactor.name = "master";
@@ -543,6 +588,7 @@
             }
         }    
     };
+    */
     
     $.jqplot.preInitHooks.push($.jqplot.InteractorPlugin.pluginit);
     $.jqplot.postDrawHooks.push($.jqplot.InteractorPlugin.postDraw);
@@ -574,20 +620,23 @@
             return this.coords;
         },
         
-        update: function(coords, fix_x, fix_y) {
-            var coords = coords || this.coords;
-            var newpos = this.putCoords(coords);
-            if ('x' in newpos) this.pos.x = newpos.x;
-            if ('y' in newpos) this.pos.y = newpos.y;
-            this.coords = coords;
-            this.updateListeners();
+        update: function(coords, updated_already) {
+            if (updated_already && updated_already.indexOf && updated_already.indexOf(this) == -1) {
+                var coords = coords || this.coords;
+                var newpos = this.putCoords(coords);
+                if ('x' in newpos) this.pos.x = newpos.x;
+                if ('y' in newpos) this.pos.y = newpos.y;
+                this.coords = coords;
+                updated_already.push(this);
+                this.updateListeners(updated_already);
 //            var mypos = this.pos;
 //            var dpos = {x: newpos.x-mypos.x, y: newpos.y-mypos.y};
 
 //            if (fix_x) { dpos.x = 0; };
 //            if (fix_y) { dpos.y = 0; };
 //            this.translateBy(dpos);
-            this.parent.redraw();
+                this.parent.redraw();
+            }
         },
         
         translateBy: function(dpos) {
@@ -599,9 +648,10 @@
             this.updateListeners();
         },
         
-        updateListeners: function() {
+        updateListeners: function(updated_already) {
+            var updated_already = updated_already || [this];
             for (var i in this.listeners) {
-                this.listeners[i].update(this.coords, [this]);
+                this.listeners[i].update(this.coords, updated_already);
             }
         },
         
@@ -611,12 +661,13 @@
             if ('x' in coords) {
                 pos.x = this.parent.plot.axes.xaxis.u2p(coords.x);
                 pos.x -= this.parent.canvas.offsetLeft;
+                if (setPos) { this.pos.x = pos.x; } 
             }
             if ('y' in coords) {
                 pos.y = this.parent.plot.axes.yaxis.u2p(coords.y);
                 pos.y -= this.parent.canvas.offsetTop;
+                if (setPos) { this.pos.y = pos.y; } 
             }
-	    if (setPos) { this.pos = pos; } 
             return pos     
         },
         
