@@ -204,13 +204,13 @@ LOGH=0;
         //A23=A23*EXPTH[L];
         A21=Cplx.multiply(A21, EXPTH_L);
         //A21=A21*EXPTH[L];
-        A43=A21;
-        A34=A12;
-        A22=A11;
-        A33=A11;
-        A44=A11;
-        A24=A13;
-        A42=A31;
+        A43=A21.copy();
+        A34=A12.copy();
+        A22=A11.copy();
+        A33=A11.copy();
+        A44=A11.copy();
+        A24=A13.copy();
+        A42=A31.copy();
 
 /*#if 0
         std::cout << "cr4x A1:"<<A11<<" "<<A12<<" "<<A13<<" "<<A14<<std::endl;
