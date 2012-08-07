@@ -30,7 +30,7 @@
 <script type="text/javascript" src="jqplot/jqplot.enhancedLegendRenderer.js"></script>
 <script type="text/javascript" src="jqplot/jquery.jqplot.InteractiveLegend.js"></script>
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/js/interactors_nonprototype.js"></script>
-<script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/js/interactor_plugin_base.js"></script>
+<script type="text/javascript" src="js/interactor_plugin_base.js"></script>
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/js/reflectivity_sim.js"></script>
 <script type="text/javascript" src="js/complex.js"></script>
 <script type="text/javascript" src="js/magnetic_wf.js"></script>
@@ -78,7 +78,7 @@ window.onload = function() {
     
     plot_choices = {'reflectivity':   {data: 'xy', xlabel: 'Q (inverse Å)', ylabel: 'log₁₀(R)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
                     'phase':          {data: 'phase', xlabel: 'Q (inverse Å)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
-                    //'spin asymmetry': {data: 'sa', xlabel: 'Q (inverse Å)', ylabel: '(R1 - R2)/(R1 + R2)', title: 'Asymmetry'}
+                    'spin asymmetry': {data: 'sa', xlabel: 'Q (inverse Å)', ylabel: '(R++ - R--)/(R++ + R--)', title: 'Asymmetry'}
                     };
     current_choice = 'reflectivity';
     
@@ -95,23 +95,31 @@ window.onload = function() {
         var dp, r;
         wf = new magnetic_wavefunction();
         wf.init(qmin/2.0, sld);
+        AGUIDE = parseFloat(document.getElementById('guide_angle').value) || 270.0;
         
         for (var q=qmin; q<qmax; q+=qstep) {
             qlist.push(q);
             //wf1.init(q/2.0, sld1);
             wf.set_kz_in(q/2.0);
-            r = wf.calculateR(270);
+            
+            var r = wf.calculateR(AGUIDE); // angle of external field!
             for (var i in r) {
                 var ri = r[i];
                 rlist[i].push(ri);
                 var ri_mag = ri.magnitude();
                 var log_data = (ri_mag <= 1e-10) ? null : Math.log(Math.pow(ri.magnitude(),2)) / Math.LN10;
                 xy[i].push([q, log_data]);
-                phase.push([q, ri.phase()]);
+                phase[i].push([q, ri.phase()]);
             }
+            var rpp = Math.pow(r[0].magnitude(), 2);
+            var rmm = Math.pow(r[3].magnitude(), 2);
+            var sum = rpp + rmm;
+            sa[0].push([q, (rpp - rmm)/(rpp + rmm)]);
+            var empt = [q, null];
+            sa[1].push(empt); sa[2].push(empt); sa[3].push(empt);
         }
         
-        return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile(), wf: wf };
+        return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile(), wf: wf, sa: sa };
     }
     
     function make_plots( xy1, xy2, xy3, xy4 ) {
@@ -147,13 +155,14 @@ window.onload = function() {
                 }
               }
             },
-            cursor: {show:true, zoom:false},
-            interactors: [{type: 'VerticalLine',
-                       name: 'vcursor',
-                       x0: 0.0001,
-                       color1: 'green',
-                       color2: 'green'
-                       }]
+            cursor: {show:true, zoom:true},
+            interactors: [{type: 'master', scrollZoom: false, dragPan: false}, 
+                          {type: 'VerticalLine',
+                           name: 'vcursor',
+                           x0: 0.0001,
+                           color1: 'green',
+                           color2: 'green'
+                          }]
         });
         
         function handleLegendClick(ev) {
@@ -206,10 +215,14 @@ window.onload = function() {
     for (var i in profilexy) { profilexy[i][1] *= 1e6; }
     
     leftpoints = [];
+    mag_leftpoints = [];
+    angle_leftpoints = [];
     var z = 0;
     for (var i in initial_sld) {
         var layer = initial_sld[i]
-        leftpoints.push( {x: z, y: layer.sld * 1e6, profile_mag: layer.sldm * 1e6, segwidth: layer.thickness} );
+        leftpoints.push( {x: z, y: layer.sld * 1e6, segwidth: layer.thickness} );
+        mag_leftpoints.push( {x: z, y: 1.0, segwidth: layer.thickness} );
+        angle_leftpoints.push( {x: z, y: THETA_M, segwidth: layer.thickness} );
         z += layer.thickness;
     }
         
@@ -218,7 +231,12 @@ window.onload = function() {
         seriesDefaults: {shadow: false, markerOptions: {shadow: false, size: 4}},
         grid: {shadow: false},
         title: 'Profile (double-click to add/remove nodes)',
-        series: [{color: 'grey'}, {color: 'orange'}, {color: 'purple'}, {color: 'black'}],
+        //series: [{color: 'grey'}, {color: 'orange'}, {color: 'purple'}, {color: 'black'}],
+        series: [{color:'blue', label:'Nuclear  SLD'},
+                 {color:'Gold', label:'Magnetic SLD'},
+                 {color:'magenta', label:'Magnetic angle (rad)'},
+                 {color:'green', label:'k0²/4π'}],
+        legend: {show: true, renderer: $.jqplot.EnhancedLegendRenderer},
         axes:{
           xaxis:{
             label: 'z (Å) Beam direction is left-to-right (zero near top of sample) ', 
@@ -239,8 +257,14 @@ window.onload = function() {
             }
           }
         },
-        cursor: {show:true, zoom:false}, 
-        interactors: [{type: 'RightAngleSegment',
+        //cursor: {show:true, zoom:true}, 
+        interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
+                      {type: 'HorizontalLine', 
+                       name: 'e0',
+                       y0: 0,
+                       color1: 'green', 
+                       color2: 'green'},
+                       {type: 'RightAngleSegment',
                        name: 'profile_nuc',
                        leftpoints: jQuery.extend(true, [], leftpoints),
                        color1: 'blue',
@@ -248,15 +272,16 @@ window.onload = function() {
                        },
                        {type: 'RightAngleSegment',
                        name: 'profile_mag',
-                       leftpoints: jQuery.extend(true, [], leftpoints),
+                       leftpoints: jQuery.extend(true, [], mag_leftpoints),
                        color1: 'Gold',
                        color2: 'Gold'
                        },
-                       {type: 'HorizontalLine', 
-                       name: 'e0',
-                       y0: 0,
-                       color1: 'green', 
-                       color2: 'green'}]
+                       {type: 'RightAngleSegment',
+                       name: 'profile_angle',
+                       leftpoints: jQuery.extend(true, [], angle_leftpoints),
+                       color1: 'Magenta',
+                       color2: 'Magenta'
+                       }]
     });
     
     plot2.series[0].data = [];
@@ -315,7 +340,7 @@ window.onload = function() {
     plot2.replot();
 
     var profile_nuc = plot2.plugins.interactors.profile_nuc;
-    get_sld = function(profile_nuc, profile_mag) {
+    get_sld = function(profile_nuc, profile_mag, profile_angle) {
         var sld = [];
         for (var i in profile_nuc.leftpoints) {
             //var lcoord = profile.getCoords(profile.lp[i].pos);
@@ -328,10 +353,20 @@ window.onload = function() {
 	        var rcoord = profile_mag.rp[i].coords;
             profile_mag.leftpoints[i].x = lcoord.x;
             profile_mag.leftpoints[i].y = lcoord.y;
+            var lcoord = profile_angle.lp[i].coords;
+	        var rcoord = profile_angle.rp[i].coords;
+            profile_angle.leftpoints[i].x = lcoord.x;
+            profile_angle.leftpoints[i].y = lcoord.y;
             profile_nuc.leftpoints[i].segwidth = (Math.abs(lcoord.x - rcoord.x));
             profile_mag.leftpoints[i].segwidth = (Math.abs(lcoord.x - rcoord.x));
+            profile_angle.leftpoints[i].segwidth = (Math.abs(lcoord.x - rcoord.x));
             
-            sld.push({ sld: profile_nuc.leftpoints[i].y * 1e-6, thickness: profile_nuc.leftpoints[i].segwidth, mu: 0, thetaM: THETA_M, sldi: 0, sldm: profile_mag.leftpoints[i].y *1e-6 });
+            sld.push({ sld: profile_nuc.leftpoints[i].y * 1e-6, 
+                       thickness: profile_nuc.leftpoints[i].segwidth, 
+                       mu: 0, 
+                       thetaM: profile_angle.leftpoints[i].y, 
+                       sldi: 0, 
+                       sldm: profile_mag.leftpoints[i].y *1e-6 });
         }
         return sld;
     };
@@ -341,8 +376,8 @@ window.onload = function() {
         if (new_choice != current_choice) {
             current_choice = new_choice;
             var plot_select = plot_choices[current_choice]['data'];
-            for (var i in r) {
-                plot1.series[i].data = r[i][plot_select];
+            for (var i=0; i<4; i++) {
+                plot1.series[i].data = r[plot_select][i];
             }
 
             plot1.title.text = plot_choices[current_choice]['title'];
@@ -392,20 +427,45 @@ window.onload = function() {
         plot1.replot();  
     }
     
+    function match_x_vals(prof1, prof2) {
+        for (var i=0; i<prof1.rp.length; i++) {
+            prof2.rp[i].coords.x = prof1.rp[i].coords.x;
+        }
+        for (var i=0; i<prof1.lp.length; i++) {
+            prof2.lp[i].coords.x = prof1.lp[i].coords.x;
+        }
+    }
+    
     plot2.plugins.interactors.profile_nuc.update = function() {
-        var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag);
+        match_x_vals(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag);
+        match_x_vals(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_angle);
+        var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
         //po.update();
         plot2.replot();
     }
     plot2.plugins.interactors.profile_mag.update = function() {
-        var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag);
+        match_x_vals(plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_nuc);
+        match_x_vals(plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
+        var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
+        update_plot(sld, plot_choices[current_choice]['data']);
+        //po.update();
+        plot2.replot();
+    }
+    plot2.plugins.interactors.profile_angle.update = function() {
+        match_x_vals(plot2.plugins.interactors.profile_angle, plot2.plugins.interactors.profile_nuc);
+        match_x_vals(plot2.plugins.interactors.profile_angle, plot2.plugins.interactors.profile_mag);
+        var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
         //po.update();
         plot2.replot();
     }
     
-    var profiles = [plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag];
+    var profiles = [
+        plot2.plugins.interactors.profile_nuc, 
+        plot2.plugins.interactors.profile_mag, 
+        plot2.plugins.interactors.profile_angle ];
+        
     function add_point_to_profiles(except_me, leftpoint_num, new_leftpoint) {
         for (var i in profiles) {
             var profi = profiles[i];
@@ -422,8 +482,22 @@ window.onload = function() {
                 //profi.update();
             }
         }
-        console.log(except_me, leftpoint_num, new_leftpoint);
     }
+    
+    make_listeners = function(profiles) {
+        // assumes all profiles have the same number of lp, rp!
+        for (var ir=0; ir<profiles[0].rp.length; ir++) {
+            var rps = [];
+            for (var i=0; i<profiles.length; i++) {
+                rps.push(profiles[i].rp[ir]);
+            }
+            for (var i=0; i<profiles.length; i++) {
+                profiles[i].rp[ir].listeners = rps;
+            }
+        }
+    }
+    
+    //make_listeners(profiles);
     //plot2.plugins.interactors.profile_nuc. 
     var onDoubleClick = function(grob, pos) {
         //var grob = this.grobs[grobnum];
@@ -500,6 +574,7 @@ window.onload = function() {
     
     plot2.plugins.interactors.profile_nuc.onDoubleClick = onDoubleClick;
     plot2.plugins.interactors.profile_mag.onDoubleClick = onDoubleClick;
+    plot2.plugins.interactors.profile_angle.onDoubleClick = onDoubleClick;
     
     //plot2.plugins.interactors.profile2.update = function() {
     //    var sld = get_sld(plot2.plugins.interactors.profile2);
@@ -507,7 +582,7 @@ window.onload = function() {
     //    plot2.replot();
     //}
     
-    sld[0] = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag);
+    sld[0] = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
     //console.log('sld[0]', sld[0]);
     r = calc_r(sld[0]);
     //console.log(r[0]);
@@ -784,7 +859,7 @@ window.onload = function() {
     */
     
     show_script = function() {
-        var sldarray = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag);
+        var sldarray = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         //var datafilename = datafilename || "";
         var pyscript = generate_slab_script(sldarray, datafilename);
         scriptwin = window.open("", "_blank");
@@ -799,6 +874,8 @@ window.onload = function() {
         code.innerHTML = pyscript;
     }
     document.getElementById("scriptbutton").onclick = show_script;
+    
+    document.getElementById('guide_angle').onchange = plot2.plugins.interactors.profile_nuc.update;
 }
 </script>
 </head>
@@ -810,5 +887,6 @@ window.onload = function() {
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='psi_choices'></div>
     <div id='psi_plot'></div>
+    <div id="guide_input_div">Guide field angle (usually 270): <input type="text" id="guide_angle" value="270.0"></input></div>
 </body>
 </html>
