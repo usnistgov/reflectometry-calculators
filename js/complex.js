@@ -166,5 +166,15 @@ Complex.sum = function(alist) {
     }
     return result
 };
+
+Complex.cosh = function(a) {
+    return Complex.multiply(Complex.half, Complex.add( Complex.exp(a), Complex.exp(a.negative()) ) );
+    // cosh(x) = 0.5*(e^x + e^-x)
+};
+
+Complex.sinh = function(a) {
+    return Complex.multiply(Complex.half, Complex.subtract( Complex.exp(a), Complex.exp(a.negative()) ) );
+    // sinh(x) = 0.5 * (e^x - e^-x);
+};
     
     
