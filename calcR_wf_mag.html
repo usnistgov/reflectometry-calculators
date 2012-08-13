@@ -95,7 +95,12 @@ window.onload = function() {
         var dp, r;
         wf = new magnetic_wavefunction();
         wf.init(qmin/2.0, sld);
-        AGUIDE = parseFloat(document.getElementById('guide_angle').value) || 270.0;
+        // if there's a valid number in the textbox, use it
+        var AGUIDE = parseFloat(document.getElementById('guide_angle').value);
+        if (isNaN(AGUIDE)) {
+            AGUIDE = 270.0;
+            document.getElementById('guide_angle').value = AGUIDE.toFixed(1);
+        }
         
         for (var q=qmin; q<qmax; q+=qstep) {
             qlist.push(q);
@@ -887,6 +892,6 @@ window.onload = function() {
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='psi_choices'></div>
     <div id='psi_plot'></div>
-    <div id="guide_input_div">Guide field angle (usually 270): <input type="text" id="guide_angle" value="270.0"></input></div>
+    <div id="guide_input_div">Guide field angle epsilon - common choices: 270 (along sample y, in-plane) and 0 (along sample z, out-of-plane): <input type="text" id="guide_angle" value="270.0"></input></div>
 </body>
 </html>

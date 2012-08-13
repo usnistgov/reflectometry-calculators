@@ -73,11 +73,13 @@ Complex.prototype.copy = function() {
     return new Complex(this.x, this.y);
 };
 
+// Return 1/(complex number)
 Complex.prototype.inverse = function() {
     var denom = Math.pow(this.x, 2) + Math.pow(this.y, 2);
     return new Complex( this.x / denom, -this.y / denom );
 };
 
+// Return the complex conjugate
 Complex.prototype.conjugate = function() {
     return new Complex( this.x, -this.y );
 };
