@@ -238,7 +238,7 @@ window.onload = function() {
         title: 'Profile (double-click to add/remove nodes)',
         //series: [{color: 'grey'}, {color: 'orange'}, {color: 'purple'}, {color: 'black'}],
         series: [{color:'blue', label:'Nuclear  SLD'},
-                 {color:'Gold', label:'Magnetic SLD'},
+                 {color:'OrangeRed', label:'Magnetic SLD'},
                  {color:'magenta', label:'Magnetic angle (rad)'},
                  {color:'green', label:'k0²/4π'}],
         legend: {show: true, renderer: $.jqplot.EnhancedLegendRenderer},
@@ -278,8 +278,8 @@ window.onload = function() {
                        {type: 'RightAngleSegment',
                        name: 'profile_mag',
                        leftpoints: jQuery.extend(true, [], mag_leftpoints),
-                       color1: 'Gold',
-                       color2: 'Gold'
+                       color1: 'OrangeRed',
+                       color2: 'DarkOrange'
                        },
                        {type: 'RightAngleSegment',
                        name: 'profile_angle',
