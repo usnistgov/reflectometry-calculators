@@ -132,12 +132,13 @@ window.onload = function() {
               }
             },
             cursor: {show:true, zoom:false},
-            interactors: [{type: 'VerticalLine',
-                       name: 'vcursor',
-                       x0: 0.0001,
-                       color1: 'green',
-                       color2: 'green'
-                       }]
+            interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
+                          {type: 'VerticalLine',
+                           name: 'vcursor',
+                           x0: 0.0001,
+                           color1: 'green',
+                           color2: 'green'
+                           }]
         });
         
         
@@ -213,7 +214,8 @@ window.onload = function() {
           }
         },
         cursor: {show:true, zoom:false}, 
-        interactors: [{type: 'RightAngleSegment',
+        interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
+                      {type: 'RightAngleSegment',
                        name: 'profile1',
                        leftpoints: leftpoints.slice(),
                        color1: 'blue',

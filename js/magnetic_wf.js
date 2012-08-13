@@ -12,6 +12,16 @@ a US government employee, and is therefore in the public domain
 function magnetic_wavefunction() {};
 
 var Cplx = Complex; // compatibility of names between c++ and js libraries
+Complex.twocosh = function(a) {
+    // useful in the calculation, since we just mutiply by two after doing cosh and sinh
+    return Complex.add( Complex.exp(a), Complex.exp(a.negative()) );
+    // cosh(x) = 0.5*(e^x + e^-x)
+};
+
+Complex.twosinh = function(a) {
+    return Complex.subtract( Complex.exp(a), Complex.exp(a.negative()) );
+    // sinh(x) = 0.5 * (e^x - e^-x);
+};
 
 magnetic_wavefunction.prototype.init = function(kz_in, sld, spin_in, spin_out) {
     // sld is an array of slabs with sld, thickness and absorption
@@ -63,8 +73,8 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
     var DETW;
     var ZI,ZS,X,Y,SCI,SS,CC;
     // constants
-    var CR = Complex.one.copy(); // Cplx(1.0,0.0);
-    var CI = Complex.i.copy(); // Cplx(0.0,1.0);
+    var CR = new Cplx(1.0, 0.0);
+    var CI = new Cplx(0.0, 1.0);
     var PI4=Math.PI * 4.0; // *1e-6??;
     
     var N = this.layer_num_total;
