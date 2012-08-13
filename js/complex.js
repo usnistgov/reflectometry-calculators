@@ -46,10 +46,16 @@ function Complex(real, imaginary) {
  * no other arguments are needed.
  */
 
+// Return the magnitude squared of a complex number.  This is
+// the square of its distance from the origin (0,0) in the complex plane.
+Complex.prototype.magsq = function() {
+    return (this.x*this.x + this.y*this.y);
+};
+
 // Return the magnitude of a complex number. This is defined
 // as its distance from the origin (0,0) of the complex plane.
 Complex.prototype.magnitude = function() {
-    return Math.sqrt(this.x*this.x + this.y*this.y);
+    return Math.sqrt(this.magsq());
 };
 
 // Return the phase of a complex number. This is defined
@@ -133,6 +139,12 @@ Complex.fromMagPhase = function(mag, phase) {
     var x = Math.cos(phase);
     var y = Math.sin(phase);
     return new Complex( mag * Math.cos(phase), mag * Math.sin(phase) );
+};
+
+Complex.pow = function(a, n) {
+    var phase = a.phase();
+    var mag = a.magnitude();
+    return Complex.fromMagPhase( Math.pow(mag, n), phase * n ); 
 };
 
 Complex.cos = function(a) {
