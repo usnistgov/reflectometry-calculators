@@ -394,15 +394,17 @@ window.onload = function() {
     wl_slider.value = default_wl;
     */
     
+    //var wl_ctl = document.getElementById('wl_ctl');
     var wl_ctl = document.createElement('input');
     wl_ctl.setAttribute('type', 'text');
     wl_ctl.setAttribute('style', 'width:80px');
-    var wl_ctl_div = document.createElement('div');
+    var wl_ctl_div = document.getElementById('wl_ctl_div');
+    //var wl_ctl_div = document.createElement('div');
     wl_ctl_div.appendChild(document.createTextNode('Wavelength (nm)'));
     wl_ctl_div.appendChild(wl_slider_span);
     wl_ctl_div.appendChild(wl_ctl);
     wl_ctl_div.setAttribute('style', 'float:left');
-    outerdiv1.appendChild(wl_ctl_div);
+    //outerdiv1.appendChild(wl_ctl_div);
     wl_ctl.value = 0.5 // AND/R and MAGIK, in nm
     wl_ctl.onchange = function() {
         $('#wl_slider_span').slider('value', wl_ctl.value);
@@ -430,7 +432,7 @@ window.onload = function() {
     // Instrument Cartoon //
     ////////////////////////
     
-    instr_ctldiv = document.getElementById('instr_ctldiv');
+    instr_ctldiv = document.getElementById('instr_ctl_div');
     //instr_ctldiv = document.createElement('div');
     instr_ctldiv.setAttribute('style', 'float:left');
     instr_label = document.createElement('label');
@@ -444,14 +446,15 @@ window.onload = function() {
     instr_label.appendChild(document.createTextNode('Reflectometer instrument'));
     //outerdiv1.appendChild(instr_ctldiv);
     
-    var qzoom_ctl = document.createElement('input');
+    var qzoom_ctl = document.getElementById('qzoom_ctl');
+    //var qzoom_ctl = document.createElement('input');
     qzoom_ctl.setAttribute('type', 'text');
     qzoom_ctl.setAttribute('style', 'width:80px');
     var qzoom_ctl_div = document.createElement('div');
     qzoom_ctl_div.appendChild(document.createTextNode('Zoom Q-vector by factor of: '));
     qzoom_ctl_div.appendChild(qzoom_ctl);
     qzoom_ctl_div.setAttribute('style', 'float:left');
-    outerdiv1.appendChild(qzoom_ctl_div);
+    //outerdiv1.appendChild(qzoom_ctl_div);
     qzoom_factor = 4.0;
     qzoom_ctl.value = qzoom_factor; // AND/R and MAGIK, in nm
     qzoom_ctl.onchange = function() { 
@@ -750,7 +753,10 @@ pointTextControl = function(p, coord, label, precision) {
     <h1>Monochromatic-beam offspecular reflectometer</h1>
     <div id='outer1'>
         <div id='plot'></div>
-        <div id='instr_ctldiv'></div>
+        <div id='wl_ctl_div'></div>
+        <div id='instr_ctl_div'></div>
+        <div id='qzoom_ctl_div'></div>
+        
     </div>
     <div id='outer2'></div>
     <div id='footer'><p><? include("/var/www/include/utility.inc"); lastmod(); ?></p></div>
