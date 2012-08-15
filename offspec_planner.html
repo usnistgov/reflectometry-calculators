@@ -76,8 +76,9 @@ window.onload = function() {
     //outerdiv1.style.width = String(Number(plotdiv1.getAttribute('width')) + 85) + 'px';
     outerdiv1.style.height = String(plot_height + 35) + 'px';
 
-    plotdiv1 = document.createElement('div');
-    plotdiv1.setAttribute('id', 'plot');
+    plotdiv1 = document.getElementById('plot');
+    //plotdiv1 = document.createElement('div');
+    //plotdiv1.setAttribute('id', 'plot');
     //plotdiv1.setAttribute('width', (total_width/2.0 - 50 - 85));
     plotdiv1.setAttribute('width', (total_width/2.0 - 90));
     plotdiv1.setAttribute('height', plot_height);
@@ -748,6 +749,7 @@ pointTextControl = function(p, coord, label, precision) {
 <body bgColor='#eeffdd'>
     <h1>Monochromatic-beam offspecular reflectometer</h1>
     <div id='outer1'>
+        <div id='plot'></div>
         <div id='instr_ctldiv'></div>
     </div>
     <div id='outer2'></div>
