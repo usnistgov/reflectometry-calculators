@@ -27,7 +27,7 @@ magnetic_wavefunction.prototype.init = function(kz_in, sld, spin_in, spin_out) {
     // sld is an array of slabs with sld, thickness and absorption
     this.kz_in = kz_in;
     this.sld = sld;
-    this.ML = null;
+    this.B = null; // 4x4 transfer matrix (complex)
     this.r = null;
     this.layer_num_total = this.sld.length;
     this.total_thickness = 0;
@@ -88,6 +88,9 @@ magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB = function(A, AGUIDE) {
 
 magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB_old = function(A, AGUIDE) {
     // take a matrix and rotate from LAB to SAMPLE frame and then back
+    // this is more efficient (avoids all the zero multiplications etc) than
+    // doing it by multiplying 2 4x4 matrices twice, which is 8x4x4x2 = 256 ops.
+    // this is only 16*7=112
     var CC, SS, SCI;
     var CST = [ [0, 0, 0, 0], 
                 [0, 0, 0, 0], 
@@ -121,13 +124,8 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
     var AGUIDE = AGUIDE || 0.0;
     var I, prevI, L, STEP;
     var YA, YB, YC, YD;
-    var A11,A12,A13,A14,A21,A22,A23,A24;
-    var A31,A32,A33,A34,A41,A42,A43,A44;
-    //var B11,B12,B13,B14,B21,B22,B23,B24;
-    //var B31,B32,B33,B34,B41,B42,B43,B44;
-    var C1,C2,C3,C4;
-    var CST11,CST12,CST13,CST14,CST21,CST22,CST23,CST24;
-    var CST31,CST32,CST33,CST34,CST41,CST42,CST43,CST44;
+    var A, B, C, CST; // matrices
+
     //    variables for translating resulting B into a signal
     var W11,W12,W21,W22,V11,V12,V21,V22;
     var DETW;
@@ -144,6 +142,7 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
         var thetaM = this.sld[i].thetaM;
         //expth.push(Cplx.exp(new Cplx(0.0, this.sld[i].thetaM))); // e^(i thetaM)
         expth.push(new Cplx(Math.cos(thetaM), Math.sin(thetaM)));
+        //expth.push(Cplx.fromMagPhase(1.0, thetaM));
     }
     
     var KZ = this.kz_in;
@@ -158,7 +157,12 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
         YB = Cplx.zero.copy(); //0.;
         YC = Cplx.zero.copy(); //0.;
         YD = Cplx.one.negative(); //-1.;
-     return [YA, YB, YC, YD];
+        
+        this.YA = YA;
+        this.YB = YB;
+        this.YC = YC;
+        this.YD = YD;
+        return [YA, YB, YC, YD];
     }
 
 /*
@@ -204,10 +208,24 @@ C later in the calculation when we divide by DETW.
             B[I][i].push( (i==j)? (new Cplx(1.0, 0.0)) : (new Cplx(0.0, 0.0)) ); 
         }
     }
+    
+    B = [];
+    B.push([ [1, 0, 0, 0], 
+             [0, 1, 0, 0], 
+             [0, 0, 1, 0], 
+             [0, 0, 0, 1] ]);
+    
+    C = [ [1, 0, 0, 0], 
+          [0, 1, 0, 0], 
+          [0, 0, 1, 0], 
+          [0, 0, 0, 1] ];
+          
     var sld_L = this.sld[L];
 //    Changing the target KZ is equivalent to subtracting the fronting
 //    medium SLD.
     KSQREL = KZ*KZ + PI4*sld_L.sld; // nuclear part of sld
+    //KSQRELP = KZ*KZ + PI4*sld_L.sld + PI4*sld_L.sldm; // nuclear + magnetic part of sld
+    //KSQRELM = KZ*KZ + PI4*sld_L.sld - PI4*sld_L.sldm; // nuclear + magnetic part of sld
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
     for (I=1; I < N-1; I++) {
@@ -215,8 +233,9 @@ C later in the calculation when we divide by DETW.
         L = L+STEP;
         sld_L = this.sld[L];
         var EXPTH_L = expth[L]; // need to fill this above!
-        S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  -PI4*sld_L.sldi));
-        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  -PI4*sld_L.sldi));
+        S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+        // this was -PI4*Imag(sld) in magnetic.cc - why? 
+        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
 /*        if (Math.abs(S1.x) > Math.abs(S3.x))
@@ -250,10 +269,10 @@ LOGH=0;
       SINHS3 = Cplx.twosinh(Cplx.multiply(S3, sld_L.thickness));
 //    Generate A using a factor of 0.25 since we are using
 //    2*cosh/H and 2*sinh/H rather than cosh/H and sinh/H
-        A = [ [0, 0, 0, 0], 
-              [0, 0, 0, 0], 
-              [0, 0, 0, 0], 
-              [0, 0, 0, 0] ];
+        var A = [ [0, 0, 0, 0], 
+                  [0, 0, 0, 0], 
+                  [0, 0, 0, 0], 
+                  [0, 0, 0, 0] ];
         A[0][0]=Cplx.multiply(0.25, Cplx.add(COSHS1, COSHS3));
         //A11=0.25*(COSHS1+COSHS3);
         A[1][0]=Cplx.multiply(0.25, Cplx.subtract(COSHS1, COSHS3));
@@ -286,18 +305,26 @@ LOGH=0;
         A[1][3]=A[0][2].copy();
         A[3][1]=A[2][0].copy();
 
-//    Matrix update B=A*B
+//    Matrix update C=A*C
         //B.push([]); // add B[I];
-        var newB = multiply4x4(A, B[prevI]);
-        B.push(newB);
+        C = multiply4x4(A, C);
+        B.push(A);
         
       }
       
+      prevI = I-1;
+      B.push([ [1, 0, 0, 0], 
+               [0, 1, 0, 0], 
+               [0, 0, 1, 0], 
+               [0, 0, 0, 1] ]); // fake B for last layer.
+      
+      this.B = B;
+      this.C = C;
 //    Rotate polarization axis to lab frame (angle AGUIDE)
 //    Note: not reusing A, instead creating CST
-      prevI = I-1;
+      //prevI = I-1;
       //CST = this.unitary_LAB_SAM_LAB_old(B[prevI], AGUIDE);
-      CST = this.unitary_LAB_SAM_LAB_old(newB, AGUIDE);
+      CST = this.unitary_LAB_SAM_LAB(C, AGUIDE);
 
 //    Use corrected versions of X,Y,ZI, and ZS to account for effect
 //    of incident and substrate media
@@ -305,7 +332,8 @@ LOGH=0;
 //    media --- use gepore.f directly for a more complete solution
       L=L+STEP;
       sld_L = this.sld[L];
-      ZS=Cplx.multiply(CI, Cplx.sqrt(new Cplx(KSQREL-PI4*sld_L.sld, PI4*sld_L.sldi)));
+      ZS=Cplx.multiply(CI, Cplx.sqrt(new Cplx(KSQREL-PI4*sld_L.sld, -PI4*sld_L.sldi)));
+      // this was +PI4*Imag(sld) in magnetic.cc Don't know why.
       ZI=Cplx.multiply(CI, Math.abs(KZ));
 
       X=-1.;
@@ -351,20 +379,159 @@ LOGH=0;
     
 }
 
+using_running = false;
+
+magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
+    // calculate coefficients of wavefunction down (c) and up (d) in the 
+    // material, for both spin states (c+, c-, d+, d-).
+    //  c -> t in Kentzinger notation, d -> r
+    // 
+    // IP and IM are the intensities of the incident + and - wavefunctions.
+    if (this.B == null) this.calculateR(AGUIDE);
+    var CP, CM, DP, DM; // coefficients c+, c-, d+, d-
+    var p_p, p_m, pp_p, pp_m; // psi+, psi-, psi'+, psi'-
+    var N = this.layer_num_total;
+    var I, prevI, L, STEP;
+    var KSQREL, KLP, KLM;
+    var PI4=Math.PI * 4.0; // *1e-6??;
+    
+    CP = [new Cplx(IP, 0)];
+    CM = [new Cplx(IM, 0)];
+    DP = [Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YC, IM))]; // YA is r++, YB is r-+
+    DM = [Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YB, IP))]; // YD is r--, YC is r+-
+    
+    var KZ = this.kz_in;
+    if (KZ<=-1.e-10) {
+        L=N-1;
+        STEP=-1;
+    } else {
+        L=0;
+        STEP=1;
+    }
+    
+    I=0;
+    var sld_L = this.sld[L];
+//    Changing the target KZ is equivalent to subtracting the fronting
+//    medium SLD.
+    KSQREL = KZ*KZ + PI4*sld_L.sld; // nuclear part of sld -- k0z
+    //KSQRELP = KZ*KZ + PI4*sld_L.sld + PI4*sld_L.sldm; // nuclear + magnetic part of sld
+    //KSQRELM = KZ*KZ + PI4*sld_L.sld - PI4*sld_L.sldm; // nuclear + magnetic part of sld
+    // assuming imaginary sld (sldi) == 0 in fronting medium.
+    KLP = KLM = Cplx.sqrt(KSQREL - PI4*sld_L.sld);
+    
+    p_p = Cplx.add(CP[I], DP[I]); // at z=0;
+    pp_p = Cplx.multiply(new Cplx(0, KLP), Cplx.subtract(CP[I], DP[I]));
+    // remember to multiply thickness by step at each layer,
+    // to take into account the backwards traversal for kz<0
+    p_m = Cplx.add(CM[I], DM[I]); // at z=0;
+    pp_m = Cplx.multiply(new Cplx(0, KLM), Cplx.subtract(CM[I], DM[I]));
+    var P0 = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
+    var P = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
+    console.log(P.toString());
+    var z = new Complex(0,0);
+    var kztp, kztm, pp_p_over_ikz, pp_m_over_ikz;
+    for (I=1; I < N; I++) {
+        prevI = I-1;
+        L = L+STEP;
+        sld_L = this.sld[L];
+        KLP = Cplx.sqrt(new Cplx(KSQREL - PI4*(sld_L.sld + sld_L.sldm), -PI4*sld_L.sldi));
+        KLM = Cplx.sqrt(new Cplx(KSQREL - PI4*(sld_L.sld - sld_L.sldm), -PI4*sld_L.sldi));
+        kztp = Cplx.multiply(KLP, z);
+        kztm = Cplx.multiply(KLM, z);
+        //pp_p_over_ikz = Cplx.multiply(pp_p, (new Cplx(0, KLP)).inverse());
+        //pp_m_over_ikz = Cplx.multiply(pp_m, (new Cplx(0, KLM)).inverse());
+        pp_p_over_ikz = Cplx.multiply(P[2], (new Cplx(0, KLP)).inverse());
+        pp_m_over_ikz = Cplx.multiply(P[3], (new Cplx(0, KLM)).inverse());
+        
+        var cpexp = Cplx.exp(new Cplx(0, kztp.negative()));
+        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
+        //var cpnum = Cplx.add(p_p, pp_p_over_ikz);
+        var cpnum = Cplx.add(P[0], pp_p_over_ikz);
+        var cp = Cplx.multiply(0.5, Cplx.multiply(cpnum, cpexp));
+        
+        var cmexp = Cplx.exp(new Cplx(0, kztm.negative()));
+        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
+        //var cmnum = Cplx.add(p_m, pp_m_over_ikz);
+        var cmnum = Cplx.add(P[1], pp_m_over_ikz);
+        var cm = Cplx.multiply(0.5, Cplx.multiply(cmnum, cmexp));
+        
+        var dpexp = Cplx.exp(new Cplx(0, kztp));
+        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
+        //var dpnum = Cplx.subtract(p_p, pp_p_over_ikz);
+        var dpnum = Cplx.subtract(P[0], pp_p_over_ikz);
+        var dp = Cplx.multiply(0.5, Cplx.multiply(dpnum, dpexp));
+        
+        var dmexp = Cplx.exp(new Cplx(0, kztm));
+        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
+        //var dmnum = Cplx.subtract(p_m, pp_m_over_ikz);
+        var dmnum = Cplx.subtract(P[1], pp_m_over_ikz);
+        var dm = Cplx.multiply(0.5, Cplx.multiply(dmnum, dmexp));
+        
+        z = Complex.add(z, STEP*sld_L.thickness); // negative step makes us move backwards...
+        CP.push(cp);
+        CM.push(cm);
+        DP.push(dp);
+        DM.push(dm);
+        
+        if (using_running == true) {
+            // using a running product of A matrices (B)
+            var BI = this.B[I];
+            P = multiply4x1(BI, P0);
+        } else {
+            var BI = this.B[I];
+            P = multiply4x1(BI, P);
+            console.log(P.toString());
+        } 
+    }
+    
+    //L = L+STEP;
+    /*
+    if (STEP < 0) {
+        // moving backwards through film, set downward (C) components in 
+        // last layer seen (which will be layer zero) to zero. 
+        CP[L] = Complex.zero.copy();
+        CM[L] = Complex.zero.copy();
+    } else {
+        // moving forwards through film, set upward (D) components in
+        // last layer to zero.  (same as boundary conditions, but this
+        // explicitly removes roundoff errors in last layer.)
+        DP[L] = Complex.zero.copy();
+        DM[L] = Complex.zero.copy();
+    }
+    */
+    
+    this.CP = CP;
+    this.CM = CM;
+    this.DP = DP;
+    this.DM = DM;
+}
+
 function multiply4x4(A, B) {
     var Z = Cplx.zero;
     var C = [ [Z, Z, Z, Z], 
               [Z, Z, Z, Z], 
               [Z, Z, Z, Z], 
               [Z, Z, Z, Z] ];
-    for(var i=0; i<4; i++){
-        for(var j=0; j<4; j++){
+    for (var i=0; i<4; i++){
+        for (var j=0; j<4; j++){
             //C[i][j] = 0;
-            for(var k=0; k<4; k++) C[i][j] = Complex.add(C[i][j], Complex.multiply(A[i][k], B[k][j]));
+            for (var k=0; k<4; k++) C[i][j] = Complex.add(C[i][j], Complex.multiply(A[i][k], B[k][j]));
         }
     }
     return C;
-}        
+}
+
+function multiply4x1(A, V) {
+    // multiply a 4x4 matrix A by a 4x1 vector V
+    var Z = Cplx.zero;
+    var C = [ Z, Z, Z, Z ];
+    for (var i=0; i<4; i++) {
+        for (var j=0; j<4; j++) {
+            C[i] = Complex.add(C[i], Complex.multiply(A[i][j], V[j]));
+        }
+    }
+    return C;
+}
 
 magnetic_wavefunction.prototype.gepore = function(AGUIDE) {
     var AGUIDE = AGUIDE || 0.0;
