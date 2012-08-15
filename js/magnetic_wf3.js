@@ -392,13 +392,15 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     var p_p, p_m, pp_p, pp_m; // psi+, psi-, psi'+, psi'-
     var N = this.layer_num_total;
     var I, prevI, L, STEP;
-    var KSQREL, KLP, KLM;
+    var KSQREL, KLP, KLM, S1, S3;
     var PI4=Math.PI * 4.0; // *1e-6??;
     
     CP = [new Cplx(IP, 0)];
     CM = [new Cplx(IM, 0)];
     DP = [Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YC, IM))]; // YA is r++, YB is r-+
     DM = [Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YB, IP))]; // YD is r--, YC is r+-
+    
+    
     
     var KZ = this.kz_in;
     if (KZ<=-1.e-10) {
@@ -418,15 +420,29 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     //KSQRELM = KZ*KZ + PI4*sld_L.sld - PI4*sld_L.sldm; // nuclear + magnetic part of sld
     // assuming imaginary sld (sldi) == 0 in fronting medium.
     KLP = KLM = Cplx.sqrt(KSQREL - PI4*sld_L.sld);
+    var expth = [];
+    for (var i=0; i<N; i++) {
+        var thetaM = this.sld[i].thetaM;
+        //expth.push(Cplx.exp(new Cplx(0.0, this.sld[i].thetaM))); // e^(i thetaM)
+        expth.push(new Cplx(Math.cos(thetaM), Math.sin(thetaM)));
+        //expth.push(Cplx.fromMagPhase(1.0, thetaM));
+    }
+    var EXPTH_L = expth[L];
+    S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+    // this was -PI4*Imag(sld) in magnetic.cc - why? 
+    S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
+    
+    var CDPM = [CP[0], DP[0], CM[0], DM[0]];
+    var P = cdpm_to_psi(CDPM, EXPTH_L, S1, S3);
     
     p_p = Cplx.add(CP[I], DP[I]); // at z=0;
     pp_p = Cplx.multiply(new Cplx(0, KLP), Cplx.subtract(CP[I], DP[I]));
     // remember to multiply thickness by step at each layer,
     // to take into account the backwards traversal for kz<0
     p_m = Cplx.add(CM[I], DM[I]); // at z=0;
-    pp_m = Cplx.multiply(new Cplx(0, KLM), Cplx.subtract(CM[I], DM[I]));
-    var P0 = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
-    var P = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
+    //pp_m = Cplx.multiply(new Cplx(0, KLM), Cplx.subtract(CM[I], DM[I]));
+    //var P0 = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
+    //var P = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
     console.log(P.toString());
     var z = new Complex(0,0);
     var kztp, kztm, pp_p_over_ikz, pp_m_over_ikz;
@@ -576,7 +592,6 @@ function psi_to_cdpm(P, EXPTH_L, S1, S3) {
     // Psi = [p+, p-, p'+, p'-];
     var scaling = new Cplx(4.0, 0);
     var expth_inv = Cplx.multiply(EXPTH_L, scaling).inverse();
-    //var nexpth_inv = expth_inv.negative();
     var s1_inv = Cplx.multiply(S1, scaling).inverse();
     var s3_inv = Cplx.multiply(S3, scaling).inverse();
     var p2cd = [[ 0.25,            expth_inv,            s1_inv, Cplx.multiply(expth_inv, s1_inv)],
@@ -593,8 +608,8 @@ function cdpm_to_psi(CDPM, EXPTH_L, S1, S3) {
     var muS1 = Cplx.multiply(mu, S1);
     var muS3 = Cplx.multiply(mu, S3);
     var cd2p = [[    1,               1,               1,              1],
-                [   S1,   S1.negative(),              S3, -S3.negative()],
-                [   mu,              mu,             -mu,            -mu],
+                [   S1,   S1.negative(),              S3,  S3.negative()],
+                [   mu,              mu,              mu,  mu.negative()],
                 [ muS1, muS1.negative(), muS3.negative(),           muS3]];
     var P = multiply4x1(cd2p, CDPM);
     return P; 

@@ -60,9 +60,9 @@ window.onload = function() {
     //outerdiv.setAttribute('class', 'bk');
 
     
-    
-    outerdiv1 = document.createElement('div');
-    outerdiv1.setAttribute('id', 'outer1');
+    outerdiv1 = document.getElementById('outer1');
+    //outerdiv1 = document.createElement('div');
+    //outerdiv1.setAttribute('id', 'outer1');
     outerdiv1.setAttribute('style', 'float:left');
     //outerdiv1.style.setProperty('width', total_width/2.0 - 50, null);
     
@@ -215,8 +215,9 @@ window.onload = function() {
     // and again
     ///////////////////////////////
     
-    outerdiv2 = document.createElement('div');
-    outerdiv2.setAttribute('id', 'outer2');
+    outerdiv2 = document.getElementById('outer2');
+    //outerdiv2 = document.createElement('div');
+    //outerdiv2.setAttribute('id', 'outer2');
     outerdiv2.setAttribute('style', 'float:right');
     //outerdiv2.style.setProperty('width', total_width/2.0 - 50, null);
     
@@ -741,7 +742,8 @@ pointTextControl = function(p, coord, label, precision) {
 </head>
 <body bgColor='#eeffdd'>
     <h1>Monochromatic-beam offspecular reflectometer</h1>
-    <div id='mydiv'>
-    </div>
+    <div id='outer1'></div>
+    <div id='outer2'></div>
+    <div id='footer'><p><? include("/var/www/include/utility.inc"); lastmod(); ?></p></div>
 </body>
 </html>
