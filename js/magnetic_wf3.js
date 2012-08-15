@@ -404,3 +404,18 @@ magnetic_wavefunction.prototype.gepore = function(AGUIDE) {
     }
     
 }
+
+function psi_to_cdpm(P, EXPTH_L, S1, S3) {
+    // Psi = [p+, p-, p'+, p'-];
+    var scaling = new Cplx(4.0, 0);
+    var expth_inv = Cplx.multiply(EXPTH_L, scaling).inverse();
+    //var nexpth_inv = expth_inv.negative();
+    var s1_inv = Cplx.multiply(S1, scaling).inverse();
+    var s3_inv = Cplx.multiply(S3, scaling).inverse();
+    var p2cd = [[ 0.25,            expth_inv,            s1_inv, Cplx.multiply(expth_inv, s1_inv)],
+                [ 0.25,            expth_inv, s1_inv.negative(), Cplx.multiply(expth_inv, s1_inv).negative()],
+                [ 0.25, expth_inv.negative(),            s3_inv, Cplx.multiply(expth_inv, s3_inv).negative()],
+                [ 0.25, expth_inv.negative(), s3_inv.negative(), Cplx.multiply(expth_inv, s3_inv)]];
+    var CDPM = multiply4x1(p2cd, P);
+    return CDPM; 
+} 
