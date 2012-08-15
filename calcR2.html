@@ -9,6 +9,10 @@
   label { display: block; font-family: consolas, monospace; text-align: center; }
   //canvas { border: 1px dotted #888; }
   .bk { float: left; margin-right: 4px; }
+  #footer {
+        position: absolute;
+        bottom: 0px;
+  }
 </style>
 <!-- JQPLOT -->
 <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
@@ -336,5 +340,6 @@ window.onload = function() {
     <div id='choices'></div>
     <div id='sldplot'></div>
     <div id='phaseplot'></div>
+    <div id='footer'><p><? include("/var/www/include/utility.inc"); lastmod(); ?></p></div>
 </body>
 </html>
