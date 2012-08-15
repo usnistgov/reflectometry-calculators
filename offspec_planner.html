@@ -23,6 +23,10 @@
         -webkit-user-select: none; 
         -moz-user-select: none;
     }
+    #footer {
+        position: relative;
+        float: left;
+    }
         .metadata-label {color: red}
         .slidingDiv {
             background-color: #99CCFF;
@@ -66,7 +70,7 @@ window.onload = function() {
     outerdiv1.setAttribute('style', 'float:left');
     //outerdiv1.style.setProperty('width', total_width/2.0 - 50, null);
     
-    document.body.appendChild(outerdiv1);
+    //document.body.appendChild(outerdiv1);
     outerdiv1.style.position = 'relative';
     outerdiv1.style.width = String(total_width/2.0 - 90) + 'px';
     //outerdiv1.style.width = String(Number(plotdiv1.getAttribute('width')) + 85) + 'px';
@@ -221,7 +225,7 @@ window.onload = function() {
     outerdiv2.setAttribute('style', 'float:right');
     //outerdiv2.style.setProperty('width', total_width/2.0 - 50, null);
     
-    document.body.appendChild(outerdiv2);
+    //document.body.appendChild(outerdiv2);
     outerdiv2.style.position = "relative";
     outerdiv2.style.width = (total_width/2.0 - 50).toFixed(0) + 'px';
     //outerdiv2.style.width = String(Number(plotdiv2.getAttribute('width')) + 85) + 'px';
