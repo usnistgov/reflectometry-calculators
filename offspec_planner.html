@@ -446,11 +446,12 @@ window.onload = function() {
     instr_label.appendChild(document.createTextNode('Reflectometer instrument'));
     //outerdiv1.appendChild(instr_ctldiv);
     
-    var qzoom_ctl = document.getElementById('qzoom_ctl');
-    //var qzoom_ctl = document.createElement('input');
+    //var qzoom_ctl = document.getElementById('qzoom_ctl');
+    var qzoom_ctl = document.createElement('input');
     qzoom_ctl.setAttribute('type', 'text');
     qzoom_ctl.setAttribute('style', 'width:80px');
-    var qzoom_ctl_div = document.createElement('div');
+    var qzoom_ctl_div = document.getElementById('qzoom_ctl_div');
+    //var qzoom_ctl_div = document.createElement('div');
     qzoom_ctl_div.appendChild(document.createTextNode('Zoom Q-vector by factor of: '));
     qzoom_ctl_div.appendChild(qzoom_ctl);
     qzoom_ctl_div.setAttribute('style', 'float:left');
