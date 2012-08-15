@@ -585,4 +585,17 @@ function psi_to_cdpm(P, EXPTH_L, S1, S3) {
                 [ 0.25, expth_inv.negative(), s3_inv.negative(), Cplx.multiply(expth_inv, s3_inv)]];
     var CDPM = multiply4x1(p2cd, P);
     return CDPM; 
+}
+
+function cdpm_to_psi(CDPM, EXPTH_L, S1, S3) {
+    // CDPM = [c+, d+, c-, d-];
+    var mu = EXPTH_L;
+    var muS1 = Cplx.multiply(mu, S1);
+    var muS3 = Cplx.multiply(mu, S3);
+    var cd2p = [[    1,               1,               1,              1],
+                [   S1,   S1.negative(),              S3, -S3.negative()],
+                [   mu,              mu,             -mu,            -mu],
+                [ muS1, muS1.negative(), muS3.negative(),           muS3]];
+    var P = multiply4x1(cd2p, CDPM);
+    return P; 
 } 
