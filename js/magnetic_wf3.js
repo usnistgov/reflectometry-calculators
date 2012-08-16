@@ -307,8 +307,10 @@ LOGH=0;
 
 //    Matrix update C=A*C
         //B.push([]); // add B[I];
+        var newB = multiply4x4(A, B[prevI]);
         C = multiply4x4(A, C);
-        B.push(A);
+        //B.push(A);
+        B.push(newB);
         
       }
       
@@ -324,7 +326,7 @@ LOGH=0;
 //    Note: not reusing A, instead creating CST
       //prevI = I-1;
       //CST = this.unitary_LAB_SAM_LAB_old(B[prevI], AGUIDE);
-      CST = this.unitary_LAB_SAM_LAB(C, AGUIDE);
+      CST = this.unitary_LAB_SAM_LAB_old(C, AGUIDE);
 
 //    Use corrected versions of X,Y,ZI, and ZS to account for effect
 //    of incident and substrate media
@@ -379,7 +381,7 @@ LOGH=0;
     
 }
 
-using_running = false;
+using_running = true;
 
 magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     // calculate coefficients of wavefunction down (c) and up (d) in the 
@@ -395,12 +397,17 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     var KSQREL, KLP, KLM, S1, S3;
     var PI4=Math.PI * 4.0; // *1e-6??;
     
+    /*
     CP = [new Cplx(IP, 0)];
     CM = [new Cplx(IM, 0)];
-    DP = [Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YC, IM))]; // YA is r++, YB is r-+
-    DM = [Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YB, IP))]; // YD is r--, YC is r+-
+    DP = [Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YB, IM))]; // YA is r++, YB is r-+
+    DM = [Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YC, IP))]; // YD is r--, YC is r+-
+    */
     
-    
+    CP = [];
+    CM = [];
+    DP = [];
+    DM = [];
     
     var KZ = this.kz_in;
     if (KZ<=-1.e-10) {
@@ -427,29 +434,56 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         expth.push(new Cplx(Math.cos(thetaM), Math.sin(thetaM)));
         //expth.push(Cplx.fromMagPhase(1.0, thetaM));
     }
+    
+    /*
     var EXPTH_L = expth[L];
     S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
     // this was -PI4*Imag(sld) in magnetic.cc - why? 
-    S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
+    S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+    */
     
-    var CDPM = [CP[0], DP[0], CM[0], DM[0]];
-    var P = cdpm_to_psi(CDPM, EXPTH_L, S1, S3);
+    var EXPTH_L = Complex.one.copy();
+    S1 = S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld)-KSQREL,  PI4*sld_L.sldi)); // ignore sldm
+    // in front material
     
-    p_p = Cplx.add(CP[I], DP[I]); // at z=0;
-    pp_p = Cplx.multiply(new Cplx(0, KLP), Cplx.subtract(CP[I], DP[I]));
-    // remember to multiply thickness by step at each layer,
-    // to take into account the backwards traversal for kz<0
-    p_m = Cplx.add(CM[I], DM[I]); // at z=0;
+    var RP = Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YB, IM));
+    var RM = Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YC, IP));
+    var P0 = [Cplx.add(IP, RP), 
+             Cplx.add(IM, RM),
+             Cplx.multiply(Cplx.sqrt(-KSQREL), Cplx.subtract(IP, RP)),
+             Cplx.multiply(Cplx.sqrt(-KSQREL), Cplx.subtract(IM, RM))];
+    
+    //var CDPM = [CP[0], DP[0], CM[0], DM[0]];
+    //console.log(CDPM.toString());
+    //var P = cdpm_to_psi(CDPM, EXPTH_L, S1, S3);
+    var z = new Complex(0,0);
+    var CDPM = psi_to_cdpm(P0, EXPTH_L, S1, S3);
+    CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z))));
+    DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z).negative())));
+    CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z))));       
+    DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z).negative())));
+    
+    //p_p = Cplx.add(CP[I], DP[I]); // at z=0;
+    //pp_p = Cplx.multiply(new Cplx(0, KLP), Cplx.subtract(CP[I], DP[I]));
+    //p_m = Cplx.add(CM[I], DM[I]); // at z=0;
     //pp_m = Cplx.multiply(new Cplx(0, KLM), Cplx.subtract(CM[I], DM[I]));
     //var P0 = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
     //var P = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
-    console.log(P.toString());
-    var z = new Complex(0,0);
-    var kztp, kztm, pp_p_over_ikz, pp_m_over_ikz;
-    for (I=1; I < N; I++) {
+    console.log(P0.toString());
+    console.log(CDPM.toString());
+    if (using_running == true) { var P = P0 };
+
+    for (I=1; I < N-1; I++) {
         prevI = I-1;
         L = L+STEP;
         sld_L = this.sld[L];
+        EXPTH_L = expth[L];
+        S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+        // this was -PI4*Imag(sld) in magnetic.cc - why? 
+        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
+        
+        //test_matrices(EXPTH_L, S1, S3);
+        /*
         KLP = Cplx.sqrt(new Cplx(KSQREL - PI4*(sld_L.sld + sld_L.sldm), -PI4*sld_L.sldi));
         KLM = Cplx.sqrt(new Cplx(KSQREL - PI4*(sld_L.sld - sld_L.sldm), -PI4*sld_L.sldi));
         kztp = Cplx.multiply(KLP, z);
@@ -482,25 +516,40 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         //var dmnum = Cplx.subtract(p_m, pp_m_over_ikz);
         var dmnum = Cplx.subtract(P[1], pp_m_over_ikz);
         var dm = Cplx.multiply(0.5, Cplx.multiply(dmnum, dmexp));
+        */
+        
+        CDPM = psi_to_cdpm(P, EXPTH_L, S1, S3);
+
+        CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z).negative())));
+        DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z))));
+        CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z).negative())));       
+        DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z))));
         
         z = Complex.add(z, STEP*sld_L.thickness); // negative step makes us move backwards...
-        CP.push(cp);
-        CM.push(cm);
-        DP.push(dp);
-        DM.push(dm);
         
         if (using_running == true) {
             // using a running product of A matrices (B)
             var BI = this.B[I];
-            P = multiply4x1(BI, P0);
+            var CST = this.unitary_LAB_SAM_LAB_old(BI, AGUIDE);
+            P = multiply4x1(CST, P0);
         } else {
             var BI = this.B[I];
-            P = multiply4x1(BI, P);
-            console.log(P.toString());
+            var CST = this.unitary_LAB_SAM_LAB_old(BI, AGUIDE);
+            P = multiply4x1(CST, P);
         } 
     }
     
-    //L = L+STEP;
+    L = L+STEP;
+    sld_L = this.sld[L];
+    EXPTH_L = expth[L];
+    S1 = S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld)-KSQREL,  PI4*sld_L.sldi)); // nonmagnetic backing
+    
+    CDPM = psi_to_cdpm(P, EXPTH_L, S1, S3);
+
+    CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z).negative())));
+    DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z))));
+    CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z).negative())));       
+    DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z))));
     /*
     if (STEP < 0) {
         // moving backwards through film, set downward (C) components in 
@@ -590,14 +639,28 @@ magnetic_wavefunction.prototype.gepore = function(AGUIDE) {
 
 function psi_to_cdpm(P, EXPTH_L, S1, S3) {
     // Psi = [p+, p-, p'+, p'-];
-    var scaling = new Cplx(4.0, 0);
-    var expth_inv = Cplx.multiply(EXPTH_L, scaling).inverse();
-    var s1_inv = Cplx.multiply(S1, scaling).inverse();
-    var s3_inv = Cplx.multiply(S3, scaling).inverse();
-    var p2cd = [[ 0.25,            expth_inv,            s1_inv, Cplx.multiply(expth_inv, s1_inv)],
-                [ 0.25,            expth_inv, s1_inv.negative(), Cplx.multiply(expth_inv, s1_inv).negative()],
-                [ 0.25, expth_inv.negative(),            s3_inv, Cplx.multiply(expth_inv, s3_inv).negative()],
-                [ 0.25, expth_inv.negative(), s3_inv.negative(), Cplx.multiply(expth_inv, s3_inv)]];
+    var mu = EXPTH_L;
+    var muS1 = Cplx.multiply(mu, S1);
+    var muS3 = Cplx.multiply(mu, S3);
+    var mu_inv = Cplx.multiply(0.25, EXPTH_L.inverse());
+    var muS1_inv = Cplx.multiply(0.25, muS1.inverse());
+    var muS3_inv = Cplx.multiply(0.25, muS3.inverse());
+    var s1_inv = Cplx.multiply(0.25, S1.inverse());
+    var s3_inv = Cplx.multiply(0.25, S3.inverse());
+    
+    var p2cd = [[ 0.25,            mu_inv,            s1_inv,            muS1_inv],
+                [ 0.25,            mu_inv, s1_inv.negative(), muS1_inv.negative()],
+                [ 0.25, mu_inv.negative(),            s3_inv, muS3_inv.negative()],
+                [ 0.25, mu_inv.negative(), s3_inv.negative(),            muS3_inv]];
+    /*
+    var p2cd = [[ 1,            expth_inv,            s1_inv, Cplx.multiply(expth_inv, s1_inv)],
+                [ 1,            expth_inv, s1_inv.negative(), Cplx.multiply(expth_inv, s1_inv).negative()],
+                [ 1, expth_inv.negative(),            s3_inv, Cplx.multiply(expth_inv, s3_inv).negative()],
+                [ 1, expth_inv.negative(), s3_inv.negative(), Cplx.multiply(expth_inv, s3_inv)]];
+    */
+    //var CDPM_nonnorm = multiply4x1(p2cd, P);
+    //var CDPM = [];
+    //for (var i=0; i<4; i++) { CDPM.push(Cplx.multiply(0.25, CDPM_nonnorm[i])) }
     var CDPM = multiply4x1(p2cd, P);
     return CDPM; 
 }
@@ -608,9 +671,33 @@ function cdpm_to_psi(CDPM, EXPTH_L, S1, S3) {
     var muS1 = Cplx.multiply(mu, S1);
     var muS3 = Cplx.multiply(mu, S3);
     var cd2p = [[    1,               1,               1,              1],
+                [   mu,              mu,   mu.negative(),  mu.negative()],
                 [   S1,   S1.negative(),              S3,  S3.negative()],
-                [   mu,              mu,              mu,  mu.negative()],
                 [ muS1, muS1.negative(), muS3.negative(),           muS3]];
     var P = multiply4x1(cd2p, CDPM);
     return P; 
-} 
+}
+
+test_matrices = function(EXPTH_L, S1, S3) {
+    var mu = EXPTH_L;
+    var muS1 = Cplx.multiply(mu, S1);
+    var muS3 = Cplx.multiply(mu, S3);
+    var mu_inv = Cplx.multiply(0.25, EXPTH_L.inverse());
+    var muS1_inv = Cplx.multiply(0.25, muS1.inverse());
+    var muS3_inv = Cplx.multiply(0.25, muS3.inverse());
+    var s1_inv = Cplx.multiply(0.25, S1.inverse());
+    var s3_inv = Cplx.multiply(0.25, S3.inverse());
+    
+    var p2cd = [[ 0.25,            mu_inv,            s1_inv,            muS1_inv],
+                [ 0.25,            mu_inv, s1_inv.negative(), muS1_inv.negative()],
+                [ 0.25, mu_inv.negative(),            s3_inv, muS3_inv.negative()],
+                [ 0.25, mu_inv.negative(), s3_inv.negative(),            muS3_inv]];
+                
+    var cd2p = [[    1,               1,               1,              1],
+                [   mu,              mu,   mu.negative(),  mu.negative()],
+                [   S1,   S1.negative(),              S3,  S3.negative()],
+                [ muS1, muS1.negative(), muS3.negative(),           muS3]];
+                
+    console.log(multiply4x4(p2cd, cd2p).toString());
+    console.log(multiply4x4(cd2p, p2cd).toString());
+}
