@@ -479,44 +479,7 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         sld_L = this.sld[L];
         EXPTH_L = expth[L];
         S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        // this was -PI4*Imag(sld) in magnetic.cc - why? 
-        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
-        
-        //test_matrices(EXPTH_L, S1, S3);
-        /*
-        KLP = Cplx.sqrt(new Cplx(KSQREL - PI4*(sld_L.sld + sld_L.sldm), -PI4*sld_L.sldi));
-        KLM = Cplx.sqrt(new Cplx(KSQREL - PI4*(sld_L.sld - sld_L.sldm), -PI4*sld_L.sldi));
-        kztp = Cplx.multiply(KLP, z);
-        kztm = Cplx.multiply(KLM, z);
-        //pp_p_over_ikz = Cplx.multiply(pp_p, (new Cplx(0, KLP)).inverse());
-        //pp_m_over_ikz = Cplx.multiply(pp_m, (new Cplx(0, KLM)).inverse());
-        pp_p_over_ikz = Cplx.multiply(P[2], (new Cplx(0, KLP)).inverse());
-        pp_m_over_ikz = Cplx.multiply(P[3], (new Cplx(0, KLM)).inverse());
-        
-        var cpexp = Cplx.exp(new Cplx(0, kztp.negative()));
-        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
-        //var cpnum = Cplx.add(p_p, pp_p_over_ikz);
-        var cpnum = Cplx.add(P[0], pp_p_over_ikz);
-        var cp = Cplx.multiply(0.5, Cplx.multiply(cpnum, cpexp));
-        
-        var cmexp = Cplx.exp(new Cplx(0, kztm.negative()));
-        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
-        //var cmnum = Cplx.add(p_m, pp_m_over_ikz);
-        var cmnum = Cplx.add(P[1], pp_m_over_ikz);
-        var cm = Cplx.multiply(0.5, Cplx.multiply(cmnum, cmexp));
-        
-        var dpexp = Cplx.exp(new Cplx(0, kztp));
-        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
-        //var dpnum = Cplx.subtract(p_p, pp_p_over_ikz);
-        var dpnum = Cplx.subtract(P[0], pp_p_over_ikz);
-        var dp = Cplx.multiply(0.5, Cplx.multiply(dpnum, dpexp));
-        
-        var dmexp = Cplx.exp(new Cplx(0, kztm));
-        //var cnum = Complex.add(p, Complex.multiply(pp, Complex.multiply(Complex.i, this.kz_array[i]).inverse()));
-        //var dmnum = Cplx.subtract(p_m, pp_m_over_ikz);
-        var dmnum = Cplx.subtract(P[1], pp_m_over_ikz);
-        var dm = Cplx.multiply(0.5, Cplx.multiply(dmnum, dmexp));
-        */
+        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
         
         CDPM = psi_to_cdpm(P, EXPTH_L, S1, S3);
 
