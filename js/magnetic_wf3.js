@@ -238,14 +238,16 @@ C later in the calculation when we divide by DETW.
         S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
-/*        if (Math.abs(S1.x) > Math.abs(S3.x))
+        if (Math.abs(S1.x) > Math.abs(S3.x))
           LOGH = Math.abs(S1.x)*sld_L.thickness;
         else
           LOGH = Math.abs(S3.x)*sld_L.thickness;
+
 LOGH=0;
-*/    
+    
 //    Calculate 2*COSH/H and 2*SINH/H for D*S1
-/*        X    = Cplx.multiply(S1, sld_L.thickness);
+/*
+        X    = Cplx.multiply(S1, sld_L.thickness);
         EPA  = Math.exp(X.x-LOGH);
         EMA  = Math.exp(-X.x-LOGH);
         SINB = Math.sin(X.y);
@@ -257,7 +259,8 @@ LOGH=0;
       SINHS1 = Cplx.twosinh(Cplx.multiply(S1, sld_L.thickness));
 
 //    Calculate 2*COSH/H and 2*SINH/H for D*S3
-/*        X    = Cplx.multiply(S3, sld_L.thickness); //S3*D[L];
+/*
+        X    = Cplx.multiply(S3, sld_L.thickness); //S3*D[L];
         EPA  = Math.exp(X.x-LOGH);
         EMA  = Math.exp(-X.x-LOGH);
         SINB = Math.sin(X.y);
@@ -396,6 +399,9 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     var I, prevI, L, STEP;
     var KSQREL, KLP, KLM, S1, S3;
     var PI4=Math.PI * 4.0; // *1e-6??;
+    this.S1 = [];
+    this.S3 = [];
+    this.P = [];
     
     /*
     CP = [new Cplx(IP, 0)];
@@ -426,7 +432,7 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     //KSQRELP = KZ*KZ + PI4*sld_L.sld + PI4*sld_L.sldm; // nuclear + magnetic part of sld
     //KSQRELM = KZ*KZ + PI4*sld_L.sld - PI4*sld_L.sldm; // nuclear + magnetic part of sld
     // assuming imaginary sld (sldi) == 0 in fronting medium.
-    KLP = KLM = Cplx.sqrt(KSQREL - PI4*sld_L.sld);
+    //KLP = KLM = Cplx.sqrt(KSQREL - PI4*sld_L.sld);
     var expth = [];
     for (var i=0; i<N; i++) {
         var thetaM = this.sld[i].thetaM;
@@ -434,6 +440,7 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         expth.push(new Cplx(Math.cos(thetaM), Math.sin(thetaM)));
         //expth.push(Cplx.fromMagPhase(1.0, thetaM));
     }
+    this.expth = expth;
     
     /*
     var EXPTH_L = expth[L];
@@ -442,37 +449,34 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
     */
     
-    var EXPTH_L = Complex.one.copy();
+    var EXPTH_L = expth[L];
     S1 = S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld)-KSQREL,  PI4*sld_L.sldi)); // ignore sldm
+    this.S1.push(S1.copy());
+    this.S3.push(S3.copy());
     // in front material
     
     var RP = Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YB, IM));
     var RM = Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YC, IP));
     var P0 = [Cplx.add(IP, RP), 
              Cplx.add(IM, RM),
-             Cplx.multiply(Cplx.sqrt(-KSQREL), Cplx.subtract(IP, RP)),
-             Cplx.multiply(Cplx.sqrt(-KSQREL), Cplx.subtract(IM, RM))];
+             Cplx.multiply(S1, Cplx.subtract(IP, RP)),
+             Cplx.multiply(S3, Cplx.subtract(IM, RM))];
     
+    P = multiply4x1(get_Uinv_sam_lab(AGUIDE), P0);
     //var CDPM = [CP[0], DP[0], CM[0], DM[0]];
     //console.log(CDPM.toString());
     //var P = cdpm_to_psi(CDPM, EXPTH_L, S1, S3);
     var z = new Complex(0,0);
     var CDPM = psi_to_cdpm(P0, EXPTH_L, S1, S3);
-    CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z))));
-    DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z).negative())));
-    CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z))));       
-    DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z).negative())));
-    
-    //p_p = Cplx.add(CP[I], DP[I]); // at z=0;
-    //pp_p = Cplx.multiply(new Cplx(0, KLP), Cplx.subtract(CP[I], DP[I]));
-    //p_m = Cplx.add(CM[I], DM[I]); // at z=0;
-    //pp_m = Cplx.multiply(new Cplx(0, KLM), Cplx.subtract(CM[I], DM[I]));
-    //var P0 = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
-    //var P = [p_p.copy(), p_m.copy(), pp_p.copy(), pp_m.copy()]; // psi-vector, at first layer
-    console.log(P0.toString());
-    console.log(CDPM.toString());
-    if (using_running == true) { var P = P0 };
+    CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z).negative())));
+    DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z))));
+    CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z).negative())));       
+    DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z))));
+    this.CDPM = [CDPM];
 
+    //if (using_running == true) { var P = P0 };
+    this.P0 = P0;
+    this.P.push(P);
     for (I=1; I < N-1; I++) {
         prevI = I-1;
         L = L+STEP;
@@ -480,8 +484,11 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         EXPTH_L = expth[L];
         S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
         S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        
+        this.S1.push(S1.copy());
+        this.S3.push(S3.copy());
+
         CDPM = psi_to_cdpm(P, EXPTH_L, S1, S3);
+        this.CDPM.push(CDPM);
 
         CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z).negative())));
         DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z))));
@@ -494,20 +501,23 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
             // using a running product of A matrices (B)
             var BI = this.B[I];
             var CST = this.unitary_LAB_SAM_LAB_old(BI, AGUIDE);
-            P = multiply4x1(CST, P0);
+            P = multiply4x1(BI, this.P[0]);
         } else {
             var BI = this.B[I];
             var CST = this.unitary_LAB_SAM_LAB_old(BI, AGUIDE);
             P = multiply4x1(CST, P);
-        } 
+        }
+        this.P.push(P);
     }
     
     L = L+STEP;
     sld_L = this.sld[L];
     EXPTH_L = expth[L];
     S1 = S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld)-KSQREL,  PI4*sld_L.sldi)); // nonmagnetic backing
-    
+    this.S1.push(S1.copy());
+    this.S3.push(S3.copy());
     CDPM = psi_to_cdpm(P, EXPTH_L, S1, S3);
+    this.CDPM.push(CDPM);
 
     CP.push(Cplx.multiply(CDPM[0], Cplx.exp(Cplx.multiply(S1, z).negative())));
     DP.push(Cplx.multiply(CDPM[1], Cplx.exp(Cplx.multiply(S1, z))));
