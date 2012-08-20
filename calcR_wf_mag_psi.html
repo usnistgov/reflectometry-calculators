@@ -231,7 +231,7 @@ window.onload = function() {
         z += layer.thickness;
     }
         
-    plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy, profilexy], {
+    plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy, profilexy, profilexy], {
         //series: [ {shadow: false} ],
         seriesDefaults: {shadow: false, markerOptions: {shadow: false, size: 4}},
         grid: {shadow: false},
@@ -626,8 +626,9 @@ window.onload = function() {
         this.update = function(pos, already_updated, use_cached_wf) {
             var any_checked = false;
             var show_psi_p = document.getElementById('psi_p_Re_toggle').checked;
-             var show_psi_m = document.getElementById('psi_m_Re_toggle').checked;
+            var show_psi_m = document.getElementById('psi_m_Re_toggle').checked;
             var show_psi_p_magsq = document.getElementById('psi_p_magsq_toggle').checked;
+            var show_psi_m_magsq = document.getElementById('psi_m_magsq_toggle').checked;
             var show_psi_p_f = document.getElementById('psi_p_f_toggle').checked;
             var show_psi_p_r = document.getElementById('psi_p_r_toggle').checked;
             if (!(show_psi || show_psi_f || show_psi_r || show_psi_magsq)) {
@@ -689,22 +690,31 @@ window.onload = function() {
                 cm = wf.CM_lab[i];
                 dm = wf.DM_lab[i];
                 */
-                var c = wf.C_up[i];
+                var c_up = wf.C_up[i];
+                var c_down = wf.C_down[i];
                 while ((xx <= rightpoint) && (xx < xx_max)) {
                     var ikpzz = Complex.multiply(wf.S1[i], (xx-xzero));
-                    var ppforward = Complex.multiply(Complex.multiply(c[0], Complex.exp(ikpzz)), eiwt);
-                    var ppbackward = Complex.multiply(Complex.multiply(c[1], Complex.exp(ikpzz.negative())), eiwt);
                     var ikmzz = Complex.multiply(wf.S3[i], (xx-xzero));
-                    var pmforward = Complex.multiply(Complex.multiply(c[2], Complex.exp(ikmzz)), eiwt);
-                    var pmbackward = Complex.multiply(Complex.multiply(c[3], Complex.exp(ikmzz.negative())), eiwt);
-                    ppfr.push([xx, ppforward.x]);
-                    pprr.push([xx, ppbackward.x]);
-                    pmfr.push([xx, pmforward.x]);
-                    pmrr.push([xx, pmbackward.x]);
-                    //psip = Cplx.sum([ppforward, ppbackward, pmforward, pmbackward]);
+                    var p_up = [];
+                    p_up.push(Complex.multiply(Complex.multiply(c_up[0], Complex.exp(ikpzz)), eiwt));
+                    p_up.push(Complex.multiply(Complex.multiply(c_up[1], Complex.exp(ikpzz.negative())), eiwt));
+                    p_up.push(Complex.multiply(Complex.multiply(c_up[2], Complex.exp(ikmzz)), eiwt));
+                    p_up.push(Complex.multiply(Complex.multiply(c_up[3], Complex.exp(ikmzz.negative())), eiwt));
+                    ppfr.push([xx, p_up[0].x]);
+                    pprr.push([xx, p_up[1].x]);
+                    pmfr.push([xx, p_up[2].x]);
+                    pmrr.push([xx, p_up[3].x]);
+                    
+                    var p_down = [];
+                    p_down.push(Complex.multiply(Complex.multiply(c_down[0], Complex.exp(ikpzz)), eiwt));
+                    p_down.push(Complex.multiply(Complex.multiply(c_down[1], Complex.exp(ikpzz.negative())), eiwt));
+                    p_down.push(Complex.multiply(Complex.multiply(c_down[2], Complex.exp(ikmzz)), eiwt));
+                    p_down.push(Complex.multiply(Complex.multiply(c_down[3], Complex.exp(ikmzz.negative())), eiwt));
+                    psip = Cplx.sum(p_up);
+                    psim = Cplx.sum(p_down);
                     //psim = Cplx.multiply(Cplx.add(Cplx.subtract(ppforward, pmforward), Cplx.subtract(ppbackward, pmbackward)), EXPTH_L);
-                    psip = Complex.sum([ppforward, ppbackward]);
-                    psim = Complex.sum([pmforward, pmbackward])
+                    //psip = Complex.sum([ppforward, ppbackward]);
+                    //psim = Complex.sum([pmforward, pmbackward])
                     ppmagsq.push([xx, psip.magnitude() * psip.magnitude()]);
                     pmmagsq.push([xx, psim.magnitude() * psim.magnitude()]);
                     ppreal.push([xx, psip.x]);
@@ -714,19 +724,24 @@ window.onload = function() {
             }
             while (xx < xx_max) {
                 var ikpzz = Complex.multiply(wf.S1[i], (xx-xzero));
-                var ppforward = Complex.multiply(Complex.multiply(c[0], Complex.exp(ikpzz)), eiwt);
-                    var ppbackward = Complex.multiply(Complex.multiply(c[1], Complex.exp(ikpzz.negative())), eiwt);
-                    var ikmzz = Complex.multiply(wf.S3[i], (xx-xzero));
-                    var pmforward = Complex.multiply(Complex.multiply(c[2], Complex.exp(ikmzz)), eiwt);
-                    var pmbackward = Complex.multiply(Complex.multiply(c[3], Complex.exp(ikmzz.negative())), eiwt);
-                ppfr.push([xx, ppforward.x]);
-                pprr.push([xx, ppbackward.x]);
-                pmfr.push([xx, pmforward.x]);
-                pmrr.push([xx, pmbackward.x]);
-                //psip = Complex.sum([ppforward, ppbackward, pmforward, pmbackward]);
-                //psim = Cplx.multiply(Cplx.add(Cplx.subtract(ppforward, pmforward), Cplx.subtract(ppbackward, pmbackward)), EXPTH_L);
-                psip = Complex.sum([ppforward, ppbackward]);
-                psim = Complex.sum([pmforward, pmbackward])
+                var ikmzz = Complex.multiply(wf.S3[i], (xx-xzero));
+                var p_up = [];
+                p_up.push(Complex.multiply(Complex.multiply(c_up[0], Complex.exp(ikpzz)), eiwt));
+                p_up.push(Complex.multiply(Complex.multiply(c_up[1], Complex.exp(ikpzz.negative())), eiwt));
+                p_up.push(Complex.multiply(Complex.multiply(c_up[2], Complex.exp(ikmzz)), eiwt));
+                p_up.push(Complex.multiply(Complex.multiply(c_up[3], Complex.exp(ikmzz.negative())), eiwt));
+                ppfr.push([xx, p_up[0].x]);
+                pprr.push([xx, p_up[1].x]);
+                pmfr.push([xx, p_up[2].x]);
+                pmrr.push([xx, p_up[3].x]);
+                
+                var p_down = [];
+                p_down.push(Complex.multiply(Complex.multiply(c_down[0], Complex.exp(ikpzz)), eiwt));
+                p_down.push(Complex.multiply(Complex.multiply(c_down[1], Complex.exp(ikpzz.negative())), eiwt));
+                p_down.push(Complex.multiply(Complex.multiply(c_down[2], Complex.exp(ikmzz)), eiwt));
+                p_down.push(Complex.multiply(Complex.multiply(c_down[3], Complex.exp(ikmzz.negative())), eiwt));
+                psip = Cplx.sum(p_up);
+                psim = Cplx.sum(p_down);
                 ppmagsq.push([xx, psip.magnitude() * psip.magnitude()]);
                 pmmagsq.push([xx, psim.magnitude() * psim.magnitude()]);
                 ppreal.push([xx, psip.x]);
@@ -753,6 +768,9 @@ window.onload = function() {
             
             if (show_psi_m) { plot2.series[4].data = pmreal; }
             else { plot2.series[4].data = []; }
+            
+            if (show_psi_m_magsq) { plot2.series[5].data = pmmagsq; }
+            else { plot2.series[5].data = []; }
             //plot2.series[1].data = prr;
             //plot2.series[2].data = preal;
             
@@ -874,8 +892,9 @@ window.onload = function() {
     psi_choices.appendChild(psi_toggle('psi_p_f_toggle', 'Show Re(Ψ₊→)'));
     psi_choices.appendChild(psi_toggle('psi_p_r_toggle', 'Show Re(Ψ₊←)'));
     psi_choices.appendChild(psi_toggle('psi_p_Re_toggle', 'Show Re(Ψ₊) = Re(Ψ₊→ + Ψ₊←)'));
-    psi_choices.appendChild(psi_toggle('psi_m_Re_toggle', 'Show Re(Ψ-) = Re(Ψ-→ + Ψ-←)'));
+    psi_choices.appendChild(psi_toggle('psi_m_Re_toggle', 'Show Re(Ψ₋) = Re(Ψ₋→ + Ψ₋←)'));
     psi_choices.appendChild(psi_toggle('psi_p_magsq_toggle', 'Show |Ψ₊Ψ₊*|'));
+    psi_choices.appendChild(psi_toggle('psi_m_magsq_toggle', 'Show |Ψ₋Ψ₋*|'));
     
     
     var animation_toggle = document.createElement('input');

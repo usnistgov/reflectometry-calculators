@@ -490,6 +490,13 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     C_up.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
     C_up.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
     this.C_up.push(C_up);
+    
+    var C_down = [];
+    C_down.push(Cplx.add(Cplx.multiply(CP[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), cos_e)));
+    C_down.push(Cplx.add(Cplx.multiply(DP[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), cos_e)));
+    C_down.push(Cplx.add(Cplx.multiply(CM[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), cos_e)));
+    C_down.push(Cplx.add(Cplx.multiply(DM[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), cos_e)));
+    this.C_down.push(C_down);
 
     //if (using_running == true) { var P = P0 };
     this.P0 = P0;
@@ -518,6 +525,13 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         C_up.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
         C_up.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
         this.C_up.push(C_up);
+        
+        var C_down = [];
+        C_down.push(Cplx.add(Cplx.multiply(CP[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), cos_e)));
+        C_down.push(Cplx.add(Cplx.multiply(DP[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), cos_e)));
+        C_down.push(Cplx.add(Cplx.multiply(CM[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), cos_e)));
+        C_down.push(Cplx.add(Cplx.multiply(DM[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), cos_e)));
+        this.C_down.push(C_down);
         
         z = Complex.add(z, STEP*sld_L.thickness); // negative step makes us move backwards...
         
@@ -554,6 +568,14 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     C_up.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
     C_up.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
     this.C_up.push(C_up);
+    
+    var C_down = [];
+    C_down.push(Cplx.add(Cplx.multiply(CP[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), cos_e)));
+    C_down.push(Cplx.add(Cplx.multiply(DP[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), cos_e)));
+    C_down.push(Cplx.add(Cplx.multiply(CM[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), cos_e)));
+    C_down.push(Cplx.add(Cplx.multiply(DM[I], isin_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), cos_e)));
+    this.C_down.push(C_down);
+    
     /*
     if (STEP < 0) {
         // moving backwards through film, set downward (C) components in 
