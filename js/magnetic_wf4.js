@@ -420,6 +420,9 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     DP_lab = [];
     DM_lab = [];
     
+    this.C_up = []; // lab frame - C_i coefficents from Eq. 101
+    this.C_down = []; // lab frame
+    
     var KZ = this.kz_in;
     if (KZ<=-1.e-10) {
         L=N-1;
@@ -481,11 +484,12 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     this.CDPM = [CDPM];
     cos_e = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
     isin_e = new Cplx(0, Math.sin(AGUIDE/2.0*Math.PI/180.));
-    CP_lab.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
-    DP_lab.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));
-    CM_lab.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
-    DM_lab.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
-    
+    var C_up = [];
+    C_up.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
+    C_up.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));
+    C_up.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
+    C_up.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
+    this.C_up.push(C_up);
 
     //if (using_running == true) { var P = P0 };
     this.P0 = P0;
@@ -508,10 +512,12 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
         CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z).negative())));       
         DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z))));
         
-        CP_lab.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
-        DP_lab.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));
-        CM_lab.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
-        DM_lab.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
+        var C_up = [];
+        C_up.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
+        C_up.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));
+        C_up.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
+        C_up.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
+        this.C_up.push(C_up);
         
         z = Complex.add(z, STEP*sld_L.thickness); // negative step makes us move backwards...
         
@@ -542,10 +548,12 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     CM.push(Cplx.multiply(CDPM[2], Cplx.exp(Cplx.multiply(S3, z).negative())));       
     DM.push(Cplx.multiply(CDPM[3], Cplx.exp(Cplx.multiply(S3, z))));
     
-    CP_lab.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
-    DP_lab.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));
-    CM_lab.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
-    DM_lab.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
+    var C_up = [];
+    C_up.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
+    C_up.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));
+    C_up.push(Cplx.add(Cplx.multiply(CM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), CM[I]), isin_e)));
+    C_up.push(Cplx.add(Cplx.multiply(DM[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L.negative(), DM[I]), isin_e)));
+    this.C_up.push(C_up);
     /*
     if (STEP < 0) {
         // moving backwards through film, set downward (C) components in 
@@ -565,6 +573,11 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     this.CM = CM;
     this.DP = DP;
     this.DM = DM;
+    
+    this.CP_lab = CP_lab;
+    this.CM_lab = CM_lab;
+    this.DP_lab = DP_lab;
+    this.DM_lab = DM_lab;
 }
 
 function multiply4x4(A, B) {

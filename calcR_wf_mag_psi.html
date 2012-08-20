@@ -33,7 +33,7 @@
 <script type="text/javascript" src="js/interactor_plugin_base.js"></script>
 <script type="text/javascript" src="js/reflectivity_sim.js"></script>
 <script type="text/javascript" src="js/complex.js"></script>
-<script type="text/javascript" src="js/magnetic_wf3.js"></script>
+<script type="text/javascript" src="js/magnetic_wf4.js"></script>
 <script type="text/javascript" src="js/generate_slab_script.js"></script>
 <script type="text/javascript"> 
 THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
@@ -231,7 +231,7 @@ window.onload = function() {
         z += layer.thickness;
     }
         
-    plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy], {
+    plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy, profilexy], {
         //series: [ {shadow: false} ],
         seriesDefaults: {shadow: false, markerOptions: {shadow: false, size: 4}},
         grid: {shadow: false},
@@ -625,25 +625,34 @@ window.onload = function() {
         
         this.update = function(pos, already_updated, use_cached_wf) {
             var any_checked = false;
-            var show_psi = document.getElementById('psi_Re_toggle').checked;
-            var show_psi_magsq = document.getElementById('psi_magsq_toggle').checked;
-            var show_psi_f = document.getElementById('psi_f_toggle').checked;
-            var show_psi_r = document.getElementById('psi_r_toggle').checked;
+            var show_psi_p = document.getElementById('psi_p_Re_toggle').checked;
+             var show_psi_m = document.getElementById('psi_m_Re_toggle').checked;
+            var show_psi_p_magsq = document.getElementById('psi_p_magsq_toggle').checked;
+            var show_psi_p_f = document.getElementById('psi_p_f_toggle').checked;
+            var show_psi_p_r = document.getElementById('psi_p_r_toggle').checked;
             if (!(show_psi || show_psi_f || show_psi_r || show_psi_magsq)) {
                 plot2.series[0].data = [];
                 plot2.series[1].data = [];
                 plot2.series[2].data = [];
                 plot2.series[3].data = [];
+                plot2.series[4].data = [];
                 plot2.replot();
                 return
             }
             var q = vc.p.coords.x;
             var x;
             var psip, psim;
+            
             var ppfr = []; // psi in the forward direction, real component
             var pprr = []; // psi in the backward direction, real component
             var ppmagsq = []; // magnitude of psi+
             var ppreal = []; // real part of psi+
+            
+            var pmfr = []; // psi in the forward direction, real component
+            var pmrr = []; // psi in the backward direction, real component
+            var pmmagsq = []; // magnitude of psi+
+            var pmreal = []; // real part of psi+
+            
             if (!(use_cached_wf) || me.wavefunction == null) {
                 var sld =  get_sld(plot2.plugins.interactors.profile_nuc, 
                                    plot2.plugins.interactors.profile_mag,
@@ -651,7 +660,7 @@ window.onload = function() {
                 var wf = new magnetic_wavefunction();
                 wf.init(q/2.0, sld);
                 var AGUIDE = parseFloat(document.getElementById('guide_angle').value);
-                wf.calculateCDPM(AGUIDE, 1.0, 0.0);
+                wf.calculateCDPM(AGUIDE, 0.5, 0.5);
                 me.wavefunction = wf;
             } else {
                 var wf = me.wavefunction;
@@ -668,39 +677,60 @@ window.onload = function() {
 	        var t_sec = t.getTime() / 1000 - t0_sec;
             var eiwt = Complex.exp(Complex.multiply(Complex.i.negative(), (OMEGA * t_sec)));
             //var eiwt = 1.0;
+            var cos_e = new Cplx(Math.cos(-wf.AGUIDE/2.0), 0);
+            var isin_e = new Cplx(0, Math.sin(-wf.AGUIDE/2.0)); 
             for (var i in leftpoints) {
                 var rightpoint = leftpoints[i].x + leftpoints[i].segwidth;
-                cp = wf.CP[i];
-                dp = wf.DP[i];
-                cm = wf.CM[i];
-                dm = wf.DM[i];
+                var EXPTH_L = wf.expth[i];
+                //cp = Cplx.add(Cplx.multiply(wf.CP[i], cos_e), Cplx.multiply(Cplx.multiply(wf.expth[i], wf.CP[i]), isin_e));
+                /*
+                cp = wf.CP_lab[i];
+                dp = wf.DP_lab[i];
+                cm = wf.CM_lab[i];
+                dm = wf.DM_lab[i];
+                */
+                var c = wf.C_up[i];
                 while ((xx <= rightpoint) && (xx < xx_max)) {
                     var ikpzz = Complex.multiply(wf.S1[i], (xx-xzero));
-                    var ppforward = Complex.multiply(Complex.multiply(cp, Complex.exp(ikpzz)), eiwt);
-                    var ppbackward = Complex.multiply(Complex.multiply(dp, Complex.exp(ikpzz.negative())), eiwt);
+                    var ppforward = Complex.multiply(Complex.multiply(c[0], Complex.exp(ikpzz)), eiwt);
+                    var ppbackward = Complex.multiply(Complex.multiply(c[1], Complex.exp(ikpzz.negative())), eiwt);
                     var ikmzz = Complex.multiply(wf.S3[i], (xx-xzero));
-                    var pmforward = Complex.multiply(Complex.multiply(cm, Complex.exp(ikmzz)), eiwt);
-                    var pmbackward = Complex.multiply(Complex.multiply(dm, Complex.exp(ikmzz.negative())), eiwt);
+                    var pmforward = Complex.multiply(Complex.multiply(c[2], Complex.exp(ikmzz)), eiwt);
+                    var pmbackward = Complex.multiply(Complex.multiply(c[3], Complex.exp(ikmzz.negative())), eiwt);
                     ppfr.push([xx, ppforward.x]);
                     pprr.push([xx, ppbackward.x]);
-                    psip = Complex.sum([ppforward, ppbackward, pmforward, pmbackward]);
+                    pmfr.push([xx, pmforward.x]);
+                    pmrr.push([xx, pmbackward.x]);
+                    //psip = Cplx.sum([ppforward, ppbackward, pmforward, pmbackward]);
+                    //psim = Cplx.multiply(Cplx.add(Cplx.subtract(ppforward, pmforward), Cplx.subtract(ppbackward, pmbackward)), EXPTH_L);
+                    psip = Complex.sum([ppforward, ppbackward]);
+                    psim = Complex.sum([pmforward, pmbackward])
                     ppmagsq.push([xx, psip.magnitude() * psip.magnitude()]);
+                    pmmagsq.push([xx, psim.magnitude() * psim.magnitude()]);
                     ppreal.push([xx, psip.x]);
+                    pmreal.push([xx, psim.x]);
                     xx += xstep;
                 }
             }
             while (xx < xx_max) {
                 var ikpzz = Complex.multiply(wf.S1[i], (xx-xzero));
-                var ppforward = Complex.multiply(Complex.multiply(cp, Complex.exp(ikpzz)), eiwt);
-                var ppbackward = Complex.multiply(Complex.multiply(dp, Complex.exp(ikpzz.negative())), eiwt);
-                var ikmzz = Complex.multiply(wf.S3[i], (xx-xzero));
-                var pmforward = Complex.multiply(Complex.multiply(cm, Complex.exp(ikmzz)), eiwt);
-                var pmbackward = Complex.multiply(Complex.multiply(dm, Complex.exp(ikmzz.negative())), eiwt);
+                var ppforward = Complex.multiply(Complex.multiply(c[0], Complex.exp(ikpzz)), eiwt);
+                    var ppbackward = Complex.multiply(Complex.multiply(c[1], Complex.exp(ikpzz.negative())), eiwt);
+                    var ikmzz = Complex.multiply(wf.S3[i], (xx-xzero));
+                    var pmforward = Complex.multiply(Complex.multiply(c[2], Complex.exp(ikmzz)), eiwt);
+                    var pmbackward = Complex.multiply(Complex.multiply(c[3], Complex.exp(ikmzz.negative())), eiwt);
                 ppfr.push([xx, ppforward.x]);
                 pprr.push([xx, ppbackward.x]);
-                psip = Complex.sum([ppforward, ppbackward, pmforward, pmbackward]);
+                pmfr.push([xx, pmforward.x]);
+                pmrr.push([xx, pmbackward.x]);
+                //psip = Complex.sum([ppforward, ppbackward, pmforward, pmbackward]);
+                //psim = Cplx.multiply(Cplx.add(Cplx.subtract(ppforward, pmforward), Cplx.subtract(ppbackward, pmbackward)), EXPTH_L);
+                psip = Complex.sum([ppforward, ppbackward]);
+                psim = Complex.sum([pmforward, pmbackward])
                 ppmagsq.push([xx, psip.magnitude() * psip.magnitude()]);
+                pmmagsq.push([xx, psim.magnitude() * psim.magnitude()]);
                 ppreal.push([xx, psip.x]);
+                pmreal.push([xx, psim.x]);
                 xx += xstep;
             }
             //for (var xx = plot2.axes.xaxis.min; xx < plot2.axes.xaxis.max; xx += xstep) {
@@ -709,17 +739,20 @@ window.onload = function() {
             //    xy.push([xx, Math.sin(xx * Math.PI/500)]);
             //}
             
-            if (show_psi_f) { plot2.series[0].data = ppfr; }
+            if (show_psi_p_f) { plot2.series[0].data = ppfr; }
             else { plot2.series[0].data = []; }
             
-            if (show_psi_r) { plot2.series[1].data = pprr; }
+            if (show_psi_p_r) { plot2.series[1].data = pprr; }
             else { plot2.series[1].data = []; }
             
-            if (show_psi) { plot2.series[2].data = ppreal; }
+            if (show_psi_p) { plot2.series[2].data = ppreal; }
             else { plot2.series[2].data = []; }
             
-            if (show_psi_magsq) { plot2.series[3].data = ppmagsq; }
+            if (show_psi_p_magsq) { plot2.series[3].data = ppmagsq; }
             else { plot2.series[3].data = []; }
+            
+            if (show_psi_m) { plot2.series[4].data = pmreal; }
+            else { plot2.series[4].data = []; }
             //plot2.series[1].data = prr;
             //plot2.series[2].data = preal;
             
@@ -838,10 +871,11 @@ window.onload = function() {
         return togglespan
     }
     
-    psi_choices.appendChild(psi_toggle('psi_f_toggle', 'Show Re(Ψ₊→)'));
-    psi_choices.appendChild(psi_toggle('psi_r_toggle', 'Show Re(Ψ₊←)'));
-    psi_choices.appendChild(psi_toggle('psi_Re_toggle', 'Show Re(Ψ₊) = Re(Ψ₊→ + Ψ₊←)'));
-    psi_choices.appendChild(psi_toggle('psi_magsq_toggle', 'Show |Ψ₊Ψ₊*|'));
+    psi_choices.appendChild(psi_toggle('psi_p_f_toggle', 'Show Re(Ψ₊→)'));
+    psi_choices.appendChild(psi_toggle('psi_p_r_toggle', 'Show Re(Ψ₊←)'));
+    psi_choices.appendChild(psi_toggle('psi_p_Re_toggle', 'Show Re(Ψ₊) = Re(Ψ₊→ + Ψ₊←)'));
+    psi_choices.appendChild(psi_toggle('psi_m_Re_toggle', 'Show Re(Ψ-) = Re(Ψ-→ + Ψ-←)'));
+    psi_choices.appendChild(psi_toggle('psi_p_magsq_toggle', 'Show |Ψ₊Ψ₊*|'));
     
     
     var animation_toggle = document.createElement('input');
