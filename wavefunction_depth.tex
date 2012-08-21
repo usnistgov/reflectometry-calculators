@@ -1,0 +1,638 @@
+% ****** Start of file apssamp.tex ******
+%
+%   This file is part of the APS files in the REVTeX 4.1 distribution.
+%   Version 4.1 of REVTeX, October 2009
+%
+%   Copyright (c) 2009 The American Physical Society.
+%
+%   See the REVTeX 4 README file for restrictions and more information.
+%
+% TeX'ing this file requires that you have AMS-LaTeX 2.0 installed
+% as well as the rest of the prerequisites for REVTeX 4.1
+%
+% See the REVTeX 4 README file
+% It also requires running BibTeX. The commands are as follows:
+%
+%  1)  latex apssamp.tex
+%  2)  bibtex apssamp
+%  3)  latex apssamp.tex
+%  4)  latex apssamp.tex
+%
+\documentclass[%
+ reprint,
+%superscriptaddress,
+%groupedaddress,
+%unsortedaddress,
+%runinaddress,
+%frontmatterverbose, 
+%preprint,
+%showpacs,preprintnumbers,
+%nofootinbib,
+%nobibnotes,
+%bibnotes,
+ amsmath,
+ amssymb,
+ aps,
+ prl,
+%pra,
+%prb,
+%rmp,
+%prstab,
+%prstper,
+%longbibliography,
+%floatfix,
+ lengthcheck,%
+]{revtex4-1}
+
+%\usepackage{epsfig}
+% \usepackage{pst-grad} % For gradients
+% \usepackage{pst-plot} % For axes
+
+
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+\usepackage{hyperref}% add hypertext capabilities
+\usepackage{amssymb}
+%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
+%\linenumbers\relax % Commence numbering lines
+
+%\usepackage[showframe,%Uncomment any one of the following lines to test 
+%%scale=0.7, marginratio={1:1, 2:3}, ignoreall,% default settings
+%%text={7in,10in},centering,
+%%margin=1.5in,
+%%total={6.5in,8.75in}, top=1.2in, left=0.9in, includefoot,
+%%height=10in,a5paper,hmargin={3cm,0.8in},
+%]{geometry}
+
+\begin{document}
+
+\preprint{APS/123-QED}
+
+\title{Calculation of the spin-dependent wavefunction in a magnetic sample, in the reflection geometry}% Force line breaks with \\
+
+\author{Brian B. Maranville}
+ \email{brian.maranville@nist.gov}
+\affiliation{%
+ NIST Center for Neutron Research\\
+ 100 Bureau Drive, Gaithersburg MD USA 20899
+}%
+
+\date{\today}% It is always \today, today,
+             %  but any date may be explicitly specified
+
+\begin{abstract}
+The theory of polarized neutron reflectometry has long been worked out, and the 
+amplitude of the reflected and transmitted waves (at large distances from the 
+sample) can be easily calculated using
+available computer code.  When using the one-dimensional reflectivity theory in
+the special case of the distorted-wave Born approximation (DWBA), the amplitudes
+of the wavefunctions are needed inside the sample as well, and in this paper
+we describe the implementation of this calculation.
+\end{abstract}
+
+\pacs{Valid PACS appear here}% PACS, the Physics and Astronomy
+                             % Classification Scheme.
+%\keywords{Suggested keywords}%Use showkeys class option if keyword
+                              %display desired
+\maketitle
+
+\section{Spin-polarized neutron reflectivity}
+The theory of polarized neutron reflectivity is thoroughly described in the 
+literature \cite{PNRMajkrzakChapter}.  The two coupled equations describing the
+spin-dependent wavefunction are 
+
+\begin{eqnarray}
+    \left[ \frac{\partial^2}{\partial z^2} + \frac{Q^2}{4} - 4\pi\rho_{++}(z) \right ] \psi_{+}(z) - 4\pi\rho_{+-}(z) = 0 \nonumber \\
+    \left[ \frac{\partial^2}{\partial z^2} + \frac{Q^2}{4} - 4\pi\rho_{--}(z) \right ] \psi_{-}(z) - 4\pi\rho_{-+}(z) = 0 \nonumber \\
+\end{eqnarray}
+where 
+\begin{equation}
+  \begin{pmatrix} 
+    \rho_{++} & \rho_{+-} \\ 
+    \rho_{-+} & \rho_{--} \\ 
+  \end{pmatrix}
+= \begin{pmatrix}
+    Nb + Np_z & Np_x - iNp_y \\
+    Np_x + iNp_y & Nb - Np_z \\
+  \end{pmatrix}
+\end{equation}
+The $\hat z$ direction in the sample coordinate system is the surface normal, 
+which is of course also the direction of the momentum transfer $\vec Q$.  
+As described in \cite{PNRMajkrzakChapter}, the two coupled equations can be 
+combined to give two fourth-order uncoupled equations, and if we use a 
+solution of the form $\psi=\exp(Sz)$ the four roots of $S$ are
+\begin{equation}
+  \begin{array}{l}
+  S_1 = \sqrt{4\pi(Nb + Np) - Q^2/4} \\
+  S_2 = -S_1 \\
+  S_3 = \sqrt{4\pi(Nb - Np) - Q^2/4} \\
+  S_4 = -S_3 \\
+  \end{array}
+\end{equation}
+
+and the total wavefunction is the combination of one that is spin-up and one
+that is spin-down (in the sample reference frame.) 
+\begin{equation}
+  \begin{array}{l}
+  \displaystyle \Psi(z) = \begin{pmatrix} \psi_{+}(z) \\ \psi_{-}(z) \end{pmatrix}\\
+  \displaystyle \psi_{+}(z) = \sum_{j=1}^{4} C_j e^{S_j z} \\
+  \displaystyle \psi_{-}(z) = \sum_{j=1}^{4} D_j e^{S_j z} \\
+  \end{array}
+\end{equation}
+
+The coupling from the first equation leads to a relationship between the 
+coefficients of the two sub-wavefunctions: 
+\begin{equation}
+  D_j = \mu_j C_j
+\end{equation}
+where 
+\begin{equation}
+\begin{array}{l}
+  \mu_1 = \frac{1+\cos\theta_M+i\sin\theta_M\cos\phi_M - \sin\theta_M\sin\phi_M}
+    {1+\cos\theta_M-i\sin\theta_M\cos\phi_M + \sin\theta_M\sin\phi_M} \\
+  \mu_2 = \mu_1 \\
+  \mu_3 = \frac{-1+\cos\theta_M+i\sin\theta_M\cos\phi_M - \sin\theta_M\sin\phi_M}
+    {-1+\cos\theta_M-i\sin\theta_M\cos\phi_M + \sin\theta_M\sin\phi_M} \\
+  \mu_4 = \mu_3 \\
+\end{array}
+\end{equation}
+($\theta_M$ is the in-plane $\hat x$\nobreakdash-$\hat y$ rotation vector, zero at $\hat x$,
+$\phi_M$ is the out-of-plane component along $\hat z$), 
+but in the case where the $z$-component of the magnetization is held to be zero
+(or constant through fronting/sample/backing) the angle $\phi_M$ is zero, and
+$\mu$ is 
+\begin{equation}
+\begin{array}{l}
+  \displaystyle \mu_1 = \mu_2 = e^{i\theta_M} \\
+  \displaystyle \mu_3 = \mu_4 = -e^{i\theta_M} \\
+\end{array}
+\end{equation}
+
+Then we can write a column vector for $\Psi(z)$ and $\Psi'(z)$ 
+representing all the wavefunction 
+terms that are continuous in the solution, as the second-order Schr\"odinger 
+equation requires. 
+
+\begin{equation}
+\label{eq:cd_to_pz}
+  %\begin{eqnarray}
+  \begin{pmatrix}
+    \psi_{+}(z) \\
+    \psi_{-}(z) \\
+    \psi'_{+}(z) \\
+    \psi'_{-}(z) \\
+  \end{pmatrix}
+  = \chi
+  \begin{pmatrix}
+    C_1 \\
+    C_2 \\
+    C_3 \\
+    C_4 \\
+  \end{pmatrix}
+\end{equation}
+where 
+\begin{equation}
+  \chi = 
+  \begin{pmatrix}
+    e^{S_1 z} & e^{-S_1 z} & e^{S_3 z} & e^{-S_3 z} \\
+    \mu e^{S_1 z} & \mu e^{-S_1 z} & -\mu e^{S_3 z} & -\mu e^{-S_3 z} \\
+    S_1 e^{S_1 z} & -S_1 e^{-S_1 z} & S_3 e^{S_3 z} & -S_3e^{-S_3 z} \\
+    \mu S_1 e^{S_1 z} & -\mu S_1 e^{-S_1 z} & -\mu S_3 e^{S_3 z} & \mu S_3 e^{-S_3 z} \\
+  \end{pmatrix}
+\end{equation}
+or, separating out the z-dependent terms within a layer
+\begin{equation}
+  \chi = 
+  \left(
+  \begin{matrix}
+    1 & 1 & 1 & 1 \\[0.3em]
+    \mu & \mu & -\mu & -\mu \\[0.3em]
+    S_1 & -S_1 & S_3 & -S_3 \\[0.3em]
+    \mu S_1  & -\mu S_1 & -\mu S_3 & \mu S_3 \\[0.3em]
+  \end{matrix}
+  \right)_{\!\!\!\!l}
+  \left(
+  \begin{matrix}
+    e^{S_1 z} & 0 & 0 & 0 \\[0.3em]
+    0 & e^{-S_1 z} & 0 & 0 \\[0.3em]
+    0 & 0 & e^{S_3 z} & 0 \\[0.3em]
+    0 & 0 & 0 & e^{-S_3 z} \\[0.3em]
+  \end{matrix}
+  \right)
+  %\end{eqnarray}
+\end{equation}
+
+%Noting that at $z=0$, the above gives:
+%\begin{equation}
+%  \label{eq:cd_to_p0}
+%  \begin{pmatrix}
+%    \psi_{+}(0) \\
+%    \psi_{-}(0) \\
+%    \psi'_{+}(0) \\
+%    \psi'_{-}(0) \\
+%  \end{pmatrix}
+%  =
+%  \begin{pmatrix}
+%    1 & 1 & 1 & 1 \\
+%    \mu & \mu & -\mu & -\mu \\
+%    S_1 & -S_1 & S_3 & -S_3 \\
+%    \mu S_1  & -\mu S_1 & -\mu S_3 & \mu S_3 \\
+%  \end{pmatrix}
+%  \begin{pmatrix}
+%    C_1 \\
+%    C_2 \\
+%    C_3 \\
+%    C_4 \\
+%  \end{pmatrix}
+%\end{equation}
+
+The inverse of the first ($z$-independent) matrix above allows one to
+calculate the $C_j$ in terms of $\Psi(z=0)$
+\begin{equation}
+\label{eq:p_to_cd}
+\frac{1}{4}
+  \begin{pmatrix}
+    1 & \frac{1}{\mu} & \frac{1}{S_1} & \frac{1}{\mu S_1} \\[0.3em]
+    1 & \frac{1}{\mu} & \frac{-1}{S_1} & \frac{-1}{\mu S_1} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{1}{S_3} & \frac{-1}{\mu S_3} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{-1}{S_3} & \frac{1}{\mu S_3} \\[0.3em]
+  \end{pmatrix}
+  \begin{pmatrix}
+    \psi_{+}(0) \\[0.3em]
+    \psi_{-}(0) \\[0.3em]
+    \psi'_{+}(0) \\[0.3em]
+    \psi'_{-}(0) \\[0.3em]
+  \end{pmatrix}
+  = 
+  \begin{pmatrix}
+    C_1  \\[0.3em]
+    C_2  \\[0.3em]
+    C_3  \\[0.3em]
+    C_4  \\[0.3em]
+  \end{pmatrix}
+\end{equation}
+
+Note that substituting the left side of Eq. \ref{eq:p_to_cd} into 
+the right side of Eq. \ref{eq:cd_to_pz}
+gives the transfer matrix: 
+\begin{equation}
+  \begin{pmatrix}
+    \psi_{+}(z) \\
+    \psi_{-}(z) \\
+    \psi'_{+}(z) \\
+    \psi'_{-}(z) \\
+  \end{pmatrix}
+  = 
+  A
+  \begin{pmatrix}
+    \psi_{+}(0) \\
+    \psi_{-}(0) \\
+    \psi'_{+}(0) \\
+    \psi'_{-}(0) \\
+  \end{pmatrix}
+\end{equation}
+\begin{widetext}
+\begin{equation}
+  A = \frac{1}{4}
+  \begin{pmatrix}
+    e^{S_1 z} & e^{-S_1 z} & e^{S_3 z} & e^{-S_3 z} \\[0.3em]
+    \mu e^{S_1 z} & \mu e^{-S_1 z} & -\mu e^{S_3 z} & -\mu e^{-S_3 z} \\[0.3em]
+    S_1 e^{S_1 z} & -S_1 e^{-S_1 z} & S_3 e^{S_3 z} & -S_3e^{-S_3 z} \\[0.3em]
+    \mu S_1 e^{S_1 z} & -\mu S_1 e^{-S_1 z} & -\mu S_3 e^{S_3 z} & \mu S_3 e^{-S_3 z} \\[0.3em]
+  \end{pmatrix}
+  \begin{pmatrix}
+    1 & \frac{1}{\mu} & \frac{1}{S_1} & \frac{1}{\mu S_1} \\[0.3em]
+    1 & \frac{1}{\mu} & \frac{-1}{S_1} & \frac{-1}{\mu S_1} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{1}{S_3} & \frac{-1}{\mu S_3} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{-1}{S_3} & \frac{1}{\mu S_3} \\[0.3em]
+  \end{pmatrix}
+\end{equation}
+
+\begin{equation}
+  A = \frac{1}{4}
+  \left(
+  \begin{matrix}
+    1 & 1 & 1 & 1 \\[0.3em]
+    \mu & \mu & -\mu & -\mu \\[0.3em]
+    S_1 & -S_1 & S_3 & -S_3 \\[0.3em]
+    \mu S_1  & -\mu S_1 & -\mu S_3 & \mu S_3 \\[0.3em]
+  \end{matrix}
+  \right)_{\!\!\!\!l}
+  \left(
+  \begin{matrix}
+    e^{S_1 z} & 0 & 0 & 0 \\[0.3em]
+    0 & e^{-S_1 z} & 0 & 0 \\[0.3em]
+    0 & 0 & e^{S_3 z} & 0 \\[0.3em]
+    0 & 0 & 0 & e^{-S_3 z} \\[0.3em]
+  \end{matrix}
+  \right)
+  \begin{pmatrix}
+    1 & \frac{1}{\mu} & \frac{1}{S_1} & \frac{1}{\mu S_1} \\[0.3em]
+    1 & \frac{1}{\mu} & \frac{-1}{S_1} & \frac{-1}{\mu S_1} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{1}{S_3} & \frac{-1}{\mu S_3} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{-1}{S_3} & \frac{1}{\mu S_3} \\[0.3em]
+  \end{pmatrix}
+\end{equation}
+\end{widetext}
+which is valid for any translation $z$ over a region of constant scattering 
+length density (and therefore $\mu$, $S_1$ and $S_3$), and is identical to the 
+matrix in Eq. 128 of \cite{PNRMajkrzakChapter}.
+
+Because the wavefunction and first derivatives are continuous over any boundary,
+one can then use this transfer matrix to ``advance'' the wavefunction through
+an arbitrary number of layers, recalculating the matrix at each interface so that
+$S_1$, $S_3$ and $\mu$ are appropriate for the current layer.
+\begin{equation}
+  \displaystyle \Psi_l = \left( \prod_{l=N}^1 A_l \right) \Psi_0
+\end{equation}
+
+Using the additional boundary condition that
+the incident wave only comes from one direction, i.e.
+\begin{equation}
+  C_{2,N} = C_{4,N} = D_{2,N} = D_{4,N} \equiv 0
+\end{equation}
+one can use this matrix product to calculate the reflectivity terms 
+$r_{++}, r_{+-}, r_{-+}, r_{--}$.
+
+\section{Construction of transfer matrix in terms of C coefficients}
+
+It is possible to make an equivalent transfer matrix for the coefficients $C_j$, 
+since they contain the same information as $\Psi$.
+
+In order to do so we note that on either side of a boundary (between layer $l$
+and layer $l+1$)
+\begin{equation}
+\Psi(z)_l = \Psi(z)_{l+1}
+\end{equation}
+and plugging into Eq. \ref{eq:cd_to_pz}
+\begin{widetext}
+\begin{equation}
+  \left(
+  \begin{matrix}
+    e^{S_1 z} & e^{-S_1 z} & e^{S_3 z} & e^{-S_3 z} \\
+    \mu_l e^{S_1 z} & \mu_l e^{-S_1 z} & -\mu_l e^{S_3 z} & -\mu_l e^{-S_3 z} \\
+    S_1 e^{S_1 z} & -S_1 e^{-S_1 z} & S_3 e^{S_3 z} & -S_3e^{-S_3 z} \\
+    \mu_l S_1 e^{S_1 z} & -\mu_l S_1 e^{-S_1 z} & -\mu_l S_3 e^{S_3 z} & \mu_l S_3 e^{-S_3 z} \\
+  \end{matrix}
+  \right)_{\!\!l}\!\!\!
+  \left(
+  \begin{matrix}
+    C_{1} \\
+    C_{2} \\
+    C_{3} \\
+    C_{4} \\
+  \end{matrix}
+  \right)_{\!\!l}
+  \!\!=\!\!
+  \left(
+  \begin{matrix}
+    e^{S_1 z} & e^{-S_1 z} & e^{S_3 z} & e^{-S_3 z} \\
+    \mu_l e^{S_1 z} & \mu_l e^{-S_1 z} & -\mu_l e^{S_3 z} & -\mu_l e^{-S_3 z} \\
+    S_1 e^{S_1 z} & -S_1 e^{-S_1 z} & S_3 e^{S_3 z} & -S_3e^{-S_3 z} \\
+    \mu_l S_1 e^{S_1 z} & -\mu_l S_1 e^{-S_1 z} & -\mu_l S_3 e^{S_3 z} & \mu_l S_3 e^{-S_3 z} \\
+  \end{matrix}
+  \right)_{\!\!l+1}\!\!\!\!\!
+  \left(
+  \begin{matrix}
+    C_{1} \\
+    C_{2} \\
+    C_{3} \\
+    C_{4} \\
+  \end{matrix}
+  \right)_{\!\!l+1}
+\end{equation}
+
+
+%\begin{equation}
+%  \left(
+%  \begin{matrix}
+%    1 & 1 & 1 & 1 \\[0.3em]
+%    \mu & \mu & -\mu & -\mu \\[0.3em]
+%    S_1 & -S_1 & S_3 & -S_3 \\[0.3em]
+%    \mu S_1  & -\mu S_1 & -\mu S_3 & \mu S_3 \\[0.3em]
+%  \end{matrix}
+%  \right)_{\!\!\!\!\!l+1}\!\!\!\!
+%  \left(
+%  \begin{matrix}
+%    e^{S_1 z} & 0 & 0 & 0 \\[0.3em]
+%    0 & e^{-S_1 z} & 0 & 0 \\[0.3em]
+%    0 & 0 & e^{S_3 z} & 0 \\[0.3em]
+%    0 & 0 & 0 & e^{-S_3 z} \\[0.3em]
+%  \end{matrix}
+%  \right)_{\!\!\!\!l+1}\!\!\!\!\!
+%  \left(
+%  \begin{matrix}
+%    C_{1} \\[0.3em]
+%    C_{2} \\[0.3em]
+%    C_{3} \\[0.3em]
+%    C_{4} \\[0.3em]
+%  \end{matrix}
+%  \right)_{\!\!l+1}\!\!\!\!\!\!
+%\end{equation}
+%\begin{eqnarray}
+%  \begin{pmatrix}
+%    e^{S_{1,l} z} & e^{-S_{1,l} z} & e^{S_{3,l} z} & e^{-S_{3,l} z} \\
+%    \mu_l e^{S_{1,l} z} & \mu_l e^{-S_{1,l} z} & -\mu_l e^{S_{3,l} z} & -\mu_l e^{-S_{3,l} z} \\
+%    S_{1,l} e^{S_{1,l} z} & -S_{1,l} e^{-S_{1,l} z} & S_{3,l} e^{S_{3,l} z} & -S_{3,l}e^{-S_{3,l} z} \\
+%    \mu_l S_{1,l} e^{S_{1,l} z} & -\mu_l S_{1,l} e^{-S_{1,l} z} & -\mu_l S_{3,l} e^{S_{3,l} z} & \mu_l S_{3,l} e^{-S_{3,l} z} \\
+%  \end{pmatrix}
+%  \begin{pmatrix}
+%    C_{1,l} \\
+%    C_{2,l} \\
+%    C_{3,l} \\
+%    C_{4,l} \\
+%  \end{pmatrix}
+%  =\nonumber \\
+%  \begin{pmatrix}
+%    e^{S_{1,l+1} z} & e^{-S_{1,l+1} z} & e^{S_{3,l+1} z} & e^{-S_{3,l+1} z} \\
+%    \mu_{l+1} e^{S_{1,l+1} z} & \mu_{l+1} e^{-S_{1,l+1} z} & -\mu_{l+1} e^{S_{3,l+1} z} & -\mu_{l+1} e^{-S_{3,l+1} z} \\
+%    S_{1,l+1} e^{S_{1,l+1} z} & -S_{1,l+1} e^{-S_{1,l+1} z} & S_{3,l+1} e^{S_{3,l+1} z} & -S_{3,l+1}e^{-S_{3,l+1} z} \\
+%    \mu_{l+1} S_{1,l+1} e^{S_{1,l+1} z} & -\mu_{l+1} S_{1,l+1} e^{-S_{1,l+1} z} & -\mu_{l+1} S_{3,l+1} e^{S_{3,l+1} z} & \mu_{l+1} S_{3,l+1} e^{-S_{3,l+1} z} \\
+%  \end{pmatrix}
+%  \begin{pmatrix}
+%    C_{1,l+1} \\
+%    C_{2,l+1} \\
+%    C_{3,l+1} \\
+%    C_{4,l+1} \\
+%  \end{pmatrix}
+%\end{eqnarray}
+
+\end{widetext}
+
+Applying the inverse matrix of the RHS gives a new $4 \times 4$ matrix $B$ that
+transfers $C_{j,l}$ to $C_{j,l+1}$.  
+\begin{equation}
+  \left(
+  \begin{matrix}
+    C_{1} \\
+    C_{2} \\
+    C_{3} \\
+    C_{4} \\
+  \end{matrix}
+  \right)_{\!\!l+1}\!\!\!\!\!\!
+  = B_l
+  \left(
+  \begin{matrix}
+    C_{1} \\
+    C_{2} \\
+    C_{3} \\
+    C_{4} \\
+  \end{matrix}
+  \right)_{\!\!l}
+\end{equation}
+
+\begin{widetext}
+\begin{equation}
+B_l=\frac{1}{4}
+  \left(
+  \begin{matrix}
+    e^{-S_1 z} & 0 & 0 & 0 \\[0.3em]
+    0 & e^{S_1 z} & 0 & 0 \\[0.3em]
+    0 & 0 & e^{-S_3 z} & 0 \\[0.3em]
+    0 & 0 & 0 & e^{S_3 z} \\[0.3em]
+  \end{matrix}
+  \right)_{\!\!\!\!l+1}\!\!\!
+  \left(
+  \begin{matrix}
+    1 & \frac{1}{\mu} & \frac{1}{S_1} & \frac{1}{\mu S_1} \\[0.3em]
+    1 & \frac{1}{\mu} & \frac{-1}{S_1} & \frac{-1}{\mu S_1} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{1}{S_3} & \frac{-1}{\mu S_3} \\[0.3em]
+    1 & \frac{-1}{\mu} & \frac{-1}{S_3} & \frac{1}{\mu S_3} \\[0.3em]
+  \end{matrix}
+  \right)_{\!\!\!\!l+1}\!\!\!
+  \left(
+  \begin{matrix}
+    1 & 1 & 1 & 1 \\[0.3em]
+    \mu & \mu & -\mu & -\mu \\[0.3em]
+    S_1 & -S_1 & S_3 & -S_3 \\[0.3em]
+    \mu S_1  & -\mu S_1 & -\mu S_3 & \mu S_3 \\[0.3em]
+  \end{matrix}
+  \right)_{\!\!\!\!l}
+  \left(
+  \begin{matrix}
+    e^{S_1 z} & 0 & 0 & 0 \\[0.3em]
+    0 & e^{-S_1 z} & 0 & 0 \\[0.3em]
+    0 & 0 & e^{S_3 z} & 0 \\[0.3em]
+    0 & 0 & 0 & e^{-S_3 z} \\[0.3em]
+  \end{matrix}
+  \right)_{\!\!\!\!l}
+\end{equation}
+\end{widetext}
+
+The components of $B$ are listed in Table \ref{B_components}.
+While this approach doesn't reduce the complexity of
+the calculation of $r$ and $t$, it does offer advantages in the case of DWBA problems;
+no extra work is done converting between $\Psi$ and $C_j$ at every layer, 
+and the DWBA terms depend on $\int_{z_l}^{z_{l+1}} \Psi(z)$ which is much easier to
+calculate as $\int_{z_l}^{z_{l+1}} \sum_j C_{j,l} e^{S_{j,l} z}$ than 
+$\left(\int_{z_l}^{z_{l+1}} A_l(z)\right) \Psi(z=z_l)$.
+
+
+\begin{table}
+\caption{Elements of the $B$-matrix, which transfers $C_{j,l} \rightarrow C_{j,l+1}$}
+
+\begin{equation}
+\begin{array}{l}
+  B_{11} = \frac{1}{4} e^{(S_{1,l} - S_{1,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} + \frac{S_{1,l}}{S_{1,l+1}} + \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{12} = \frac{1}{4} e^{(-S_{1,l} - S_{1,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} - \frac{S_{1,l}}{S_{1,l+1}} - \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{13} = \frac{1}{4} e^{(S_{3,l} - S_{1,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} + \frac{S_{3,l}}{S_{1,l+1}} - \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{14} = \frac{1}{4} e^{(-S_{3,l} - S_{1,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} - \frac{S_{3,l}}{S_{1,l+1}} + \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{1,l+1}} \right)\\[1em]
+  
+  B_{21} = \frac{1}{4} e^{(S_{1,l} + S_{1,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} - \frac{S_{1,l}}{S_{1,l+1}} - \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{22} = \frac{1}{4} e^{(-S_{1,l} + S_{1,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} + \frac{S_{1,l}}{S_{1,l+1}} + \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{23} = \frac{1}{4} e^{(S_{3,l} + S_{1,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} - \frac{S_{3,l}}{S_{1,l+1}} + \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{24} = \frac{1}{4} e^{(-S_{3,l} + S_{1,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} + \frac{S_{3,l}}{S_{1,l+1}} - \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{1,l+1}} \right)\\[1em]
+  
+  B_{31} = \frac{1}{4} e^{(S_{1,l} - S_{3,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} + \frac{S_{1,l}}{S_{3,l+1}} - \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{3,l+1}} \right)\\
+  B_{32} = \frac{1}{4} e^{(-S_{1,l} - S_{3,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} - \frac{S_{1,l}}{S_{3,l+1}} + \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{3,l+1}} \right)\\
+  B_{33} = \frac{1}{4} e^{(S_{3,l} - S_{3,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} + \frac{S_{3,l}}{S_{3,l+1}} + \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{3,l+1}} \right)\\
+  B_{34} = \frac{1}{4} e^{(-S_{3,l} - S_{3,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} - \frac{S_{3,l}}{S_{3,l+1}} - \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{3,l+1}} \right)\\[1em]
+  
+  B_{41} = \frac{1}{4} e^{(S_{1,l} + S_{3,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} - \frac{S_{1,l}}{S_{1,l+1}} + \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{42} = \frac{1}{4} e^{(-S_{1,l} + S_{3,l+1})z}\left( 1 - \frac{\mu_l}{\mu_{l+1}} + \frac{S_{1,l}}{S_{1,l+1}} - \frac{\mu_l S_{1,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{43} = \frac{1}{4} e^{(S_{3,l} + S_{3,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} - \frac{S_{3,l}}{S_{1,l+1}} - \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{1,l+1}} \right)\\
+  B_{44} = \frac{1}{4} e^{(-S_{3,l} + S_{3,l+1})z}\left( 1 + \frac{\mu_l}{\mu_{l+1}} + \frac{S_{3,l}}{S_{1,l+1}} + \frac{\mu_l S_{3,l}}{\mu_{l+1} S_{1,l+1}} \right)\\[1em]
+  
+\end{array}\nonumber
+\end{equation}
+\label{B_components}
+\end{table}
+
+The calculation of $r$ can by setting 
+the incident polarization to $\pm 1$ and using the equations
+\begin{equation}
+  \begin{array}{l}
+    C_{2,N} = B_{21} C_{1,0} + B_{22} C_{2,0} + B_{23} C_{3,0} + B_{24} C_{4,0} \equiv 0\\
+    C_{4,N} = B_{41} C_{1,0} + B_{42} C_{2,0} + B_{43} C_{3,0} + B_{44} C_{4,0} \equiv 0    
+  \end{array}
+\end{equation}
+noting that
+\begin{equation}
+  \begin{array}{l}
+    C_{1,0} \equiv I_+ \\
+    C_{2,0} \equiv r_+ \\
+    C_{3,0} \equiv I_- \\
+    C_{4,0} \equiv r_- \\
+  \end{array}
+\end{equation}
+giving expressions for $r$
+\begin{equation}
+  \begin{array}{l}
+    r_{++} = \frac{B_{24}B_{41} - B_{21}B_{44}}{B_{44}B_{22} - B_{24}B_{42}}\\[0.3em]
+    r_{+-} = \frac{B_{21}B_{42} - B_{41}B_{22}}{B_{44}B_{22} - B_{12}B_{24}}\\[0.3em]
+    r_{-+} = \frac{B_{24}B_{43} - B_{23}B_{44}}{B_{44}B_{22} - B_{24}B_{42}}\\[0.3em]
+    r_{--} = \frac{B_{23}B_{42} - B_{43}B_{22}}{B_{44}B_{22} - B_{12}B_{24}}\\[0.3em]
+  \end{array}
+\end{equation}
+then the transmission can be calculated, since 
+we now know all the $C_{j,0}$, and 
+\begin{equation}
+  \begin{array}{l}
+    t_+ \equiv C_{1,N} \\
+    t_- \equiv C_{3,N} \\
+  \end{array}
+\end{equation}
+
+
+\section{Rotation of reference frame}
+
+The equations in the previous section were derived in a single reference frame, 
+which for the sample is defined by convention to have $\hat z_{\textrm{SAM}} \parallel \vec Q$.
+Given that the $\hat z$ direction is also by convention the quantization axis 
+for spin, we have to apply a transformation if the lab quantization axis 
+$(\hat z_{\textrm {LAB}} \parallel \vec H_{\textrm{guide}})$ is not collinear with
+$\hat z_{\textrm{SAM}}$
+
+%\begin{equation}
+%\end{equation}
+
+%\begin{thebibliography}{1}
+%\bibitem{Dura_unpublished}J. Dura, private communication
+%\end{thebibliography}
+%%%
+%\begin{equation}
+%  \begin{pmatrix}
+%    \psi_{+}(z) \\
+%    \psi_{-}(z) \\
+%    \psi'_{+}(z) \\
+%    \psi'_{-}(z) \\
+%  \end{pmatrix}
+%  =
+%  \begin{pmatrix}
+%    1 & 1 & 1 & 1 \\
+%    \mu & \mu & -\mu & -\mu \\
+%    S_1 & -S_1 & S_3 & -S_3 \\
+%    \mu S_1  & -\mu S_1 & -\mu S_3 & \mu S_3 \\
+%  \end{pmatrix}
+%  \begin{pmatrix}
+%    C_1 e^{+S_1 z} \\
+%    C_2 e^{-S_1 z} \\
+%    C_3 e^{+S_3 z} \\
+%    C_4 e^{-S_3 z} \\
+%  \end{pmatrix}
+%\end{equation}
+%%%
+\bibliography{/home/bbm/Documents/master}
+
+\end{document}

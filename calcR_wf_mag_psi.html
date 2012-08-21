@@ -116,8 +116,8 @@ window.onload = function() {
                 xy[i].push([q, log_data]);
                 phase[i].push([q, ri.phase()]);
             }
-            var rpp = Math.pow(r[0].magnitude(), 2);
-            var rmm = Math.pow(r[3].magnitude(), 2);
+            var rpp = Math.pow(r[3].magnitude(), 2);
+            var rmm = Math.pow(r[0].magnitude(), 2);
             var sum = rpp + rmm;
             sa[0].push([q, (rpp - rmm)/(rpp + rmm)]);
             var empt = [q, null];
@@ -132,10 +132,10 @@ window.onload = function() {
         plot1 = $.jqplot ('rplot', [xy1, xy2, xy3, xy4, [[0, 0]]], {
             title: 'Reflectivity R=|Ψ←(z=-∞)|²',
             seriesDefaults: {breakOnNull: true, shadow: false, markerOptions: {shadow: false, size: 4}},
-            series: [ {label: '+ +', color: 'red'},
+            series: [ {label: '- -', color: 'red'},
                       {label: '+ -', shadow: false, color: 'green', markerOptions: {shadow: false, size: 4}},
                       {label: '- +', shadow: false, color: 'yellow', markerOptions: {shadow: false, size: 4}},
-                      {label: '- -', shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}},
+                      {label: '+ +', shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}},
                       {label: 'data', shadow: false, color: 'black', markerOptions: {shadow: false, size: 4}} ],
             grid: {shadow: false},
             sortData: false,
@@ -160,7 +160,7 @@ window.onload = function() {
                 }
               }
             },
-            cursor: {show:true, zoom:true},
+            cursor: {show:true, zoom:false},
             interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
                           {type: 'VerticalLine',
                            name: 'vcursor',
