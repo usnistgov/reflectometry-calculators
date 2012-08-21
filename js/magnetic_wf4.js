@@ -329,7 +329,7 @@ LOGH=0;
 //    Note: not reusing A, instead creating CST
       //prevI = I-1;
       //CST = this.unitary_LAB_SAM_LAB_old(B[prevI], AGUIDE);
-      CST = this.unitary_LAB_SAM_LAB_old(C, AGUIDE);
+      CST = this.unitary_LAB_SAM_LAB(C, AGUIDE);
 
 //    Use corrected versions of X,Y,ZI, and ZS to account for effect
 //    of incident and substrate media
@@ -437,10 +437,6 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
 //    Changing the target KZ is equivalent to subtracting the fronting
 //    medium SLD.
     KSQREL = KZ*KZ + PI4*sld_L.sld; // nuclear part of sld -- k0z
-    //KSQRELP = KZ*KZ + PI4*sld_L.sld + PI4*sld_L.sldm; // nuclear + magnetic part of sld
-    //KSQRELM = KZ*KZ + PI4*sld_L.sld - PI4*sld_L.sldm; // nuclear + magnetic part of sld
-    // assuming imaginary sld (sldi) == 0 in fronting medium.
-    //KLP = KLM = Cplx.sqrt(KSQREL - PI4*sld_L.sld);
     var expth = [];
     for (var i=0; i<N; i++) {
         var thetaM = this.sld[i].thetaM;
@@ -464,8 +460,8 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     this.S3.push(S3.copy());
     // in front material
     
-    var RP = Cplx.add(Cplx.multiply(this.YA, IP), Cplx.multiply(this.YB, IM));
-    var RM = Cplx.add(Cplx.multiply(this.YD, IM), Cplx.multiply(this.YC, IP));
+    var RP = Cplx.add(Cplx.multiply(this.YD, IP), Cplx.multiply(this.YC, IM));
+    var RM = Cplx.add(Cplx.multiply(this.YA, IM), Cplx.multiply(this.YB, IP));
     var P0 = [Cplx.add(IP, RP), 
              Cplx.add(IM, RM),
              Cplx.multiply(S1, Cplx.subtract(IP, RP)),
