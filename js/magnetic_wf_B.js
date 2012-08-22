@@ -23,6 +23,9 @@ Complex.twosinh = function(a) {
     // sinh(x) = 0.5 * (e^x - e^-x);
 };
 
+Cplx.prototype.neg = Cplx.prototype.negative;
+Cplx.prototype.inv = Cplx.prototype.inverse;
+
 magnetic_wavefunction.prototype.init = function(kz_in, sld, spin_in, spin_out) {
     // sld is an array of slabs with sld, thickness and absorption
     this.kz_in = kz_in;
@@ -391,8 +394,6 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
     var A, B, C, CST; // matrices
 
     // constants
-    var CR = new Cplx(1.0, 0.0);
-    var CI = new Cplx(0.0, 1.0);
     var PI4=Math.PI * 4.0; // *1e-6??;
     
     var N = this.layer_num_total;
@@ -400,9 +401,7 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
     var expth = [];
     for (var i=0; i<N; i++) {
         var thetaM = this.sld[i].thetaM;
-        //expth.push(Cplx.exp(new Cplx(0.0, this.sld[i].thetaM))); // e^(i thetaM)
         expth.push(new Cplx(Math.cos(thetaM), Math.sin(thetaM)));
-        //expth.push(Cplx.fromMagPhase(1.0, thetaM));
     }
     
     var KZ = this.kz_in;
@@ -425,167 +424,118 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
         return [YA, YB, YC, YD];
     }
 
-    C = []
-
-//     B = I
-    B = [[]];
-
     I=0;
-    for (var i=0; i<4; i++) {
-        B[I].push([]);
-        for (var j=0; j<4; j++) {
-            B[I][i].push( (i==j)? (new Cplx(1.0, 0.0)) : (new Cplx(0.0, 0.0)) ); 
-        }
-    }
     
-    B = [];
-    
-    C = [ [1, 0, 0, 0], 
-          [0, 1, 0, 0], 
-          [0, 0, 1, 0], 
-          [0, 0, 0, 1] ];
-          
+    B = []
+    newB =  [[1, 0, 0, 0], 
+             [0, 1, 0, 0], 
+             [0, 0, 1, 0], 
+             [0, 0, 0, 1] ];
+     
     var sld_L = this.sld[L];
+    var z = new Complex(0,0);
 //    Changing the target KZ is equivalent to subtracting the fronting
 //    medium SLD.
     KSQREL = KZ*KZ + PI4*sld_L.sld; // nuclear part of sld
-    //KSQRELP = KZ*KZ + PI4*sld_L.sld + PI4*sld_L.sldm; // nuclear + magnetic part of sld
-    //KSQRELM = KZ*KZ + PI4*sld_L.sld - PI4*sld_L.sldm; // nuclear + magnetic part of sld
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
+    
+    
     for (I=0; I < N-1; I++) {
-        prevI = I-1;
-        nextI = I+1;
+        //console.log(z.toString());
         Ln = L+STEP;
         sld_L = this.sld[L];
         sld_Ln = this.sld[Ln];
         var mu_L = expth[L]; // need to fill this above!
-        var inv_mu_Ln = expth[Ln].inverse();       
+        var mu_Ln = expth[Ln];
+        var inv_mu_Ln = mu_Ln.inverse();       
         var mu_ratio = Cplx.multiply(mu_L, inv_mu_Ln);
 
         S1L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        // this was -PI4*Imag(sld) in magnetic.cc - why? 
-        S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
+        muS1L = Cplx.multiply(mu_L, S1L);
+        S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+        muS3L = Cplx.multiply(mu_L, S3L);
         
-        inv_S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi))).inverse();
-        // this was -PI4*Imag(sld) in magnetic.cc - why? 
-        inv_S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi))).inverse();
-
-        var S1S1ratio = Cplx.multiply(S1L, inv_S1Ln);
-        var S1S3ratio = Cplx.multiply(S1L, inv_S3Ln);
-        var S3S1ratio = Cplx.multiply(S3L, inv_S1Ln);
-        var S3S3ratio = Cplx.multiply(S3L, inv_S3Ln);
+        S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
+        inv_S1Ln = S1Ln.inverse();
+        inv_mu_S1Ln = Cplx.multiply(inv_mu_Ln, inv_S1Ln);
+        S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
+        inv_S3Ln = S3Ln.inverse();
+        inv_mu_S3Ln = Cplx.multiply(inv_mu_Ln, inv_S3Ln);
         
+        var SLvec = [ Cplx.exp(Cplx.multiply(S1L, z)),
+                      Cplx.exp(Cplx.multiply(S1L, z).neg()),
+                      Cplx.exp(Cplx.multiply(S3L, z)),
+                      Cplx.exp(Cplx.multiply(S3L, z).neg()) ];
+                      
+        var SLn_inv_vec = [ Cplx.exp(Cplx.multiply(S1Ln, z).neg()),
+                            Cplx.exp(Cplx.multiply(S1Ln, z)),
+                            Cplx.exp(Cplx.multiply(S3Ln, z).neg()),
+                            Cplx.exp(Cplx.multiply(S3Ln, z)) ];
+        
+        var M1 = [ [1,       inv_mu_Ln,       inv_S1Ln,       inv_mu_S1Ln],
+                   [1,       inv_mu_Ln, inv_S1Ln.neg(), inv_mu_S1Ln.neg()],
+                   [1, inv_mu_Ln.neg(),       inv_S3Ln, inv_mu_S3Ln.neg()],
+                   [1, inv_mu_Ln.neg(), inv_S3Ln.neg(),       inv_mu_S3Ln] ];
+                   
+        var M2 = [ [    1,           1,           1,          1],
+                   [ mu_L,        mu_L,  mu_L.neg(), mu_L.neg()],
+                   [  S1L,   S1L.neg(),         S3L,  S3L.neg()],
+                   [muS1L, muS1L.neg(), muS3L.neg(),      muS3L] ];
 
-        var A = [ [0, 0, 0, 0], 
-                  [0, 0, 0, 0], 
-                  [0, 0, 0, 0], 
-                  [0, 0, 0, 0] ];
-        A[0][0]=Cplx.multiply(0.25, Cplx.sum([1, mu_ratio, S1S1ratio, Cplx.multiply(mu_ratio, S1S1ratio)]));
-        //A11=0.25*(COSHS1+COSHS3);
-        A[1][0]=Cplx.multiply(0.25, Cplx.subtract(COSHS1, COSHS3));
-        //A21=0.25*(COSHS1-COSHS3);
-        A[2][0]=Cplx.multiply(0.25, Cplx.add(Cplx.multiply(SINHS1, S1), Cplx.multiply(SINHS3, S3)));
-        //A31=0.25*(SINHS1*S1+SINHS3*S3);
-        A[3][0]=Cplx.multiply(0.25, Cplx.subtract(Cplx.multiply(SINHS1, S1), Cplx.multiply(SINHS3, S3)));
-        //A41=0.25*(SINHS1*S1-SINHS3*S3);
-        A[0][2]=Cplx.multiply(0.25, Cplx.add(Cplx.multiply(SINHS1, S1.inverse()), Cplx.multiply(SINHS3, S3.inverse())));
-        //A13=0.25*(SINHS1/S1+SINHS3/S3);
-        A[1][2]=Cplx.multiply(0.25, Cplx.subtract(Cplx.multiply(SINHS1, S1.inverse()), Cplx.multiply(SINHS3, S3.inverse())));
-        //A23=0.25*(SINHS1/S1-SINHS3/S3);
-        A[2][1]=Cplx.multiply(A[3][0], EXPTH_L.conjugate());
-        //A32=A41*conj(EXPTH[L]);
-        A[0][3]=Cplx.multiply(A[1][2], EXPTH_L.conjugate());
-        //A14=A23*conj(EXPTH[L]);
-        A[0][1]=Cplx.multiply(A[1][0], EXPTH_L.conjugate());
-        //A12=A21*conj(EXPTH[L]);
-        A[3][0]=Cplx.multiply(A[3][0], EXPTH_L);
-        //A41=A41*EXPTH[L];
-        A[1][2]=Cplx.multiply(A[1][2], EXPTH_L);
-        //A23=A23*EXPTH[L];
-        A[1][0]=Cplx.multiply(A[1][0], EXPTH_L);
-        //A21=A21*EXPTH[L];
-        A[3][2]=A[1][0].copy();
-        A[2][3]=A[0][1].copy();
-        A[1][1]=A[0][0].copy();
-        A[2][2]=A[0][0].copy();
-        A[3][3]=A[0][0].copy();
-        A[1][3]=A[0][2].copy();
-        A[3][1]=A[2][0].copy();
-
+        var A = multiply4x4(M1, M2);
+        
+        for (var i=0; i<4; i++) {
+            for (var j=0; j<4; j++) {
+                var ess = Cplx.multiply(0.25, Cplx.multiply(SLn_inv_vec[i], SLvec[j]));
+                A[i][j] = Cplx.multiply(A[i][j], ess);
+            }
+        }
+            
+        
 //    Matrix update C=A*C
-        //B.push([]); // add B[I];
-        var newB = multiply4x4(A, B[prevI]);
-        C = multiply4x4(A, C);
-        //B.push(A);
+        var newB = multiply4x4(A, newB);
+        // C = multiply4x4(A, C);
+        // B.push(A);
         B.push(newB);
+        
+        z = Complex.add(z, STEP*sld_Ln.thickness); // negative step makes us move backwards...
+        L = Ln;
         
       }
       
-      prevI = I-1;
-      B.push([ [1, 0, 0, 0], 
-               [0, 1, 0, 0], 
-               [0, 0, 1, 0], 
-               [0, 0, 0, 1] ]); // fake B for last layer.
+      var denom = Cplx.subtract(Cplx.multiply(newB[3][3], newB[1][1]), Cplx.multiply(newB[1][3], newB[3][1])).inverse();
+      var YA_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][0]), Cplx.multiply(newB[1][0], newB[3][3])), denom); // r++
+      var YB_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][0], newB[3][1]), Cplx.multiply(newB[3][0], newB[1][1])), denom); // r+-
+      var YC_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][2]), Cplx.multiply(newB[1][2], newB[3][3])), denom); // r-+
+      var YD_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][2], newB[3][1]), Cplx.multiply(newB[3][2], newB[1][1])), denom); // r--
+      
+      var cos_e = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
+      var isin_e = new Cplx(0, Math.sin(AGUIDE/2.0*Math.PI/180.));
+
+      var U = [[  cos_e, isin_e],
+               [ isin_e,  cos_e]];
+      var Uinv = [[  cos_e, isin_e.neg()],
+                  [ isin_e.neg(),  cos_e]];
+      
+      var Y_lab = multiply2x2( U, multiply2x2([[YA_sam, YC_sam],[YB_sam, YD_sam]], Uinv)); 
       
       this.B = B;
       this.C = C;
 //    Rotate polarization axis to lab frame (angle AGUIDE)
 //    Note: not reusing A, instead creating CST
-      //prevI = I-1;
-      //CST = this.unitary_LAB_SAM_LAB_old(B[prevI], AGUIDE);
-      CST = this.unitary_LAB_SAM_LAB(C, AGUIDE);
-
-//    Use corrected versions of X,Y,ZI, and ZS to account for effect
-//    of incident and substrate media
-//    Note: this does not take into account magnetic fronting/backing
-//    media --- use gepore.f directly for a more complete solution
-      L=L+STEP;
-      sld_L = this.sld[L];
-      ZS=Cplx.multiply(CI, Cplx.sqrt(new Cplx(KSQREL-PI4*sld_L.sld, -PI4*sld_L.sldi)));
-      // this was +PI4*Imag(sld) in magnetic.cc Don't know why.
-      ZI=Cplx.multiply(CI, Math.abs(KZ));
-
-      X=-1.;
-      Y=Cplx.multiply(ZI, ZS);
-
-//    W below is U and V is -V of printed versions
-      V11 = Cplx.sum([Cplx.multiply(ZS, CST[0][0]), Cplx.multiply(X, CST[2][0]), Cplx.multiply(Y, CST[0][2]), (Cplx.multiply(ZI, CST[2][2])).negative()]);
-      //V11=ZS*CST11+X*CST31+Y*CST13-ZI*CST33;
-      V12 = Cplx.sum([Cplx.multiply(ZS, CST[0][1]), Cplx.multiply(X, CST[2][1]), Cplx.multiply(Y, CST[0][3]), (Cplx.multiply(ZI, CST[2][3])).negative()]);
-      //V12=ZS*CST12+X*CST32+Y*CST14-ZI*CST34;
-      V21 = Cplx.sum([Cplx.multiply(ZS, CST[1][0]), Cplx.multiply(X, CST[3][0]), Cplx.multiply(Y, CST[1][2]), (Cplx.multiply(ZI, CST[3][2])).negative()]);
-      //V21=ZS*CST21+X*CST41+Y*CST23-ZI*CST43;
-      V22 = Cplx.sum([Cplx.multiply(ZS, CST[1][1]), Cplx.multiply(X, CST[3][1]), Cplx.multiply(Y, CST[1][3]), (Cplx.multiply(ZI, CST[3][3])).negative()]);
-      //V22=ZS*CST22+X*CST42+Y*CST24-ZI*CST44;
-
-      W11 = Cplx.sum([Cplx.multiply(ZS, CST[0][0]), Cplx.multiply(X, CST[2][0]), (Cplx.multiply(Y, CST[0][2])).negative(), Cplx.multiply(ZI, CST[2][2])]);
-      //W11=ZS*CST11+X*CST31-Y*CST13+ZI*CST33;
-      W12 = Cplx.sum([Cplx.multiply(ZS, CST[0][1]), Cplx.multiply(X, CST[2][1]), (Cplx.multiply(Y, CST[0][3])).negative(), Cplx.multiply(ZI, CST[2][3])]);
-      //W12=ZS*CST12+X*CST32-Y*CST14+ZI*CST34;
-      W21 = Cplx.sum([Cplx.multiply(ZS, CST[1][0]), Cplx.multiply(X, CST[3][0]), (Cplx.multiply(Y, CST[1][2])).negative(), Cplx.multiply(ZI, CST[3][2])]);
-      //W21=ZS*CST21+X*CST41-Y*CST23+ZI*CST43;
-      W22 = Cplx.sum([Cplx.multiply(ZS, CST[1][1]), Cplx.multiply(X, CST[3][1]), (Cplx.multiply(Y, CST[1][3])).negative(), Cplx.multiply(ZI, CST[3][3])]);
-      //W22=ZS*CST22+X*CST42-Y*CST24+ZI*CST44;
       
-      DETW=Cplx.subtract(Cplx.multiply(W22, W11), Cplx.multiply(W12, W21));
-      //DETW=W22*W11-W12*W21;
-
-//    Calculate reflectivity coefficients specified by POLSTAT
-      YA = Cplx.multiply(Cplx.subtract(Cplx.multiply(V21, W12), Cplx.multiply(V11, W22)), DETW.inverse());
-      //YA = (V21*W12-V11*W22)/DETW;
-      YB = Cplx.multiply(Cplx.subtract(Cplx.multiply(V11, W21), Cplx.multiply(V21, W11)), DETW.inverse());
-      //YB = (V11*W21-V21*W11)/DETW;
-      YC = Cplx.multiply(Cplx.subtract(Cplx.multiply(V22, W12), Cplx.multiply(V12, W22)), DETW.inverse());
-      //YC = (V22*W12-V12*W22)/DETW;
-      YD = Cplx.multiply(Cplx.subtract(Cplx.multiply(V12, W21), Cplx.multiply(V22, W11)), DETW.inverse());
-      //YD = (V12*W21-V22*W11)/DETW;
+      this.YA = Y_lab[0][0];
+      this.YB = Y_lab[1][0];
+      this.YC = Y_lab[0][1];
+      this.YD = Y_lab[1][1];
       
-      this.YA = YA;
-      this.YB = YB;
-      this.YC = YC;
-      this.YD = YD;
-      return [YA, YB, YC, YD];
+      this.YA_sam = YA_sam;
+      this.YB_sam = YB_sam;
+      this.YC_sam = YC_sam;
+      this.YD_sam = YD_sam;
+      
+      return [this.YA.copy(), this.YB.copy(), this.YC.copy(), this.YD.copy()];
     
 }
 
@@ -814,6 +764,19 @@ function multiply4x4(A, B) {
         for (var j=0; j<4; j++){
             //C[i][j] = 0;
             for (var k=0; k<4; k++) C[i][j] = Complex.add(C[i][j], Complex.multiply(A[i][k], B[k][j]));
+        }
+    }
+    return C;
+}
+
+function multiply2x2(A, B) {
+    var Z = Cplx.zero;
+    var C = [ [Z, Z], 
+              [Z, Z] ];
+    for (var i=0; i<2; i++){
+        for (var j=0; j<2; j++){
+            //C[i][j] = 0;
+            for (var k=0; k<2; k++) C[i][j] = Complex.add(C[i][j], Complex.multiply(A[i][k], B[k][j]));
         }
     }
     return C;
