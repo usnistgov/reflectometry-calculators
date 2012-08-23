@@ -602,7 +602,80 @@ which for the sample is defined by convention to have $\hat z_{\textrm{SAM}} \pa
 Given that the $\hat z$ direction is also by convention the quantization axis 
 for spin, we have to apply a transformation if the lab quantization axis 
 $(\hat z_{\textrm {LAB}} \parallel \vec H_{\textrm{guide}})$ is not collinear with
-$\hat z_{\textrm{SAM}}$
+$\hat z_{\textrm{SAM}}$.
+
+In order to mate the laboratory reference frame to the sample one, we have to do
+a rotation.  As per Eq. 3.2.46 in \cite{SakuraiQuantum1994}, a spinor is rotated about
+an axis according to
+\begin{equation}
+  \chi \rightarrow \exp\left(\frac{-i\boldsymbol{\sigma} \cdot \hat{\mathbf{n}} \phi}{2}\right) \chi
+\end{equation} 
+
+The rotation matrix around the $\hat x$-axis is (as in \cite{PNRMajkrzakChapter})
+\begin{equation}
+  U_R = 
+  \begin{pmatrix}
+    \cos(\epsilon/2) & i \sin(\epsilon/2) & 0 & 0 \\
+    i \sin(\epsilon/2) & \cos(\epsilon/2) & 0 & 0 \\
+    0 & 0 & \cos(\epsilon/2) & i \sin(\epsilon/2) \\
+    0 & 0 & i \sin(\epsilon/2) & \cos(\epsilon/2) \\
+  \end{pmatrix}
+\end{equation}
+
+The wavefunction in the incident medium has no coupling between
+$\psi_+$ and $\psi_-$ when $\rho_{+-}, \rho_{-+} = 0$.  In practice, we take
+the wavefunction in the incident medium and rotate it from the lab frame to
+the sample frame, and then just inside the first layer of the sample we can calculate
+the $C_j$.
+
+\begin{equation}
+  \begin{array}{l}
+  U_R^{-1} \Psi_{\textrm{LAB}} = \Psi_{\textrm{SAM}} \\
+  \chi^{-1} U_R^{-1} \Psi_{\textrm{LAB}} = \chi^{-1} \Psi_{\textrm{SAM}} = \bigg( C_j \bigg) \\
+  \end{array}
+\end{equation}
+
+If one wishes to calculate the wavefunction in the laboratory frame throughout 
+the sample, within each layer the solutions for $C_j$ can transferred to the lab
+frame by noting that 
+
+\begin{equation}
+  \begin{array}{l}
+    \left(
+    \begin{matrix}
+    \psi_+(z) \\
+    \psi_-(z)
+    \end{matrix}
+    \right)_{\textrm{LAB}}
+    = U_R
+    \left(
+    \begin{matrix}
+    \psi_+(z) \\
+    \psi_-(z)
+    \end{matrix}
+    \right)_{\textrm{SAM}}
+    \\[2em]
+    = \left(
+    \begin{matrix}
+      \cos(\epsilon/2)[\sum_j C_j e^{S_j z}] + i \sin(\epsilon/2)[\sum_j \mu_j C_j e^{S_j z}] \\
+      i \sin(\epsilon/2)[\sum_j C_j e^{S_j z}] + \cos(\epsilon/2)[\sum_j \mu_j C_j e^{S_j z}] \\
+    \end{matrix}
+    \right)
+  \end{array}
+\end{equation}
+and collecting terms that all have the same $e^{S_j z}$ dependence, we get
+\begin{equation}
+  \begin{array}{l}
+    C^{\uparrow}_{j,\textrm{LAB}} = \left(\cos(\epsilon/2) + i\mu_j \sin(\epsilon/2)\right)C_{j,\textrm{SAM}} \\
+    C^{\downarrow}_{j,\textrm{LAB}} = \left(\mu_j \cos(\epsilon/2) + i \sin(\epsilon/2)\right)C_{j,\textrm{SAM}} \\
+  \end{array}
+\end{equation}
+
+Within the DWBA layer-by-layer calculations, of course, the reference frame doesn't
+matter as long as $\langle \psi_f |$ and $| \psi_i \rangle$ are in the same 
+reference frame, and it will be easiest to use the $\bigg(C_j\bigg)$ in the sample
+frame.
+
 
 %\begin{equation}
 %\end{equation}

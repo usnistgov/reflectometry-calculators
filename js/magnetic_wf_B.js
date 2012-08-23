@@ -636,6 +636,7 @@ magnetic_wavefunction.prototype.calculateCDPM = function(AGUIDE, IP, IM) {
     this.CDPM = [CDPM];
     cos_e = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
     isin_e = new Cplx(0, Math.sin(AGUIDE/2.0*Math.PI/180.));
+    //nisin_e = new Cplx(0, -Math.sin(AGUIDE/2.0*Math.PI/180.));
     var C_up = [];
     C_up.push(Cplx.add(Cplx.multiply(CP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, CP[I]), isin_e)));
     C_up.push(Cplx.add(Cplx.multiply(DP[I], cos_e), Cplx.multiply(Cplx.multiply(EXPTH_L, DP[I]), isin_e)));

@@ -408,7 +408,7 @@ window.onload = function() {
     wl_ctl.value = 0.5 // AND/R and MAGIK, in nm
     wl_ctl.onchange = function() {
         $('#wl_slider_span').slider('value', wl_ctl.value);
-	gT.wavelength = wl_ctl.value * 10;
+	    gT.wavelength = wl_ctl.value * 10;
         gT.redraw();
         pQ.qspace_patch.wavelength = wl_ctl.value * 10;
         pQ.qspace_patch.updateQPoints();

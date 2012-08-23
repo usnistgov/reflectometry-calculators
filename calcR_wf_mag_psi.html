@@ -107,7 +107,7 @@ window.onload = function() {
             //wf1.init(q/2.0, sld1);
             wf.set_kz_in(q/2.0);
             
-            var r = wf.calculateRB(AGUIDE); // angle of external field!
+            var r = wf.calculateR(AGUIDE); // angle of external field!
             for (var i in r) {
                 var ri = r[i];
                 rlist[i].push(ri);
@@ -446,7 +446,7 @@ window.onload = function() {
         match_x_vals(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_angle);
         var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
-        //po.update();
+        po.update();
         plot2.replot();
     }
     plot2.plugins.interactors.profile_mag.update = function() {
@@ -454,7 +454,7 @@ window.onload = function() {
         match_x_vals(plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
-        //po.update();
+        po.update();
         plot2.replot();
     }
     plot2.plugins.interactors.profile_angle.update = function() {
@@ -462,7 +462,7 @@ window.onload = function() {
         match_x_vals(plot2.plugins.interactors.profile_angle, plot2.plugins.interactors.profile_mag);
         var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
-        //po.update();
+        po.update();
         plot2.replot();
     }
     
@@ -661,11 +661,21 @@ window.onload = function() {
                 var wf = new magnetic_wavefunction();
                 wf.init(q/2.0, sld);
                 var AGUIDE = parseFloat(document.getElementById('guide_angle').value);
-                wf.calculateCDPM(AGUIDE, 0.5, 0.5);
+                var Polarization = parseFloat(document.getElementById('pol_ctl').value);
+                var Iplus =  Math.sqrt((1.0 + Polarization)/2.0);
+                var Iminus = Math.sqrt((1.0 - Polarization)/2.0);
+                //console.log(Iplus, Iminus);
+                wf.calculateCDPM(AGUIDE, Iplus, Iminus);
+                //wf.calculateCDPM(AGUIDE, 0.5, 0.5);
                 me.wavefunction = wf;
             } else {
                 var wf = me.wavefunction;
             }
+            //var Polarization = parseFloat(document.getElementById('pol_ctl').value);
+            //var Iplus =  Math.sqrt((1.0 + Polarization)/2.0);
+            //var Iminus = Math.sqrt((1.0 - Polarization)/2.0);
+            //wf.calculateCDPM(AGUIDE, Iplus, Iminus);
+            //wf.calculateCDPM(AGUIDE, 0.5, 0.5);
             var cp, cm, dp, dm;
             var leftpoints = plot2.plugins.interactors.profile_nuc.leftpoints;
             var xzero = leftpoints[0].x + leftpoints[0].segwidth;
@@ -691,6 +701,7 @@ window.onload = function() {
                 dm = wf.DM_lab[i];
                 */
                 var c_up = wf.C_up[i];
+                //var c_up = [wf.CP[i], wf.DP[i], wf.CM[i], wf.DM[i]];
                 var c_down = wf.C_down[i];
                 while ((xx <= rightpoint) && (xx < xx_max)) {
                     var ikpzz = Complex.multiply(wf.S1[i], (xx-xzero));
@@ -754,10 +765,10 @@ window.onload = function() {
             //    xy.push([xx, Math.sin(xx * Math.PI/500)]);
             //}
             
-            if (show_psi_p_f) { plot2.series[0].data = ppfr; }
+            if (show_psi_p_f) { plot2.series[0].data = pmfr; }
             else { plot2.series[0].data = []; }
             
-            if (show_psi_p_r) { plot2.series[1].data = pprr; }
+            if (show_psi_p_r) { plot2.series[1].data = pmrr; }
             else { plot2.series[1].data = []; }
             
             if (show_psi_p) { plot2.series[2].data = ppreal; }
@@ -925,6 +936,43 @@ window.onload = function() {
     document.getElementById("scriptbutton").onclick = show_script;
     
     document.getElementById('guide_angle').onchange = plot2.plugins.interactors.profile_nuc.update;
+    
+    default_pol = 1.0;
+    var pol_slider_span = document.createElement('span');
+    pol_slider_span.id = "wl_slider_span";
+    pol_slider_span.setAttribute('style', "display:inline-block;width:260px;margin-right:10px;margin-left:10px;");
+    $(pol_slider_span).slider({
+        value: default_pol,
+        min: -1.0,
+        step: 0.05,
+        max: 1.0,
+        name: 'pol_slider',
+        id: 'pol_slider', 
+        slide: function(e, ui) { 
+            pol_ctl.value = ui.value;
+            pol_ctl.onchange();
+         }  
+    });
+    
+    //var wl_ctl = document.getElementById('wl_ctl');
+    var pol_ctl = document.createElement('input');
+    pol_ctl.setAttribute('id', 'pol_ctl');
+    pol_ctl.setAttribute('type', 'text');
+    pol_ctl.setAttribute('style', 'width:80px');
+    var pol_ctl_div = document.getElementById('pol_ctl_div');
+    //var pol_ctl_div = document.createElement('div');
+    pol_ctl_div.appendChild(document.createTextNode('Polarization of neutron beam'));
+    pol_ctl_div.appendChild(pol_slider_span);
+    pol_ctl_div.appendChild(pol_ctl);
+    pol_ctl_div.setAttribute('style', 'float:left');
+    //outerdiv1.appendChild(pol_ctl_div);
+    pol_ctl.value = 1.0; // AND/R and MAGIK, in nm
+    pol_ctl.onchange = function() {
+        $('#wl_slider_span').slider('value', pol_ctl.value);
+        plot2.plugins.interactors.profile_nuc.update();
+        po.update();
+    }
+    
 }
 </script>
 </head>
@@ -934,6 +982,7 @@ window.onload = function() {
     <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='choices'></div>
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
+    <div id='pol_ctl_div'></div>
     <div id='psi_choices' style="display:inline-block;"></div>
     <div id='psi_plot'></div>
     <div id="guide_input_div">Guide field angle epsilon - common choices: 270 (along sample y, in-plane) and 0 (along sample z, out-of-plane): <input type="text" id="guide_angle" value="270.0"></input></div>
