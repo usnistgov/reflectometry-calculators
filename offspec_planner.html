@@ -115,7 +115,8 @@ window.onload = function() {
           }
         },
         grid: {shadow: false},
-        interactors: [ {
+        interactors: [{type: 'master', scrollZoom: true, dragPan: true},  
+        {
             type: 'Th2ThFromQGrating',
             name: 'th2thoffspec'
         },   
@@ -269,7 +270,8 @@ window.onload = function() {
           }
         },
         grid: {shadow: false},
-        interactors: [ {   type: 'QGrating', name: 'QGrating' },
+        interactors: [{type: 'master', scrollZoom: true, dragPan: true},  
+        {   type: 'QGrating', name: 'QGrating' },
         {
             type: 'QSpace',
             name: 'Qspace',
