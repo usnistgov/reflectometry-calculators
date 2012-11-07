@@ -588,8 +588,16 @@ window.onload = function() {
                 //var new_leftpoint = {segwidth: new_segwidth, x: coords.x, y: leftpoint.y};
                 profi.leftpoints.splice(leftpoint_num, 0, new_leftpoint);
                 profi.build_segments();
-                //profi.redraw();
-                //profi.update();
+            }
+        }
+    }
+    
+    function remove_point_from_profiles(except_me, leftpoint_num) {
+        for (var i in profiles) {
+            var profi = profiles[i];
+            if (profi.name != except_me) {
+                profi.leftpoints.splice(leftpoint_num, 1);
+                profi.build_segments();
             }
         }
     }
@@ -636,7 +644,7 @@ window.onload = function() {
             }
             this.leftpoints.splice(leftpoint_num, 1);
             this.build_segments();
-            this.redraw();
+            remove_point_from_profiles(this.name, leftpoint_num);
             this.update();
         }
         
