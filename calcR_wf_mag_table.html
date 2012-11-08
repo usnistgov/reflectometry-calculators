@@ -34,7 +34,7 @@
 <script type="text/javascript" src="js/reflectivity_sim.js"></script>
 <script type="text/javascript" src="js/complex.js"></script>
 <script type="text/javascript" src="js/magnetic_wf3.js"></script>
-<script type="text/javascript" src="js/generate_slab_script.js"></script>
+<script type="text/javascript" src="js/generate_mag_slab_script.js"></script>
 <script type="text/javascript"> 
 THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
 
@@ -979,7 +979,7 @@ window.onload = function() {
     show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         //var datafilename = datafilename || "";
-        var pyscript = generate_slab_script(sldarray, datafilename);
+        var pyscript = generate_slab_script(sldarray.reverse(), datafilename);
         scriptwin = window.open("", "_blank");
         scriptwin.pyscript = pyscript;
         /*scriptwin.onload = function() {

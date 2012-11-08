@@ -17,27 +17,41 @@ generate_slab_script = function(sldarray, filename) {
     py += "# probe object combines instrument and data\n";
     
     // link to the datafile specified
-    py += "probe = instrument.load('" + filename + "', back_reflectivity=False)\n";
+    py += "probe = instrument.load_magnetic('" + filename + "', back_reflectivity=False)\n";
     py += "\n";
     py += "# === Stack ===\n";
     py += "# the roughnesses of each layer are set to zero to begin with\n";
     py += "\n";
     py += "s = Stack()\n";
     py += "slds = []\n";
+    py += "slabs = []\n";
     // Need to separate out the top and bottom layers as non-magnetic?
     var sld;
-    for (var i=0; i<sldarray.length; i++) {
+    // first the incident medium:
+    var i=0;
+    sld = sldarray[i];
+    py += "# incident medium:\n";
+    py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+    py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", 0))\n";
+    py += "\n# magnetic layers in the middle:\n";
+    
+    // then all the magnetic layers in the middle:
+    for (i=1; i<sldarray.length-1; i++) {
         sld = sldarray[i];
-        //sld = sldi[0];
-        //thickness = sldi[1];
-        //mu = sldi[2];
-        py += "slds.append(MagneticSlab(SLD(name='layer"+String(i)+"',";
-        py += " rho="+(sld.sld*1e6).toPrecision(prec)+",";
+        py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+        py += "slabs.append(MagneticSlab(slds["+String(i)+"]("+String(sld.thickness)+", 0), ";
         py += " rhoM="+(sld.sldm*1e6).toPrecision(prec)+",";
         py += " thetaM="+(sld.thetaM*180.0/Math.PI).toPrecision(prec)+",";
-        py += ")))\n";
-        py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", 0))\n";
+        py += "))\n";
+        py += "s.add( slabs["+String(i-1)+"])\n";
     }
+    
+    // now the substrate:
+    py += "\n# substrate:\n";
+    sld = sldarray[i];
+    py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+    py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", 0))\n";
+    
     py += "\n";
     //py += "layers = []\n";
     
@@ -59,24 +73,46 @@ generate_slab_script = function(sldarray, filename) {
     py += "# probe.theta_offset.range(-.01,.01)\n";
     py += "\n";
     py += "# INTENSITY\n";
-    py += "probe.intensity.range(0.001,10)\n";
+    py += "probe.pm.intensity = probe.mp.intensity = probe.mm.intensity = probe.pp.intensity\n";
+    py += "probe.pp.intensity.range(0.9,1.1)\n";
+    py += "probe.pp.intensity.value = 1.0\n";
     py += "\n"
-    py += "# LAYER RHOS\n"
+    py += "# LAYER RHOs\n"
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
-        py += "#slds["+String(i)+"].rho.range("+(sld.sld*1e6 - 1.0).toPrecision(prec)+","+(sld.sld*1e6 + 1.0).toPrecision(prec)+")\n";
+        py += "#s["+String(i)+"].";
+        if ((i > 0) && (i < sldarray.length-1)) py += "stack[0].";
+        py += "material.rho.range("+(sld.sld*1e6 - 1.0).toPrecision(prec)+","+(sld.sld*1e6 + 1.0).toPrecision(prec)+")\n";
     }
     py += "\n";
-    py += "# LAYER THICKNESSES\n"
+    py += "# LAYER RHOMs\n"
+    for (var i=1; i<sldarray.length-1; i++) {
+        sld = sldarray[i];
+        py += "s["+String(i)+"].";
+        py += "rhoM.range("+(sld.sldm*1e6 - 1.0).toPrecision(prec)+","+(sld.sldm*1e6 + 1.0).toPrecision(prec)+")\n";
+    }
+    py += "\n";
+    py += "# LAYER THETAMs\n"
+    for (var i=1; i<sldarray.length-1; i++) {
+        sld = sldarray[i];
+        py += "s["+String(i)+"].";
+        py += "thetaM.range("+(sld.thetaM*180.0/Math.PI - 30).toFixed(1)+","+(sld.thetaM*180.0/Math.PI + 30).toFixed(1)+")\n";
+    }
+    py += "\n";
+    py += "# LAYER THICKNESSES\n";
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
-        py += "#s["+String(i)+"].thickness.range("+String(Math.max(sld.thickness - 100.0, 0))+","+String(sld.thickness + 100.0)+")\n";
+        py += "s["+String(i)+"].";
+        if ((i > 0) && (i < sldarray.length-1)) py += "stack[0].";
+        py +="thickness.range("+String(Math.max(sld.thickness - 100.0, 0))+","+String(sld.thickness + 100.0)+")\n";
     }
     py += "\n";
     py += "# LAYER ROUGHNESSES\n"
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
-        py += "#s["+String(i)+"].interface.range(0,10)\n";
+        py += "s["+String(i)+"].";
+        if ((i > 0) && (i < sldarray.length-1)) py += "stack[0].";
+        py += "interface.range(0,10)\n";
     }
     py += "\n";
     py += "# === Problem definition ===\n";
