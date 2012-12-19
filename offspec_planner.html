@@ -151,14 +151,14 @@ window.onload = function() {
     var cR = plot1.plugins.interactors.rcursor;
     cR.update = function(pos, updated_already) {
         if (updated_already && updated_already.indexOf && updated_already.indexOf(this) == -1) {
-	    updated_already.push(this);
+	        updated_already.push(this);
     	    cR.p1.coords.y = -180.0/Math.PI * samp_ctl.spinor.angle;
-	    cR.p1.coords.x = -180.0/Math.PI * kf_ctl.Arrow.angle;
-	    cR.redraw();
+	        cR.p1.coords.x = -180.0/Math.PI * kf_ctl.Arrow.angle;
+	        cR.redraw();
     	    cQ.update(null, updated_already);
-	    kf_ctl.update(null, updated_already);
-	    samp_ctl.update(null, updated_already);
-	}
+	        kf_ctl.update(null, updated_already);
+	        samp_ctl.update(null, updated_already);
+	    }
     }
 
 /*    
@@ -246,7 +246,7 @@ window.onload = function() {
     
     
     
-    plot2 = jQuery.jqplot ('plot2', [[-0.0003, 0], [0.0003, 0], [0.0003, 0.04], [-0.0003, 0.04]], {
+    plot2 = jQuery.jqplot ('plot2', [[-0.003, 0], [0.003, 0], [0.003, 0.4], [-0.003, 0.4]], {
       // Give the plot a title.
       title: 'Q space',
       axes:{
@@ -271,10 +271,14 @@ window.onload = function() {
         },
         grid: {shadow: false},
         interactors: [{type: 'master', scrollZoom: true, dragPan: true},  
-        {   type: 'QGrating', name: 'QGrating' },
+        {   type: 'QGrating', 
+            name: 'QGrating',
+            wavelength: 0.5 
+        },
         {
             type: 'QSpace',
             name: 'Qspace',
+            wavelength: 0.5,
             p1: plot1.plugins.interactors.realspace.p1,
             p2: plot1.plugins.interactors.realspace.p3,
             xdim: 11,
@@ -283,6 +287,7 @@ window.onload = function() {
             color2: 'grey' 
         },
         {   type: 'QCursor',
+            wavelength: 0.5,
             rp1: plot1.plugins.interactors.rcursor.p1,
             r: 6,
             color: "red",
@@ -292,10 +297,10 @@ window.onload = function() {
          }] 
     } );
     plot2.series[0].data = [];
-    plot2.axes.xaxis.min = -0.03;
-    plot2.axes.xaxis.max = 0.03;
-    plot2.axes.yaxis.min = -0.2;
-    plot2.axes.yaxis.max = 0.2;
+    plot2.axes.xaxis.min = -0.3;
+    plot2.axes.xaxis.max = 0.3;
+    plot2.axes.yaxis.min = -1.2;
+    plot2.axes.yaxis.max = 2.0;
     plot2.replot()
 
     
@@ -309,10 +314,12 @@ window.onload = function() {
     cQ.onDrag = function(pos) {
     	$.jqplot.QCursorInteractor.prototype.onDrag.call(this, pos);
         new_th_twoth = this.get_th_twoth(this.p1.coords, wl_ctl.value);
-	cR.p1.coords.x = new_th_twoth.x;
-	cR.p1.coords.y = new_th_twoth.y;
-	cR.redraw();
-	cR.p1.updateListeners();
+        if (isFinite(new_th_twoth.x) && isFinite(new_th_twoth.y)) {
+	        cR.p1.coords.x = new_th_twoth.x;
+	        cR.p1.coords.y = new_th_twoth.y;
+	        cR.redraw();
+	        cR.p1.updateListeners();
+	    }
 	//cR.update(null, [cQ]);
     }
     cR.p1.listeners.push(cQ);
@@ -369,6 +376,7 @@ window.onload = function() {
     var gT = plot1.plugins.interactors.th2thoffspec;
     gT.qspace = gQ;
     gridctl.p1.listeners.push(gT);
+    gridctl.p1.updateListeners();
     gT.redraw();
     
     default_wl = 0.5;
@@ -400,6 +408,7 @@ window.onload = function() {
     var wl_ctl = document.createElement('input');
     wl_ctl.setAttribute('type', 'text');
     wl_ctl.setAttribute('style', 'width:80px');
+    wl_ctl.setAttribute('id', 'wl_ctl');
     var wl_ctl_div = document.getElementById('wl_ctl_div');
     //var wl_ctl_div = document.createElement('div');
     wl_ctl_div.appendChild(document.createTextNode('Wavelength (nm)'));

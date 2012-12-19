@@ -145,7 +145,7 @@
             return {x: qxOut, y: qzOut};
         },
         
-        initialize: function (parent, p1, p2, width) {
+        initialize: function (parent, p1, p2, width, wavelength) {
             $.jqplot.GrobConnector.prototype.initialize.call(this, parent, width);
             // convert all the values of theta and twotheta between points 1 and 2
             // (assumed to be corners of a bounding box)
@@ -155,7 +155,7 @@
             this.p1 = p1;
             this.p2 = p2;
             this.updateQPoints();
-            this.wavelength = 5.0;
+            this.wavelength = wavelength;
             this.filled = true;
         }, 
         
@@ -223,9 +223,11 @@
         init: function(options) {
             $.jqplot.InteractorPlugin.prototype.init.call(this, options);
             this.qspace_patch = new $.jqplot.QFromThetaTwotheta();
-            this.p1 = options.p1;
-            this.p2 = options.p2;
-            this.qspace_patch.initialize(this, this.p1, this.p2, 4);
+            //this.p1 = options.p1;
+            //this.p2 = options.p2;
+            this.wavelength = 0.5;
+            $.extend(this, options);
+            this.qspace_patch.initialize(this, this.p1, this.p2, 4, this.wavelength);
             this.filled = true;
             this.grobs.push(this.qspace_patch);
             //this.redraw();
@@ -311,6 +313,7 @@
         init: function(options) {
             $.jqplot.InteractorPlugin.prototype.init.call(this, options);
             this.q_spacing = 0.001;
+            this.wavelength = 0.5;
             $.extend(this, options);
             this.grating = new $.jqplot.QGrating();
             this.grating.initialize(this, 4, true);
@@ -453,7 +456,7 @@
             //this.q_spacing = 0.001;
             this.qspace = options.qspace || null;
             this.subsegments = 201;
-            this.wavelength = 5.0;
+            this.wavelength = 0.5;
             $.extend(this, options);
             this.grating = new $.jqplot.Th2ThFromQGrating();
             this.grating.initialize(this, 4, true);
@@ -548,6 +551,7 @@
             this.r = 10.0;
             this.color = "yellow";
             this.wavelength = 5.0;
+            $.extend(this, options);
 	    this.A3 = 0.5; // theta
 	    this.rp1 = null; // th-2th pointer
 	    this.tp1 = null; // tof pointer

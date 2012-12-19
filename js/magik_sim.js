@@ -472,7 +472,7 @@
         this.y_center = this.canvas.height / 2.0;
         var width = this.canvas.width;  
         this.p1 = new $.jqplot.Point(); this.p1.initialize(this, x_center - 50, 100);
-        this.max_spacing = 20000;
+        this.max_spacing = 2000;
         this.p1.getCoords = function() { 
             return {x: (x_center - this.pos.x) * 2.0 / width * this.parent.max_spacing, y: this.pos.y}
         }

@@ -72,15 +72,18 @@ generate_slab_script = function(sldarray, filename) {
     py += "# this parameter accounts for theta misalignment\n";
     py += "# probe.theta_offset.range(-.01,.01)\n";
     py += "\n";
-    py += "# INTENSITY\n";
-    py += "probe.pm.intensity = probe.mp.intensity = probe.mm.intensity = probe.pp.intensity\n";
+    py += "# INTENSITY: check to see if cross-section is included in the probe defined by data files;\n";
+    py += "# if so, set the intensity for that cross-section to be equal to the pp intensity\n";
+    py += "if hasattr(probe, 'pm'): probe.pm.intensity = probe.pp.intensity\n";
+    py += "if hasattr(probe, 'mp'): probe.mp.intensity = probe.pp.intensity\n";
+    py += "if hasattr(probe, 'mm'): probe.mm.intensity = probe.pp.intensity\n";
     py += "probe.pp.intensity.range(0.9,1.1)\n";
     py += "probe.pp.intensity.value = 1.0\n";
     py += "\n"
     py += "# LAYER RHOs\n"
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
-        py += "#s["+String(i)+"].";
+        py += "s["+String(i)+"].";
         if ((i > 0) && (i < sldarray.length-1)) py += "stack[0].";
         py += "material.rho.range("+(sld.sld*1e6 - 1.0).toPrecision(prec)+","+(sld.sld*1e6 + 1.0).toPrecision(prec)+")\n";
     }
@@ -104,7 +107,7 @@ generate_slab_script = function(sldarray, filename) {
         sld = sldarray[i];
         py += "s["+String(i)+"].";
         if ((i > 0) && (i < sldarray.length-1)) py += "stack[0].";
-        py +="thickness.range("+String(Math.max(sld.thickness - 100.0, 0))+","+String(sld.thickness + 100.0)+")\n";
+        py +="thickness.range("+(sld.thickness - 100.0, 0).toFixed(1)+","+(sld.thickness + 100.0).toFixed(1)+")\n";
     }
     py += "\n";
     py += "# LAYER ROUGHNESSES\n"
