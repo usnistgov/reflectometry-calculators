@@ -492,10 +492,19 @@ window.onload = function() {
             var q = vc.p.coords.x;
             var x;
             var psi;
-            var pfr = []; // psi in the forward direction, real component
-            var prr = []; // psi in the backward direction, real component
-            var pmagsq = []; // magnitude of psi
-            var preal = []; // real part of psi
+            //var pfr = []; // psi in the forward direction, real component
+            var pfr = plot2.series[0].data;
+            //var prr = []; // psi in the backward direction, real component
+            var prr = plot2.series[1].data;
+            //var pmagsq = []; // magnitude of psi
+            var pmagsq = plot2.series[3].data;
+            //var preal = []; // real part of psi
+            var preal = plot2.series[2].data;
+            pfr.length = 0;
+            prr.length = 0;
+            pmagsq.length = 0;
+            preal.length = 0;
+            
             if (!(use_cached_wf) || me.wavefunction == null) {
                 var sld =  get_sld(plot2.plugins.interactors.profile1);
                 var wf = new neutron_wavefunction();
@@ -550,6 +559,7 @@ window.onload = function() {
             //    xy.push([xx, Math.sin(xx * Math.PI/500)]);
             //}
             
+            /*
             if (show_psi_f) { plot2.series[0].data = pfr; }
             else { plot2.series[0].data = []; }
             
@@ -561,11 +571,20 @@ window.onload = function() {
             
             if (show_psi_magsq) { plot2.series[3].data = pmagsq; }
             else { plot2.series[3].data = []; }
-            //plot2.series[1].data = prr;
-            //plot2.series[2].data = preal;
+            */
+            plot2.series[0].show = show_psi_f;
+            plot2.series[1].show = show_psi_r;
+            plot2.series[2].show = show_psi;
+            plot2.series[3].show = show_psi_magsq;
+
             
             //plot2.replot();
-            plot2.redraw();
+            plot2.drawSeries(0);
+            plot2.drawSeries(1);
+            plot2.drawSeries(2);
+            plot2.drawSeries(3);
+            
+            //plot2.redraw();
                       
         }
         return this;
