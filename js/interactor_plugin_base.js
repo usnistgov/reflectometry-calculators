@@ -234,20 +234,37 @@
         },
         
         onMouseDown: function(e) {
-            this.mousedown = true;
-            var pos = this.getMouse(e);
-            this.prevpos = pos;
-            for (var i = 0; i < this.grobs.length; i ++) {
-                var g = this.grobs[i];
+            var master = e.data.master;
+            var ev = e.originalEvent;
+            master.mousedown = true;
+            var pos = master.getMouse(ev);
+            master.prevpos = pos;
+            for (var i = 0; i < master.grobs.length; i ++) {
+                var g = master.grobs[i];
                 var inside = g.isInside(pos);
                 
                 if (inside) {
-                    //this.prevpos = pos;
-                    this.curgrob = i;
+                    master.curgrob = i;
                     g.prevpos = pos;
                 }
             }
+            return false;
             //console.log('down', /*this.grobs,*/ pos.x, pos.y, 'mousedown=',this.mousedown);
+        },
+        
+        onMouseUp:   function(e) {
+            var master = e.data.master;
+            var ev = e.originalEvent;
+            master.mousedown = false;
+            var pos = master.getMouse(ev);
+            master.prevpos = null;
+            if (master.curgrob != null) {
+                master.grobs[master.curgrob].onDrop(e, pos);
+                master.onDrop(e, pos);
+            }
+            master.curgrob = null;
+            //console.log('up  ', /*this.grobs,*/ pos.x, pos.y, 'mousedown=',this.mousedown);
+            master.redraw();
         },
         
         handleMouseDown: function(ev, gridpos, datapos, neighbor, plot) {
@@ -269,15 +286,18 @@
         },
         
         onDoubleClick: function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+            var master = e.data.master;
+            var ev = e.originalEvent;
             
-            var pos = this.getMouse(e);
+            ev.preventDefault();
+            ev.stopPropagation();
+            
+            var pos = master.getMouse(ev);
             var sel_grob = null;
-	    var sel_grob_num = null;
-	    //console.log(pos);
-            for (var i = 0; i < this.grobs.length; i ++) {
-                var g = this.grobs[i];
+	        var sel_grob_num = null;
+	        //console.log(pos);
+            for (var i = 0; i < master.grobs.length; i ++) {
+                var g = master.grobs[i];
                 var inside = g.isInside(pos);
                 
                 if (inside) {
@@ -289,7 +309,7 @@
             //console.log("double-clicked:", sel_grob.parent);
             if (sel_grob_num == null) {
                 // then we're double-clicking outside all the interactors
-                this.zoomMax();
+                master.zoomMax();
             } else {
 	    	sel_grob.parent.onDoubleClick(sel_grob, pos);
                 //this.redraw();
@@ -318,53 +338,55 @@
             }
         },
         onMouseWheel: function(e) {
-            if (this.scrollZoom) {
+            var master = e.data.master;
+            var e = e.originalEvent;
+            if (master.scrollZoom) {
                 if (e.preventDefault) e.preventDefault();
                 if (e.stopPropagation) e.stopPropagation();
-                var pos = this.getMouse(e);
+                var pos = master.getMouse(e);
                 var dzoom;
                 if (e.wheelDelta) { dzoom = e.wheelDelta; }
                 else if (e.detail) { dzoom = e.detail * -40; }
-                else { dzoom = 0 } 
-                this.zoomPlot(dzoom, pos);
+                else { dzoom = 0 }
+                master.zoomPlot(dzoom, pos);
             }
         },
         
         onMouseMove: function(e) {
-            //console.log('mousemove');
-            var pos = this.getMouse(e);
-            //console.log('move', this.grobs, pos.x, pos.y, this.mousedown);
-            var i = 0, inside = false;
-            if (this.mousedown) {
-                if (this.curgrob != null) {
-                    var cg = this.grobs[this.curgrob];
-                    if (e.preventDefault) e.preventDefault();
-                    if (e.stopPropagation) e.stopPropagation();
-                    cg.onDrag(e, pos);
-                    //cg.parent.redraw();
-                    this.redraw();
-                } else {
-                    this.onEmptyDrag(pos);
-                }
-            } else {
-                while (i < this.grobs.length) {
-                    var g = this.grobs[i];
-                    inside = g.isInside(pos);
-                    if (inside) {
-                        g.onMouseOver(e);
-                        g.parent.onMouseOver(e);
-                        this.redraw();
+            //console.log('move', this.grobs, e.clientX, e.clientY, this.mousedown);
+            setTimeout( function() { // returns immediately... makes responsive
+                var master = e.data.master;               
+                var pos = master.getMouse(e.originalEvent);
+                var i = 0, inside = false;
+                if (master.mousedown) {                    
+                    if (master.curgrob != null) {
+                        var cg = master.grobs[master.curgrob];
+                        cg.onDrag(e, pos);
+                        master.redraw();
                     } else {
-                        if (g.inside) {
-                            g.onMouseOut(e);
-                            g.parent.onMouseOut(e);
-                            this.redraw();
-                        }
+                        master.onEmptyDrag(pos);
                     }
-                    i++;
+                } else {
+                    while (i < master.grobs.length) {
+                        var g = master.grobs[i];
+                        inside = g.isInside(pos);
+                        if (inside) {
+                            g.onMouseOver(e);
+                            g.parent.onMouseOver(e);
+                            master.redraw();
+                        } else {
+                            if (g.inside) {
+                                g.onMouseOut(e);
+                                g.parent.onMouseOut(e);
+                                master.redraw();
+                            }
+                        }
+                        i++;
+                    }
                 }
-            }
-            //this.redraw();    
+                //this.redraw(); 
+            }, 0);
+            return false;
         },
         
         onEmptyDrag: function(pos) {
@@ -444,12 +466,15 @@
             //master.context.globalAlpha = 0.6;
             //master.context.lineJoin = 'round';
             
-            ec.onmousemove = bind(master, master.onMouseMove);
-            ec.onmousedown = bind(master, master.onMouseDown);
+            //ec.onmousemove = bind(master, master.onMouseMove);
+            $(ec).on('mousemove', {master:master}, master.onMouseMove);
+            $(ec).on('mousedown', {master:master}, master.onMouseDown);
             
-            ec.onmouseup = bind(master, master.onMouseUp);
-            ec.onmousewheel = bind(master, master.onMouseWheel);
-            ec.ondblclick = bind(master, master.onDoubleClick);
+            $(ec).on('mouseup', {master:master}, master.onMouseUp);
+            $(ec).on('mousewheel', {master:master}, master.onMouseWheel);
+            $(ec).on('DOMMouseScroll', {master:master}, master.onMouseWheel);
+            
+            $(ec).on('dblclick', {master:master}, master.onDoubleClick);
             ec.onselectstart = function() { return false; };
             
             ec.ontouchstart = touchToMouse;
@@ -479,14 +504,15 @@
                 ec._touchendregistered = true;
             }
             
-            */
+           
             
             if (!ec._scrollregistered && ec.addEventListener) {
                 ec.addEventListener('DOMMouseScroll', function(event) {
-                    ec.onmousewheel(event);
+                    $(ec).trigger('mousewheel', [event]);
                 });
                 ec._scrollregistered = true;
             }
+            */
             
             for (var i in this.plugins.interactors) {
                 var I = this.plugins.interactors[i];
