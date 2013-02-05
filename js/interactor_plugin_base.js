@@ -296,13 +296,8 @@
             var sel_grob = null;
 	        var sel_grob_num = null;
 	        //console.log(pos);
-<<<<<<< HEAD
-            for (var i = 0; i < this.grobs.length; i ++) {
-                var g = this.grobs[i];
-=======
             for (var i = 0; i < master.grobs.length; i ++) {
                 var g = master.grobs[i];
->>>>>>> db09c220d8f2e3de532f8f7206ae0ed7d5fe3e02
                 var inside = g.isInside(pos);
                 
                 if (inside) {

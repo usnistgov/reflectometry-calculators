@@ -362,8 +362,8 @@ window.onload = function() {
     }
     
     plot2.plugins.interactors.profile1.update = function() {
-        //var sld = get_sld(plot2.plugins.interactors.profile1);
-        //update_plot(0, sld, plot_choices[current_choice]['data']);
+        var sld = get_sld(plot2.plugins.interactors.profile1);
+        update_plot(0, sld, plot_choices[current_choice]['data']);
         //po.update();
         //plot2.replot();
     }
