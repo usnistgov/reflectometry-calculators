@@ -98,6 +98,6 @@ generate_slab_script = function(sldarray, filename) {
     py += "problem = FitProblem(model)\n";
     py += "\n";
     py += "problem.name = \""+filename+"\"\n";
-
+    
     return py
 }

@@ -240,12 +240,13 @@ window.onload = function() {
     var e0cursor = plot2.plugins.interactors.e0;
     e0cursor.update = function (pos) {
         this.p.coords.y = 1.0e6 * Math.pow((pos.x/2.0), 2) / (4 * Math.PI);
+        //setTimeout(function() { e0cursor.redraw(); }, 0);
         this.redraw();
     }
     
     function render_text(ctx, texts, startx, starty) {
-        var x_offset = 0, t;
-        for (var i in texts) {
+        var x_offset = 0.0, t;
+        for (var i=0; i<texts.length; i++) {
             t = texts[i];
             if (t.mod && t.mod == 'sup') {
                 ctx.font = "7pt Arial";
@@ -258,7 +259,7 @@ window.onload = function() {
                 ctx.textBaseline = "alphabetic";
             }
             ctx.fillText(t.text, startx + x_offset, starty);
-            x_offset += ctx.measureText(t.text).width;
+            x_offset += parseFloat(ctx.measureText(t.text).width);
         }
     }
         
@@ -266,11 +267,12 @@ window.onload = function() {
             var height = ctx.canvas.height;
             var width = ctx.canvas.width;
             ctx.fillStyle = this.color;
-            ctx.strokeStyle = 'transparent';
+            //ctx.strokeStyle = 'transparent';
             ctx.beginPath();
             this.putCoords(null, true);
             this.pos.x = this.r/2;
             this.getCoords();
+            
             render_text(ctx, [{text:'k'}, 
                               {text:'0', mod:'sub'}, 
                               {text:'2', mod:'sup'},
@@ -278,10 +280,11 @@ window.onload = function() {
                               {text:this.coords.y.toPrecision(4), mod:''}
                               ], 5, this.pos.y - 5);
             
+            
             //ctx.fillText("ko^2/(4 Pi) = " + this.coords.y.toPrecision(4), 5, this.pos.y - 5);
             ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
-            ctx.closePath();
-            ctx.stroke();
+            //ctx.closePath();
+            //ctx.stroke();
             ctx.fill(); 
         }
     
@@ -353,14 +356,15 @@ window.onload = function() {
         plot1.series[0].data = r[0][plot_select];
         //plot1.series[1].data = r[1][plot_select];
         plot1.resetAxesScale();
-        plot1.replot();  
+        //plot1.replot();  
+        plot1.drawSeries(0);
     }
     
     plot2.plugins.interactors.profile1.update = function() {
-        var sld = get_sld(plot2.plugins.interactors.profile1);
-        update_plot(0, sld, plot_choices[current_choice]['data']);
-        po.update();
-        plot2.replot();
+        //var sld = get_sld(plot2.plugins.interactors.profile1);
+        //update_plot(0, sld, plot_choices[current_choice]['data']);
+        //po.update();
+        //plot2.replot();
     }
     
     plot2.plugins.interactors.profile1.onDoubleClick = function(grob, pos) {
@@ -462,7 +466,12 @@ window.onload = function() {
     var vc = plot1.plugins.interactors.vcursor;
     vc.update = function(pos) {
         this.p.coords.x = 2 * Math.sqrt(4 * Math.PI * pos.y / 1.0e6);
-        plot1.replot();
+        //plot1.replot();
+        //setTimeout(function() { plot1.plugins._interactor.redraw(); }, 0);        
+        //setTimeout(function() { plot1.plugins._interactor.redraw(); }, 0);
+        plot1.plugins._interactor.redraw(); // master
+        plot1.plugins._interactor.redraw(); // master
+        //plot1.drawSeries(0);
         //this.redraw();
         //this.redraw();
     }
@@ -486,6 +495,10 @@ window.onload = function() {
                 plot2.series[1].data = [];
                 plot2.series[2].data = [];
                 plot2.series[3].data = [];
+                //plot2.drawSeries(0);
+                //plot2.drawSeries(1);
+                //plot2.drawSeries(2);
+                //plot2.drawSeries(3);
                 plot2.replot();
                 return
             }
@@ -625,6 +638,8 @@ window.onload = function() {
         // request new frame
         if (animation_on && show_psi == true) {
             t0 += dt0;
+            var sld = get_sld(plot2.plugins.interactors.profile1);
+            update_plot(0, sld, plot_choices[current_choice]['data']);
             po.update(null, null, true); // use cached wf if possible
             requestAnimFrame(function(){
                 animate();
@@ -731,6 +746,18 @@ window.onload = function() {
     psi_choices.appendChild(animation_toggle);
     psi_choices.appendChild(document.createTextNode('Animate (include time-dependence)'));
     
+    test_show_script = function() {
+        var sldarray = get_sld(plot2.plugins.interactors.profile1);
+        //var datafilename = datafilename || "";
+        var pyscript = generate_slab_script(sldarray, datafilename);
+        var data_uri = "data:application/octet-stream,"+encodeURIComponent(pyscript);
+        var a = document.getElementById('pyscript_data_uri');
+        a.href = data_uri;
+        a.download = "refl_script.py";
+        a.mimeType = 'application/binary-octal';
+        a.click();     
+    }
+    
     show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
@@ -752,6 +779,7 @@ window.onload = function() {
 </head>
 <body bgcolor="#ffffcc"> 
     Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
+    <a href="" id="pyscript_data_uri"></a>
     <input type="button" value="generate Refl1D script" id="scriptbutton">
     <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='choices'></div>

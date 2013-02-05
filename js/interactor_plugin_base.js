@@ -274,8 +274,8 @@
             
             var pos = this.getMouse(e);
             var sel_grob = null;
-	    var sel_grob_num = null;
-	    //console.log(pos);
+	        var sel_grob_num = null;
+	        //console.log(pos);
             for (var i = 0; i < this.grobs.length; i ++) {
                 var g = this.grobs[i];
                 var inside = g.isInside(pos);
@@ -645,7 +645,7 @@
             if (dpos.y)
                 this.pos.y += dpos.y;
             this.coords = this.getCoords();
-            this.updateListeners();
+            this.updateListeners([this]);
         },
         
         updateListeners: function(updated_already) {
@@ -673,14 +673,14 @@
         
         render: function(ctx) {
 	        ctx.fillStyle = this.color;
-	        ctx.strokeStyle = 'transparent';
+	        //ctx.strokeStyle = 'transparent';
             ctx.beginPath();
 	        //var coords = this.getCoords();
 	        this.pos = this.putCoords();
 	        ctx.fillText('(' + this.coords.x.toFixed(3) + ', ' + this.coords.y.toFixed(3) + ')', this.pos.x, this.pos.y - 5);
 	        ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
-	        ctx.closePath();
-	        ctx.stroke();
+	        //ctx.closePath();
+	        //ctx.stroke();
 	        ctx.fill();
         }
     });
@@ -697,7 +697,7 @@
         
         render: function(ctx) {
 	        ctx.fillStyle = this.color;
-	        ctx.strokeStyle = 'transparent';
+	        //ctx.strokeStyle = 'transparent';
             ctx.beginPath();
 	        //ctx.moveTo(this.x, this.y);
 	        var coords = this.coords;
@@ -709,7 +709,7 @@
 	        ctx.lineTo(this.pos.x - this.r, this.pos.y);
 	        ctx.lineTo(this.pos.x, this.pos.y - this.r);
 	        ctx.closePath();
-	        ctx.stroke();
+	        //ctx.stroke();
 	        ctx.fill();
         },
 

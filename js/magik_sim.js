@@ -434,7 +434,7 @@
                 ctx.moveTo(xpos, 10);
                 ctx.lineTo(xpos, height - 10);
                 ctx.stroke();
-                if (this.show_pos) if (this.show_pos) ctx.fillText( (i > 0 ? '+' : '') + i, xpos + 5, height);   
+                if (this.show_pos) ctx.fillText( (i > 0 ? '+' : '') + i, xpos + 5, height);   
                 xpos -= this.x_spacing;
                 i -= 1;
             }
@@ -446,7 +446,7 @@
                 ctx.moveTo(xpos, 10);
                 ctx.lineTo(xpos, height -10);
                 ctx.stroke();
-                if (this.show_pos) if (this.show_pos) ctx.fillText( (i > 0 ? '+' : '') + i, xpos + 5, height); 
+                if (this.show_pos) ctx.fillText( (i > 0 ? '+' : '') + i, xpos + 5, height); 
                 xpos += this.x_spacing;
                 i += 1;
             }

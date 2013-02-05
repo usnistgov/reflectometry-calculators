@@ -41,15 +41,15 @@
             var height = ctx.canvas.height;
             var width = ctx.canvas.width;
             ctx.fillStyle = this.color;
-            ctx.strokeStyle = 'transparent';
+            //ctx.strokeStyle = 'transparent';
             ctx.beginPath();
             this.putCoords(null, true);
             this.pos.y = height/2.0;
             this.getCoords();
             ctx.fillText(this.coords.x.toPrecision(4) , this.pos.x + 5, this.pos.y - 5);
             ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
-            ctx.closePath();
-            ctx.stroke();
+            //ctx.closePath();
+            //ctx.stroke();
             ctx.fill(); 
         }
         this.p.move = function(dpos) {
@@ -75,6 +75,7 @@
         $.extend(this, options);
         this.p = new $.jqplot.PluginPoint();
         this.p.initialize(this, 0, this.y0);
+        this.p.show_pos = false;
         this.hline = new $.jqplot.HorizontalLine();
         this.hline.initialize(this, this.p, this.width);
         this.grobs.push(this.hline);
@@ -135,10 +136,12 @@
             pl = new $.jqplot.PluginPoint();
             pl.initialize(this, x0, leftpoints[i].y);
             pl.n = i;
+            pl.show_pos=false;
             this.lp.push(pl);
             pr = new $.jqplot.PluginPoint();
             pr.initialize(this, x0 + leftpoints[i].segwidth, leftpoints[i].y);
             pr.n = i;
+            pr.show_pos=false;
             this.rp.push(pr);
             hseg = new $.jqplot.Segment();
             hseg.initialize(this, pl, pr, this.width);
@@ -176,14 +179,14 @@
         for (var i in this.lp)  {
             this.lp[i].render = function(ctx) {
 	            ctx.fillStyle = this.color;
-	            ctx.strokeStyle = 'transparent';
+	            //ctx.strokeStyle = 'transparent';
                 ctx.beginPath();
 	            //var coords = this.getCoords();
-		    this.pos = this.putCoords();
+		        this.pos = this.putCoords();
 	            ctx.fillText('(' + this.coords.x.toFixed() + ', ' + this.coords.y.toPrecision(4) + ')', this.pos.x, this.pos.y - 5);
 	            ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
-	            ctx.closePath();
-	            ctx.stroke();
+	            //ctx.closePath();
+	            //ctx.stroke();
 	            ctx.fill();
             };
             
@@ -200,15 +203,15 @@
         for (var i in this.rp)  {
             this.rp[i].render = function(ctx) {
 	            ctx.fillStyle = this.color;
-	            ctx.strokeStyle = 'transparent';
+	            //ctx.strokeStyle = 'transparent';
                 ctx.beginPath();
 	            //var coords = this.getCoords();
 	            this.pos = this.putCoords();
-		    //this.putCoords();
+		        //this.putCoords();
 	            ctx.fillText('(' + this.coords.x.toFixed() + ', ' + this.coords.y.toPrecision(4) + ')', this.pos.x, this.pos.y - 5);
 	            ctx.arc(this.pos.x, this.pos.y, this.r, 0, Math.PI * 2, true);
-	            ctx.closePath();
-	            ctx.stroke();
+	            //ctx.closePath();
+	            //ctx.stroke();
 	            ctx.fill();
             };
             
