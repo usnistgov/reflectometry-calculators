@@ -92,6 +92,7 @@ window.onload = function() {
         var sa = [];
         var dp, r;
         var wf = new neutron_wavefunction();
+        
         wf.init(qmin/2.0, sld);
         
         for (var q=qmin; q<qmax; q+=qstep) {
@@ -355,7 +356,7 @@ window.onload = function() {
         //plot1.series[series].data = r[series][plot_select];
         plot1.series[0].data = r[0][plot_select];
         //plot1.series[1].data = r[1][plot_select];
-        plot1.resetAxesScale();
+        //plot1.resetAxesScale();
         //plot1.replot();  
         plot1.drawSeries(0);
     }
