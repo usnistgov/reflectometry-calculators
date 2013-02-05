@@ -98,7 +98,7 @@ window.onload = function() {
     
     plot1 = jQuery.jqplot ('plot', [[3,7,9,1,4,6,8,2,5]], {
       // Give the plot a title.
-      title: 'Instrument Coordinates',
+      title: 'Realspace',
       
       axes:{
           xaxis:{
@@ -215,20 +215,25 @@ window.onload = function() {
     //document.body.appendChild(outerdiv2);
     outerdiv2.style.position = "relative";
     outerdiv2.style.width = (total_width/2.0 - 50).toFixed(0) + 'px';
-    //outerdiv2.style.width = String(Number(plotdiv2.getAttribute('width')) + 85) + 'px';
     outerdiv2.style.height = String(plot_height + 35) + 'px';
 
     plotdiv2 = document.createElement('div');
     plotdiv2.setAttribute('id', 'plot2');
-    //plotdiv2.setAttribute('width', (total_width/2.0 - 50 - 85));
+    plotdiv2.setAttribute('width', 400);
+    plotdiv2.setAttribute('height', 400);
+    /*
     plotdiv2.setAttribute('width', (total_width/2.0 - 90));
     plotdiv2.setAttribute('height', plot_height);
+    */
     plotdiv2.setAttribute('style', 'float:right');
     outerdiv2.appendChild(plotdiv2);
     //plotdiv2.style.width = String(total_width/2.0 - 50 - 85) + 'px';
+    plotdiv2.style.width = '400px';
+    plotdiv2.style.height = '400px';
+    /*
     plotdiv2.style.width = String(total_width/2.0 - 90) + 'px';
     plotdiv2.style.height = String(plot_height) + 'px';
-    
+    */
     generate_fourier = function(points) {
         var points_plus = jQuery.extend(true, [], points);
         points_plus.push(points_plus[0]); // wrap around to end of object
