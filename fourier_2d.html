@@ -52,6 +52,7 @@
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jqplot.canvasAxisLabelRenderer.min.js"></script>
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jqplot.canvasAxisTickRenderer.min.js"></script>
 <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jqplot.cursor.js"></script>
+<script type="text/javascript" src="jqplot/jqplot.heatmapRenderer.js"></script>
 <script type="text/javascript" src="js/interactors_nonprototype.js"></script>
 <script type="text/javascript" src="js/complex.js"></script>
 <script type="text/javascript" src="js/div_thm_form.js"></script>
@@ -101,7 +102,7 @@ window.onload = function() {
       
       axes:{
           xaxis:{
-            label: 'Detector angle (degrees)', 
+            label: 'X (nm)', 
             labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
             tickRenderer: $.jqplot.CanvasAxisTickRenderer,
             tickOptions: {
@@ -109,7 +110,7 @@ window.onload = function() {
             }
           },
           yaxis:{
-            label: 'Sample angle (degrees)',
+            label: 'Y (nm)',
             labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
             tickRenderer: $.jqplot.CanvasAxisTickRenderer,
             tickOptions: {
@@ -122,14 +123,14 @@ window.onload = function() {
         grid: {shadow: false},
         interactors: [{type: 'master', scrollZoom: true, dragPan: true},          
         {
-            type: 'Rectangle',
+            type: 'Quadrilateral',
             showcenter: true,
             showrect: true,
             xmin: -2, xmax: 2,
             ymin: -2, ymax: 2,
             name: 'realspace',
             color1: 'black',
-            color2: 'grey'
+            color2: 'black'
         }]
     }    
     );
@@ -142,6 +143,7 @@ window.onload = function() {
     //pI = new jQuery.jqplot.RectangleInteractorPlugin();
     //pI.oldinit(plot1, true, true);
     var pI = plot1.plugins.interactors.realspace;
+    
     
 
 /*    
@@ -189,16 +191,16 @@ window.onload = function() {
     /////////////
     
     qconveq = document.createElement('div');
-    eqimg = new Image();
-    eqimg.src = 'eqs.png';
+    //eqimg = new Image();
+    //eqimg.src = 'eqs.png';
     //eqimg.style.width = '160px';
-    eqimg.style.height= 'auto';
-    qconveq.appendChild(eqimg);
+    //eqimg.style.height= 'auto';
+    //qconveq.appendChild(eqimg);
     var text =  "<math display='block'><mrow><mi>cos</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03b8;</mi><mo>+</mo><mi>&#x03c6;</mi><mo>)</mo></mrow><mo>=</mo><mi>cos</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03b8;</mi><mo>)</mo></mrow><mi>cos</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03c6;</mi><mo>)</mo></mrow><mo>&#x2212;</mo><mi>sin</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03b8;</mi><mo>)</mo></mrow><mi>sin</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03c6;</mi><mo>)</mo></mrow></mrow></math>";
-    outerdiv1.appendChild(qconveq);
-    qconveq.style.position = 'absolute';
-    qconveq.style.top = String(plot_height/2.0 - 80) + 'px';
-    qconveq.style.left = outerdiv1.style.width;
+    //outerdiv1.appendChild(qconveq);
+    //qconveq.style.position = 'absolute';
+    //qconveq.style.top = String(plot_height/2.0 - 80) + 'px';
+    //qconveq.style.left = outerdiv1.style.width;
     
     ///////////////////////////////
     // and again
@@ -227,7 +229,21 @@ window.onload = function() {
     plotdiv2.style.width = String(total_width/2.0 - 90) + 'px';
     plotdiv2.style.height = String(plot_height) + 'px';
     
-    
+    generate_fourier = function(points) {
+        var points_plus = jQuery.extend(true, [], points);
+        points_plus.push(points_plus[0]); // wrap around to end of object
+        var fourier_sum = function(qx,qy) {
+            var sum = new Complex(0,0);
+            for (var i=0; i<points.length; i++) {
+                var p0 = points_plus[i];
+                var p1 = points_plus[i+1];
+                var new_component = div_form_line(p0.coords.x, p0.coords.y, p1.coords.x, p1.coords.y, qx,qy);
+                sum = Complex.add(sum, new_component);
+            }
+            return sum.magnitude()
+        } 
+        return fourier_sum
+    }
     
     plot2 = jQuery.jqplot ('plot2', [[-0.003, 0, 0.003, 0, 0.003, 0.4, -0.003, 0.4]], {
       // Give the plot a title.
@@ -242,7 +258,7 @@ window.onload = function() {
             }
           },
           yaxis:{
-            label: 'Qz (nm⁻¹)',
+            label: 'Qy (nm⁻¹)',
             labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
             tickRenderer: $.jqplot.CanvasAxisTickRenderer,
             tickOptions: {
@@ -253,8 +269,20 @@ window.onload = function() {
           }
         },
         grid: {shadow: false},
-        interactors: [{type: 'master', scrollZoom: true, dragPan: true}] 
+        interactors: [{type: 'master', scrollZoom: true, dragPan: true}],
+        seriesDefaults:{
+		                    shadow: false,
+                            renderer:$.jqplot.heatmapRenderer,
+                            rendererOptions: {
+                                transform: 'lin',
+                                //display_dims: { xmin: data.dims.xmin-1,
+                                //                ymin: data.dims.ymin-1,
+                                //                ymax: data.dims.ymax+1,
+                                //                xmax: data.dims.xmax+1}
+                            },
+                        }
     } );
+    plot2.series[0].renderer.draw = plot2.series[0].renderer.draw_functional_blit;
     plot2.series[0].data = [];
     plot2.axes.xaxis.min = -4;
     plot2.axes.xaxis.max = 4;
@@ -262,7 +290,21 @@ window.onload = function() {
     plot2.axes.yaxis.max = 4;
     plot2.replot();
     
+    ft_listener = function() {
+        this.update = function() {
+            new_ft_function = generate_fourier(pI.points());
+            plot2.series[0].get_z = new_ft_function;
+            plot2.drawSeries(0);
+        }
+        return this;
+    }();
+     
+    pI.p1.listeners.push(ft_listener);
+    pI.p2.listeners.push(ft_listener);
+    pI.p3.listeners.push(ft_listener);
+    pI.p4.listeners.push(ft_listener);
     
+    ft_listener.update();
     //gridxdiv.style.width = String(total_width/2.0 - 90) + 'px';
     
     /*

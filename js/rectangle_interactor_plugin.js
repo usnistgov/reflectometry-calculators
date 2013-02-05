@@ -132,6 +132,48 @@
         //this.redraw();
     };
     
+    $.jqplot.QuadrilateralInteractorPlugin = function() { $.jqplot.PolygonInteractorPlugin.call(this); };
+    $.jqplot.QuadrilateralInteractorPlugin.prototype = new $.jqplot.PolygonInteractorPlugin();
+    $.jqplot.QuadrilateralInteractorPlugin.prototype.constructor = $.jqplot.QuadrilateralInteractorPlugin;
+    $.jqplot.InteractorPluginSubtypes.Quadrilateral = $.jqplot.QuadrilateralInteractorPlugin;
+    
+    $.jqplot.QuadrilateralInteractorPlugin.prototype.init = function(options) {
+        $.jqplot.PolygonInteractorPlugin.prototype.init.call(this, options);
+        this.showcenter = true;
+        this.showrect = true;
+        this.xmin = 0;
+        this.xmax = 6.0;
+        this.ymin = -4.0;
+        this.ymax = 4.0;
+        //this.p1pos = {x: 0, y: 4.0};
+        //this.p2pos = {x: 6, y: 4.0};
+        //this.p3pos = {x: 6, y: -4.0};
+        //this.p4pos = {x: 0, y: -4.0};
+        $.extend(this, options);
+        this.p1 = new $.jqplot.PluginPoint(); this.p1.initialize(this, this.xmin, this.ymax);
+        this.p2 = new $.jqplot.PluginPoint(); this.p2.initialize(this, this.xmax, this.ymax);
+        this.p3 = new $.jqplot.PluginPoint(); this.p3.initialize(this, this.xmax, this.ymin);
+        this.p4 = new $.jqplot.PluginPoint(); this.p4.initialize(this, this.xmin, this.ymin);
+        //this.c = new Center(this, 150, 150);
+        
+        //this.rect = new $.jqplot.Rectangle(); this.rect.initialize(this, this.p1, this.p3);
+        this.l1 = new $.jqplot.Segment(); this.l1.initialize(this, this.p1, this.p2, 4);
+        this.l2 = new $.jqplot.Segment(); this.l2.initialize(this, this.p2, this.p3, 4);
+        this.l3 = new $.jqplot.Segment(); this.l3.initialize(this, this.p3, this.p4, 4);
+        this.l4 = new $.jqplot.Segment(); this.l4.initialize(this, this.p4, this.p1, 4);
+        
+        
+        this.grobs.push(this.l1, this.l2, this.l3, this.l4, this.p1, this.p2, this.p3, this.p4);
+        
+        if (this.showcenter) {
+            var center = {x: (this.xmin + this.xmax) / 2.0, 
+                         y: (this.ymin + this.ymax) / 2.0 }
+            this.c = new $.jqplot.PluginCenter(); this.c.initialize(this, center.x, center.y);
+            this.grobs.push(this.c);
+        }
+        
+    };
+    
     $.jqplot.QFromThetaTwotheta = function() {};
     $.jqplot.QFromThetaTwotheta.prototype = new $.jqplot.GrobConnector();
     $.jqplot.QFromThetaTwotheta.prototype.constructor = $.jqplot.QFromThetaTwotheta;
