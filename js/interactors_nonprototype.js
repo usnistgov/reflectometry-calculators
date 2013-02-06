@@ -1006,6 +1006,43 @@ debug = false;
         }
     });
     
+    $.jqplot.Polygon = function() {};
+    $.jqplot.Polygon.prototype = new $.jqplot.GrobConnector();
+    $.jqplot.Polygon.prototype.constructor = $.jqplot.Polygon;    
+    $.extend($.jqplot.Polygon.prototype, {        
+        initialize: function(parent, points, width) {
+            $.jqplot.GrobConnector.prototype.initialize.call(this, parent, width);
+            this.name = 'polygon';
+            this.points = points;
+            this.filled = true;
+        },
+        
+        
+        render: function(ctx) {
+            $.jqplot.GrobConnector.prototype.render.call(this, ctx);
+            
+            var numPoints = this.points.length;
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].pos.x, this.points[0].pos.y);
+            for (var i=0; i<numPoints; i++) {
+                ctx.lineTo(this.points[i].pos.x, this.points[i].pos.y);
+            }
+            ctx.lineTo(this.points[0].pos.x, this.points[0].pos.y);
+            ctx.closePath();
+            ctx.stroke();
+            if (this.filled) {
+                ctx.globalAlpha = 0.4;
+                ctx.fill();
+                ctx.globalAlpha = 0.6;
+            }
+            
+        },
+        
+        isInside: function(pos) {
+            return false;
+        }
+    });
+    
     $.jqplot.Center = function() {};
     $.jqplot.Center.prototype = new $.jqplot.Point();
     $.jqplot.Center.prototype.constructor = $.jqplot.Center;    

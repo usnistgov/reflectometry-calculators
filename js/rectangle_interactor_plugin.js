@@ -145,25 +145,33 @@
         this.xmax = 6.0;
         this.ymin = -4.0;
         this.ymax = 4.0;
+        this.showfill = true;
+        this.pointsize = 12;
+        this.linewidth = 8;
         //this.p1pos = {x: 0, y: 4.0};
         //this.p2pos = {x: 6, y: 4.0};
         //this.p3pos = {x: 6, y: -4.0};
         //this.p4pos = {x: 0, y: -4.0};
         $.extend(this, options);
-        this.p1 = new $.jqplot.PluginPoint(); this.p1.initialize(this, this.xmin, this.ymax);
-        this.p2 = new $.jqplot.PluginPoint(); this.p2.initialize(this, this.xmax, this.ymax);
-        this.p3 = new $.jqplot.PluginPoint(); this.p3.initialize(this, this.xmax, this.ymin);
-        this.p4 = new $.jqplot.PluginPoint(); this.p4.initialize(this, this.xmin, this.ymin);
+        this.p1 = new $.jqplot.PluginPoint(); this.p1.initialize(this, this.xmin, this.ymax, this.pointsize);
+        this.p2 = new $.jqplot.PluginPoint(); this.p2.initialize(this, this.xmax, this.ymax, this.pointsize);
+        this.p3 = new $.jqplot.PluginPoint(); this.p3.initialize(this, this.xmax, this.ymin, this.pointsize);
+        this.p4 = new $.jqplot.PluginPoint(); this.p4.initialize(this, this.xmin, this.ymin, this.pointsize);
         //this.c = new Center(this, 150, 150);
         
         //this.rect = new $.jqplot.Rectangle(); this.rect.initialize(this, this.p1, this.p3);
-        this.l1 = new $.jqplot.Segment(); this.l1.initialize(this, this.p1, this.p2, 4);
-        this.l2 = new $.jqplot.Segment(); this.l2.initialize(this, this.p2, this.p3, 4);
-        this.l3 = new $.jqplot.Segment(); this.l3.initialize(this, this.p3, this.p4, 4);
-        this.l4 = new $.jqplot.Segment(); this.l4.initialize(this, this.p4, this.p1, 4);
+        this.l1 = new $.jqplot.Segment(); this.l1.initialize(this, this.p1, this.p2, this.linewidth);
+        this.l2 = new $.jqplot.Segment(); this.l2.initialize(this, this.p2, this.p3, this.linewidth);
+        this.l3 = new $.jqplot.Segment(); this.l3.initialize(this, this.p3, this.p4, this.linewidth);
+        this.l4 = new $.jqplot.Segment(); this.l4.initialize(this, this.p4, this.p1, this.linewidth);
         
         
         this.grobs.push(this.l1, this.l2, this.l3, this.l4, this.p1, this.p2, this.p3, this.p4);
+        
+        if (this.showfill) {
+            this.fill = new $.jqplot.Polygon(); this.fill.initialize(this, this.points(), 0);
+            this.grobs.push(this.fill);
+        }
         
         if (this.showcenter) {
             var center = {x: (this.xmin + this.xmax) / 2.0, 
