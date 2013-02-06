@@ -1,6 +1,8 @@
-//from numpy import zeros_like, complex128, exp, array, empty, sum, newaxis, zeros, logical_and, logical_not, size
-
 /*
+# begin python code:
+
+from numpy import zeros_like, complex128, exp, array, empty, sum, newaxis, zeros, logical_and, logical_not, size
+
 def greens_form_line(x0, y0, x1, y1, qx, qy):
     if y0 == y1:
         result = 0.0
@@ -13,26 +15,33 @@ def greens_form_line(x0, y0, x1, y1, qx, qy):
         result = -1.0 / (qx*(qy + qx/m)) * exp(1j * qx * (x0 - y0/m))
         result *= (exp(1j * (qx/m + qy) * y1) - exp(1j * (qx/m + qy) * y0))
     return result
-
-def greens_form_shape(points, qx, qy):
-    result = zeros_like(qx, dtype=complex128)
-    numpoints = len(points)
-    for i in range(numpoints):
-        x0,y0 = points[i]
-        x1,y1 = points[(i+1) % numpoints] # loops back to zero for last point.
-        result += greens_form_line(x0, y0, x1, y1, qx, qy)
+    
+def div_form_line(x0, y0, x1, y1, qx, qy):
+    qxl = qx[..., newaxis] 
+    qyl = qy[..., newaxis] 
+    dx = x1 - x0
+    dy = y1 - y0
+    
+    
+    qlensq = qx**2 + qy**2
+    result = zeros(qlensq.shape + x0.shape, dtype=complex128)
+    zero_qs = (qlensq == 0.0)
+    qlensq.shape += (1,) # add axis for spatial component
+    nonzero_qs = logical_not(zero_qs)
+    result[nonzero_qs] = complex128(1.0)/(qlensq[nonzero_qs]) * (-qxl*dy + qyl*dx)[nonzero_qs] / ((qxl*dx + qyl*dy)[nonzero_qs])
+    result[nonzero_qs] *= (exp(1j*(qxl*x1 + qyl*y1)) - exp(1j*(qxl*x0 + qyl*y0)))[nonzero_qs]
+    result[zero_qs, :] = (x0 * dy - y0 * dx)
     return result
+    
+# end python code
 */
 
 div_form_line = function(x0, y0, x1, y1, qx, qy) {
-    //var qxl = qx[..., newaxis] 
-    //var qyl = qy[..., newaxis]
     var dx = x1 - x0;
     var dy = y1 - y0;
   
     var qlensq = qx*qx + qy*qy;
     var result;
-    //var result = zeros(qlensq.shape + x0.shape, dtype=complex128)
     if (qlensq == 0.0) { 
         result = x0 * dy - y0 * dx;
     }

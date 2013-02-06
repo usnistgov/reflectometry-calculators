@@ -167,6 +167,7 @@
             this.color = this.color1;
             
             this.rc = 1;//Math.random();
+            this.forceload = false; // make the master initialize, even if no other interactors
             $.extend(true, this, options);
             this.notMaster = false;
             this.interactors = []; // number of interactors
@@ -457,7 +458,7 @@
         
         var ec = this.eventCanvas._ctx.canvas;
         var master = this.plugins._interactor;
-        if (master && master.interactors && master.interactors.length > 0) {
+        if ((master && master.forceload) || (master && master.interactors && master.interactors.length > 0)) {
             master.Canvas = new $.jqplot.GenericCanvas();
             this.eventCanvas._elem.before(master.Canvas.createElement(this._gridPadding, 'jqplot-interactor-canvas', this._plotDimensions, this));
             master.Canvas.setContext();

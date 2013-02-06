@@ -66,9 +66,11 @@ window.onload = function() {
        
     var total_width = window.innerWidth || 1024;
     var total_height = window.innerHeight || 768;
-    plot_height = total_height - 150;
+    var plot_height = total_height - 150;
     //outerdiv.setAttribute('class', 'bk');
-
+    
+    var ft_width = Math.min(400, (total_width/2.0 - 90));
+    var ft_height = Math.min(ft_width, (total_height - 90));
     
     outerdiv1 = document.getElementById('outer1');
     //outerdiv1 = document.createElement('div');
@@ -78,7 +80,7 @@ window.onload = function() {
     
     //document.body.appendChild(outerdiv1);
     outerdiv1.style.position = 'relative';
-    outerdiv1.style.width = String(total_width/2.0 - 90) + 'px';
+    outerdiv1.style.width = String(total_width - ft_width - 80) + 'px';
     //outerdiv1.style.width = String(Number(plotdiv1.getAttribute('width')) + 85) + 'px';
     outerdiv1.style.height = String(total_height - 90) + 'px';
 
@@ -86,12 +88,12 @@ window.onload = function() {
     //plotdiv1 = document.createElement('div');
     //plotdiv1.setAttribute('id', 'plot');
     //plotdiv1.setAttribute('width', (total_width/2.0 - 50 - 85));
-    plotdiv1.setAttribute('width', (total_width/2.0 - 90));
+    plotdiv1.setAttribute('width', (total_width - ft_width - 120));
     plotdiv1.setAttribute('height', plot_height);
     plotdiv1.setAttribute('style', 'float:right');
     //outerdiv1.appendChild(plotdiv1);
     //plotdiv1.style.width = String(total_width/2.0 - 50 - 85) + 'px';
-    plotdiv1.style.width = String(total_width/2.0 - 90) + 'px';
+    plotdiv1.style.width = String(total_width - ft_width - 120) + 'px';
     plotdiv1.style.height = String(plot_height) + 'px';
     
     
@@ -214,13 +216,13 @@ window.onload = function() {
     
     //document.body.appendChild(outerdiv2);
     outerdiv2.style.position = "relative";
-    outerdiv2.style.width = (total_width/2.0 - 50).toFixed(0) + 'px';
+    outerdiv2.style.width = (ft_width + 50).toFixed(0) + 'px';
     outerdiv2.style.height = String(plot_height + 35) + 'px';
 
     plotdiv2 = document.createElement('div');
     plotdiv2.setAttribute('id', 'plot2');
-    plotdiv2.setAttribute('width', 400);
-    plotdiv2.setAttribute('height', 400);
+    plotdiv2.setAttribute('width', ft_width);
+    plotdiv2.setAttribute('height', ft_height);
     /*
     plotdiv2.setAttribute('width', (total_width/2.0 - 90));
     plotdiv2.setAttribute('height', plot_height);
@@ -228,8 +230,8 @@ window.onload = function() {
     plotdiv2.setAttribute('style', 'float:right');
     outerdiv2.appendChild(plotdiv2);
     //plotdiv2.style.width = String(total_width/2.0 - 50 - 85) + 'px';
-    plotdiv2.style.width = '400px';
-    plotdiv2.style.height = '400px';
+    plotdiv2.style.width = ft_width.toFixed(0) + 'px';
+    plotdiv2.style.height = ft_height.toFixed(0) + 'px';
     /*
     plotdiv2.style.width = String(total_width/2.0 - 90) + 'px';
     plotdiv2.style.height = String(plot_height) + 'px';
@@ -274,7 +276,7 @@ window.onload = function() {
           }
         },
         grid: {shadow: false},
-        interactors: [{type: 'master', scrollZoom: true, dragPan: true}],
+        interactors: [{type: 'master', scrollZoom: true, dragPan: true, forceload: true}],
         seriesDefaults:{
 		                    shadow: false,
                             renderer:$.jqplot.heatmapRenderer,
@@ -416,10 +418,7 @@ pointTextControl = function(p, coord, label, precision) {
 <body bgColor='#eeffdd'>
     <h1>Fourier Transform of 2-dimensional shape</h1>
     <div id='outer1'>
-        <div id='plot'></div>
-        <div id='wl_ctl_div'></div>
-        <div id='instr_ctl_div'></div>
-        <div id='qzoom_ctl_div'></div>       
+        <div id='plot'></div>    
     </div>
     <div id='outer2'></div>
     <div id='footer'><p><? include("/var/www/include/utility.inc"); lastmod(); ?></p></div>
