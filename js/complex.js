@@ -174,11 +174,13 @@ Complex.sqrt = function(a) {
 };
 
 Complex.sum = function(alist) {
-    var result = new Complex(0,0);
+    var realsum = 0.0;
+    var imagsum = 0.0;
     for (var i = 0; i<alist.length; i++) {
-        result = Complex.add(result, alist[i]);
+        realsum += alist[i].x;
+        imagsum += alist[i].y;
     }
-    return result
+    return new Complex(realsum, imagsum);
 };
 
 Complex.cosh = function(a) {
