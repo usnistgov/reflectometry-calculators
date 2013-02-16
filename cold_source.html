@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!-- Enable IE9 Standards mode -->
+<meta http-equiv="X-UA-Compatible" content="IE=9" >
+<title>Cold neutrons</title>
+<style type="text/css">
+  label { display: block; font-family: consolas, monospace; text-align: center; }
+  //canvas { border: 1px dotted #888; }
+  .bk { float: left; margin-right: 4px; }
+</style>
+<style>
+    body { 
+        border: 10;
+        margin: 10;
+        padding:10;
+    }
+
+    div { 
+        background-image: url('./blank.png'); 
+        user-select: none; 
+        -webkit-user-select: none; 
+        -moz-user-select: none;
+    }
+        .metadata-label {color: red}
+        .slidingDiv {
+            background-color: #99CCFF;
+            padding:20px;
+            margin-top:10px;
+            border-bottom:5px solid #3399FF;
+        }
+         
+        .show_hide {
+            display:none;
+        }
+</style>
+<!-- JQPLOT -->
+<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
+<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css" type="text/css" rel="Stylesheet" />
+            
+        <!-- Reference jQuery and jQuery UI from the CDN. Remember
+           that the order of these two elements is important -->
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+<!--        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+<!--        <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>-->
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js" type="text/javascript"></script>
+<!--<script type="text/javascript" src="jquery-1.5.1.min.js"></script>-->
+<script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jquery.jqplot.min.js"></script>
+<script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jqplot.canvasTextRenderer.min.js"></script>
+<script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jqplot.canvasAxisLabelRenderer.min.js"></script>
+<script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/calculators/jqplot/jqplot.canvasAxisTickRenderer.min.js"></script>
+<script type="text/javascript" src="jqplot/jqplot.cursor.js"></script>
+<script type="text/javascript" src="js/interactors_nonprototype.js"></script>
+<script type="text/javascript" src="js/interactor_plugin_base.js"></script>
+
+
+<script type="text/javascript" src="js/magik_sim.js"></script>
+<script type="text/javascript" src="js/rectangle_interactor_plugin.js"></script>
+<script type="text/javascript">
+var c = [], interactors;
+//window.onload = function() {
+window.onload = function() {
+       
+    var total_width = window.innerWidth || 1024;
+    plot_height = 400;
+    //outerdiv.setAttribute('class', 'bk');
+
+    
+    
+    outerdiv1 = document.createElement('div');
+    outerdiv1.setAttribute('id', 'outer1');
+    outerdiv1.setAttribute('style', 'float:left');
+    //outerdiv1.style.setProperty('width', total_width/2.0 - 50, null);
+    
+    document.body.appendChild(outerdiv1);
+    outerdiv1.style.position = 'relative';
+    outerdiv1.style.width = String(total_width/2.0 - 90) + 'px';
+    //outerdiv1.style.width = String(Number(plotdiv1.getAttribute('width')) + 85) + 'px';
+    outerdiv1.style.height = String(plot_height + 35) + 'px';
+
+    plotdiv1 = document.createElement('div');
+    plotdiv1.setAttribute('id', 'plot');
+    //plotdiv1.setAttribute('width', (total_width/2.0 - 50 - 85));
+    plotdiv1.setAttribute('width', (total_width/2.0 - 90));
+    plotdiv1.setAttribute('height', plot_height);
+    plotdiv1.setAttribute('style', 'float:right');
+    outerdiv1.appendChild(plotdiv1);
+    //plotdiv1.style.width = String(total_width/2.0 - 50 - 85) + 'px';
+    plotdiv1.style.width = String(total_width/2.0 - 90) + 'px';
+    plotdiv1.style.height = String(plot_height) + 'px';
+    
+    function getVelocDist(v, temperature, mass) {
+        var result = Math.sqrt(2.0/Math.PI * Math.pow((mass / (k_b * temperature)), 3));
+        result *= Math.pow(v, 2) * Math.exp(-mass * v * v / (2.0*k_b * temperature))
+        return result;
+    }
+    
+    temperature = 10; // kelvin
+    k_b = 1.3806488e-23; // J/K Boltzmann's constant
+    m_h = 1.00794 * 2 * 1.660539e-27; // mass of hydrogen molecule
+    hbar = 1.054571726e-34; // Planck's reduced constant, J s
+
+    var data = [];
+    for (var v=220; v<6000; v+=50) {
+        data.push([v, ( getVelocDist(v, temperature, m_h))]);
+    }
+    
+    plot1 = jQuery.jqplot ('plot', [data], {
+      // Give the plot a title.
+      title: 'Velocity Distribution',
+      seriesDefaults: { shadow: false, color: 'green', markerOptions: {shadow: false}},
+      axes:{
+          xaxis:{
+            label: 'Velocity (m/s)', 
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            tickOptions: {
+                formatString: "%.2g"
+            }
+          },
+          yaxis:{
+            label: 'Probability density (integrates to 1)',
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            tickOptions: {
+                formatString: "%.2g",
+                // fix for ticks drifting to the left in accordionview!
+                _styles: {right: 0}
+            }
+          }
+        },
+        grid: {shadow: false},
+        cursor: {
+            show: true,
+            zoom: true,
+            clickReset: true,
+            tooltipLocation:'ne',
+            useAxesFormatters: false
+        }
+    }    
+    );
+    
+    plot1.replot();
+
+    
+    /////////////
+    /// equation
+    /////////////
+    
+    qconveq = document.createElement('div');
+    eqimg = new Image();
+    eqimg.src = 'eqn_coldsource.png';
+    eqimg.style.width = '160px';
+    eqimg.style.height= 'auto';
+    qconveq.appendChild(eqimg);
+    
+    outerdiv1.appendChild(qconveq);
+    qconveq.style.position = 'absolute';
+    qconveq.style.top = String(plot_height/2.0 - 80) + 'px';
+    qconveq.style.left = outerdiv1.style.width;
+    
+    ///////////////////////////////
+    // and again
+    ///////////////////////////////
+    
+    outerdiv2 = document.createElement('div');
+    outerdiv2.setAttribute('id', 'outer2');
+    outerdiv2.setAttribute('style', 'float:right');
+    //outerdiv2.style.setProperty('width', total_width/2.0 - 50, null);
+    
+    document.body.appendChild(outerdiv2);
+    outerdiv2.style.position = "relative";
+    outerdiv2.style.width = (total_width/2.0 - 50).toFixed(0) + 'px';
+    //outerdiv2.style.width = String(Number(plotdiv2.getAttribute('width')) + 85) + 'px';
+    outerdiv2.style.height = String(plot_height + 35) + 'px';
+
+    plotdiv2 = document.createElement('div');
+    plotdiv2.setAttribute('id', 'plot2');
+    //plotdiv2.setAttribute('width', (total_width/2.0 - 50 - 85));
+    plotdiv2.setAttribute('width', (total_width/2.0 - 90));
+    plotdiv2.setAttribute('height', plot_height);
+    plotdiv2.setAttribute('style', 'float:right');
+    outerdiv2.appendChild(plotdiv2);
+    //plotdiv2.style.width = String(total_width/2.0 - 50 - 85) + 'px';
+    plotdiv2.style.width = String(total_width/2.0 - 90) + 'px';
+    plotdiv2.style.height = String(plot_height) + 'px';
+    
+    
+    m_n = 1.674927351e-27; //  mass of neutron, kg[3]
+
+    var ldata = [];
+    for (var i in data) {
+        var v = data[i][0];
+        var pv = data[i][1];
+        var momentum = v * m_n;
+        var k = momentum / hbar;
+        var wavelength = 2*Math.PI / k; // in meters
+        var pl = pv * hbar * 2.0 * Math.PI / (m_n * Math.pow(wavelength, 2));
+        ldata.push([wavelength * 1e10, pl]); // in Angstroms
+    }
+    plot2 = jQuery.jqplot ('plot2', [ldata], {
+      // Give the plot a title.
+      title: 'Wavelength distribution',
+      seriesDefaults: { shadow: false, color: 'red', markerOptions: {shadow: false}},
+      axes:{
+          xaxis:{
+            label: 'Wavelength (Angstrom)', 
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            tickOptions: {
+                formatString: "%.2g"
+            }
+          },
+          yaxis:{
+            label: 'Probability density (integrates to 1)',
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            tickOptions: {
+                formatString: "%.2g",
+                // fix for ticks drifting to the left in accordionview!
+                _styles: {right: 0}
+            }
+          }
+        },
+        grid: {shadow: false},
+        cursor: {
+            show: true,
+            zoom: true,
+            clickReset: true,
+            tooltipLocation:'ne',
+            useAxesFormatters: false
+        }
+    } );
+    var ldata = [];
+    for (var i in data) {
+	var v = data[i][0];
+        var pv = data[i][1];
+        var momentum = v * m_n;
+        var k = momentum / hbar;
+        var wavelength = 2*Math.PI / k * 1e10; // in Angstrom
+        ldata.push([wavelength, pv]);
+    }
+    plot2.series[0].data = ldata;    
+    
+    default_temp = 10;
+    var temp_slider = document.createElement('input');
+    temp_slider.id = "temp_slider";
+    temp_slider.setAttribute('type', 'range');
+    temp_slider.setAttribute('min', 1);
+    temp_slider.setAttribute('step', 1);
+    temp_slider.setAttribute('max', 400);
+    temp_slider.value = default_temp;
+    
+    var temp_ctl = document.createElement('input');
+    temp_ctl.id = "temp_ctl";
+    temp_ctl.setAttribute('type', 'text');
+    temp_ctl.setAttribute('style', 'width:80px');
+    var temp_ctl_div = document.createElement('div');
+    temp_ctl_div.appendChild(document.createTextNode('Source Temperature (K)'));
+    temp_ctl_div.appendChild(temp_slider);
+    temp_ctl_div.appendChild(temp_ctl);
+    temp_ctl_div.setAttribute('style', 'float:left');
+    outerdiv1.appendChild(temp_ctl_div);
+    temp_ctl.value = default_temp; // AND/R and MAGIK, in nm
+    temp_ctl.onchange = function() {
+        temp_slider.value = temp_ctl.value;
+        update_plots();
+    }
+    temp_slider.onchange = function(bounced) {
+        temp_ctl.value = temp_slider.value;
+        temp_ctl.onchange();
+    }
+
+    default_mass = 2.014; // hydrogen, in amu
+
+    var mass_slider = document.createElement('input');
+    mass_slider.id = "mass_slider";
+    mass_slider.setAttribute('type', 'range');
+    mass_slider.setAttribute('min', 1.0);
+    mass_slider.setAttribute('step', 0.01);
+    mass_slider.setAttribute('max', 100.0);
+    mass_slider.value = default_mass;
+
+    var mass_ctl = document.createElement('input');
+    mass_ctl.id = "mass_ctl";
+    mass_ctl.setAttribute('type', 'text');
+    mass_ctl.setAttribute('style', 'width:80px');
+    //var mass_ctl_div = document.createElement('div');
+    temp_ctl_div.appendChild(document.createElement('br'));
+    temp_ctl_div.appendChild(document.createTextNode('Molecular mass of thermalizing gas (amu)'));
+    temp_ctl_div.appendChild(mass_slider);
+    temp_ctl_div.appendChild(mass_ctl);
+    //temp_ctl_div.setAttribute('style', 'float:left');
+    //outerdiv1.appendChild(temp_ctl_div);
+
+    var h2_button = document.createElement('button');
+    h2_button.id = "h2_button";
+    h2_button.value = "H2 (2.016 amu)";
+    h2_button.name = "H2 (2.016 amu)";
+    h2_button.innerHTML = "H<sub>2</sub> (2.016 amu)";
+    h2_button.onclick = function() { mass_ctl.value = 2.016; mass_ctl.onchange(); };
+    temp_ctl_div.appendChild(h2_button);
+
+    var d2_button = document.createElement('button');
+    d2_button.id = "d2_button";
+    d2_button.value = "D2 (4.028 amu)";
+    d2_button.name = "D2 (4.028 amu)";
+    d2_button.innerHTML = "D<sub>2</sub> (4.028 amu)";
+    d2_button.onclick =	function() { mass_ctl.value = 4.028; mass_ctl.onchange(); };
+    temp_ctl_div.appendChild(d2_button);
+
+
+
+    mass_ctl.value = default_mass; // AND/R and MAGIK, in nm
+    mass_ctl.onchange = function() { 
+        mass_slider.value = mass_ctl.value;
+       	update_plots();
+    }
+    mass_slider.onchange = function(bounced) {
+        mass_ctl.value = mass_slider.value;
+        mass_ctl.onchange();
+    }
+
+    function update_plots() {
+        var temp = temp_ctl.value;
+        var mass = mass_ctl.value *  1.660538921e-27; // into kg
+	    var data = [];
+        	for (var v=220; v<6000; v+=50) {
+            	data.push([v, ( getVelocDist(v, temp, mass))]);
+       	}
+	    plot1.series[0].data = data;
+	    plot1.axes.yaxis.resetScale();
+	    plot1.replot();
+
+        var ldata = [];
+        for (var i in data) {
+            var v = data[i][0];
+            var pv = data[i][1];
+            var momentum = v * m_n;
+            var k = momentum / hbar;
+            var wavelength = 2*Math.PI / k; // in meters
+            var pl = pv * hbar * 2.0 * Math.PI / (m_n * Math.pow(wavelength, 2));
+            ldata.push([wavelength * 1e10, pl]); // in Angstroms
+            //ldata.push([wavelength, pv]);
+        }
+        plot2.series[0].data = ldata;
+        plot2.axes.yaxis.resetScale();
+        plot2.replot();
+    }
+    
+};
+
+//window.onresize = function() {window.location.href = window.location.href;}
+</script>
+</head>
+<body bgColor='PeachPuff'>
+    <div id='mydiv'>
+    </div>
+</body>
+</html>
