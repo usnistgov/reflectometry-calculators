@@ -61,6 +61,19 @@
 var c = [], interactors;
 //window.onload = function() {
 window.onload = function() {
+    //////////////////////////////////
+    // CONSTANTS 
+    //////////////////////////////////
+    
+    temperature = 10; // kelvin
+    k_b = 1.3806488e-23; // J/K Boltzmann's constant
+    m_h = 1.00794 * 2 * 1.660539e-27; // mass of hydrogen molecule
+    hbar = 1.054571726e-34; // Planck's reduced constant, J s
+    m_n = 1.674927351e-27; //  mass of neutron, kg[3]
+
+    /////////////////////////////////
+    // END CONSTANTS 
+    /////////////////////////////////
        
     var total_width = window.innerWidth || 1024;
     plot_height = 400;
@@ -90,17 +103,14 @@ window.onload = function() {
     plotdiv1.style.width = String(total_width/2.0 - 90) + 'px';
     plotdiv1.style.height = String(plot_height) + 'px';
     
+  
     function getVelocDist(v, temperature, mass) {
         var result = Math.sqrt(2.0/Math.PI * Math.pow((mass / (k_b * temperature)), 3));
         result *= Math.pow(v, 2) * Math.exp(-mass * v * v / (2.0*k_b * temperature))
         return result;
     }
     
-    temperature = 10; // kelvin
-    k_b = 1.3806488e-23; // J/K Boltzmann's constant
-    m_h = 1.00794 * 2 * 1.660539e-27; // mass of hydrogen molecule
-    hbar = 1.054571726e-34; // Planck's reduced constant, J s
-
+    
     var data = [];
     for (var v=220; v<6000; v+=50) {
         data.push([v, ( getVelocDist(v, temperature, m_h))]);
@@ -187,7 +197,7 @@ window.onload = function() {
     plotdiv2.style.height = String(plot_height) + 'px';
     
     
-    m_n = 1.674927351e-27; //  mass of neutron, kg[3]
+    
 
     var ldata = [];
     for (var i in data) {
