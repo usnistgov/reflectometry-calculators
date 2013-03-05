@@ -79,8 +79,12 @@ generate_slab_script = function(sldarray, filename) {
     py += "if hasattr(probe, 'mm'): probe.mm.intensity = probe.pp.intensity\n";
     py += "probe.pp.intensity.range(0.9,1.1)\n";
     py += "probe.pp.intensity.value = 1.0\n";
-    py += "\n"
-    py += "# LAYER RHOs\n"
+    py += "\n";
+    py += "# DISABLE CROSS-SECTIONS\n";
+    py += "# probe.xs[1] = None # disables PM\n";
+    py += "# probe.xs[2] = None # disables MP\n";
+    py += "\n";
+    py += "# LAYER RHOs\n";
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
         py += "s["+String(i)+"].";
