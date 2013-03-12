@@ -1,0 +1,135 @@
+<head>
+<html>
+<title>Slit calculator</title>
+    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css" type="text/css" rel="Stylesheet" />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    /* FORTRAN program metric_beamwidth.f
+   
+      program beamwidth
+      implicit real*8(a-h,o-z)
+      open(unit=10,file='beamin.',status='old',form='formatted')
+      read(10,*)ntheta,dtheta,sl,slitr,d12,d2s,ds3,ds4
+      close(10)
+      open(unit=11,file='widthout.',status='unknown',form='formatted')
+c     ntheta = number of angles
+c     dtheta = angular step in degrees
+c     sl = sample length (mm)
+c     slitr = w1/w2
+c     d12 = distance from slit 1 to slit 2 (mm)
+c     d2s = distance from slit 2 to sample (mm)
+c     ds3 = distance from sample to slit 3 (mm)
+c     ds4 = distance from sample to slit 4 (mm)
+c     ws = sample "width" at angle theta (mm)
+c     w1 = slit width 1 (mm)
+c     w2 = slit width 2 (mm)
+c     w3 = slit width 3 (mm)
+c     w4 = slit width 4 (mm)
+c     alpha = beam angular divergence (radians)
+      pi=3.14159
+      do 100 j=1, ntheta
+      theta=j*dtheta
+      thetar=theta*(pi/180.)
+      ws=sl*sin(thetar)
+      w2=ws/(1.0+(d2s/d12)*(slitr+1.0))
+      w1=slitr*w2
+      alpha=atan(((w1+w2)/2.0)/d12)
+      w3=w2+2.0*(d2s+ds3)*tan(alpha)
+      w4=w2+2.0*(d2s+ds4)*tan(alpha) 
+      write(11,200)theta,ws,w1,w2,w3,w4,alpha,sl,slitr
+ 100  continue
+ 200  format(9(f8.3))
+      close(11)
+      stop
+      end
+      
+    */
+    
+    default_parameters = {
+        "sl": {label: "sample length (mm)", value: 10},
+        "theta": {label: "incident angle (deg)", value: 0.1},
+        "slitr": {label: "slit ratio, w1/w2", value: 0.2},
+        "d12": {label: "distance from slit 1 to slit 2 (mm)", value: 927},
+        "d2s": {label: "distance from slit 2 to sample (mm)", value: 45},
+        "ds3": {label: "distance from sample to slit 3 (mm)", value: 45},
+        "ds4": {label: "distance from sample to slit 4 (mm)", value: 120},
+        //"ws" : {label: "sample 'width' at angle theta (mm)", value: 0.1},
+        //"w1" : {label: "slit width 1 (mm)", value: 1.0},
+        //"w2" : {label: "slit width 2 (mm)", value: 1.0},
+        //"w3" : {label: "slit width 3 (mm)", value: 1.0},
+        //"w4" : {label: "slit width 4 (mm)", value: 1.0},
+        //"alpha" : {label: "beam angular divergence (radians)", value = 0.01}
+    }
+    
+    function calculate_width(parameters, divtarget) {
+        var d12 = parameters.d12.value;
+        var d2s = parameters.d2s.value;
+        var ds3 = parameters.ds3.value;
+        var ds4 = parameters.ds4.value;
+        var theta = parameters.theta.value;
+        var sl = parameters.sl.value;
+        var slitr = parameters.slitr.value;
+        
+        var thetar = Math.PI * theta / 180.0;
+        var ws = sl * Math.sin(thetar);
+        var w2 = ws/(1.0+(d2s/d12)*(slitr+1.0));
+        var w1=slitr*w2;
+        var alpha=Math.atan(((w1+w2)/2.0)/d12);
+        var w3=w2+2.0*(d2s+ds3)*Math.tan(alpha)
+        var w4=w2+2.0*(d2s+ds4)*Math.tan(alpha);
+        
+        var output = "ws: " + ws.toPrecision(4);
+        output += ", w1: " + w1.toPrecision(4);
+        output += ", w2: " + w2.toPrecision(4);
+        output += ", w3: " + w3.toPrecision(4);
+        output += ", w4: " + w4.toPrecision(4);
+        output += ", alpha: " + alpha.toPrecision(4);
+        var output_dict = {ws:ws, w1:w1, w2:w2, w3:w3, w4:w4, alpha:alpha};
+        
+        document.getElementById(divtarget).innerHTML = output;
+        return output_dict
+    }
+    
+    function makeInputTable(parameters, divtarget, columns) {
+        var columns = columns || 2;
+        var t = document.getElementById(divtarget);
+        t.innerHTML = "";
+        
+        var t_table = document.createElement('table');
+        t_table.border = "1";
+        var cell, t_row, slab, entry, param;
+        for (var p in parameters) {
+            var param = parameters[p];
+            t_row = t_table.insertRow(-1);
+            cell = t_row.insertCell(-1);
+            cell.innerHTML = param.label;
+            cell = t_row.insertCell(-1);
+            cell.style.textAlign = "center";
+            entry = document.createElement('input');
+            entry.type = "text";
+            entry.style.width = "60px";
+            entry.style.textAlign = "right";
+            entry.index = p;
+            entry.value = (param.value).toFixed(4);
+            entry.onchange = function() { 
+                parameters[this.index].value = parseFloat(this.value);
+                calculate_width(parameters, "results_div");
+            }
+            cell.appendChild(entry);
+            
+        }
+        t.appendChild(t_table);
+    }
+       
+    window.onload = function() {
+        makeInputTable(default_parameters, 'table_div', 1);
+        calculate_width(default_parameters, 'results_div');
+    }
+    
+</script>
+<body>
+<div id="table_div"></div>
+<div id="results_div"></div>
+</body>
+</html>
