@@ -210,10 +210,13 @@ window.onload = function() {
     plot2.axes.yaxis.max = 4;
     plot2.replot();
     
+    new_ft_function = generate_fourier(pI.points());
+    plot2.series[0].get_z = new_ft_function;
+
     ft_listener = function() {
         this.update = function() {
-            new_ft_function = generate_fourier(pI.points());
-            plot2.series[0].get_z = new_ft_function;
+            //new_ft_function = generate_fourier(pI.points());
+            //plot2.series[0].get_z = new_ft_function;
             plot2.drawSeries(0);
         }
         return this;
