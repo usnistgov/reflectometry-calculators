@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <!-- Enable IE9 Standards mode -->
 <meta http-equiv="X-UA-Compatible" content="IE=9" >
-<title>MAGIK offspecular reflectometer: principles of operation</title>
+<title>Fourier transform of a quadrilateral</title>
 <style type="text/css">
   label { display: block; font-family: consolas, monospace; text-align: center; }
   //canvas { border: 1px dotted #888; }
@@ -20,7 +20,6 @@
     h1 { text-align: center }
     
     div { 
-        background-image: url('http://ncnr.nist.gov/instruments/magik/calculators/blank.png'); 
         user-select: none; 
         -webkit-user-select: none; 
         -moz-user-select: none;
@@ -90,36 +89,23 @@ window.onload = function() {
     var total_width = window.innerWidth || 1024;
     var total_height = window.innerHeight || 768;
     var plot_height = total_height - 150;
-    //outerdiv.setAttribute('class', 'bk');
+
     
     var ft_width = Math.min(400, (total_width/2.0 - 90));
     var ft_height = Math.min(ft_width, (total_height - 90));
     
     outerdiv1 = document.getElementById('outer1');
-    //outerdiv1 = document.createElement('div');
-    //outerdiv1.setAttribute('id', 'outer1');
     outerdiv1.setAttribute('style', 'float:left');
-    //outerdiv1.style.setProperty('width', total_width/2.0 - 50, null);
-    
-    //document.body.appendChild(outerdiv1);
     outerdiv1.style.position = 'relative';
     outerdiv1.style.width = String(total_width - ft_width - 80) + 'px';
-    //outerdiv1.style.width = String(Number(plotdiv1.getAttribute('width')) + 85) + 'px';
     outerdiv1.style.height = String(total_height - 90) + 'px';
 
     plotdiv1 = document.getElementById('plot');
-    //plotdiv1 = document.createElement('div');
-    //plotdiv1.setAttribute('id', 'plot');
-    //plotdiv1.setAttribute('width', (total_width/2.0 - 50 - 85));
     plotdiv1.setAttribute('width', (total_width - ft_width - 120));
     plotdiv1.setAttribute('height', plot_height);
     plotdiv1.setAttribute('style', 'float:right');
-    //outerdiv1.appendChild(plotdiv1);
-    //plotdiv1.style.width = String(total_width/2.0 - 50 - 85) + 'px';
     plotdiv1.style.width = String(total_width - ft_width - 120) + 'px';
     plotdiv1.style.height = String(plot_height) + 'px';
-    
-    
     
     plot1 = jQuery.jqplot ('plot', [[3,7,9,1,4,6,8,2,5]], {
       // Give the plot a title.
@@ -169,75 +155,9 @@ window.onload = function() {
     //pI.oldinit(plot1, true, true);
     var pI = plot1.plugins.interactors.realspace;
     
-    
-
-/*    
-    ymax1 = document.createElement('input');
-    ymax1.setAttribute('style', 'width:50px');
-    ymax1.onchange = function() { plot1.axes.yaxis.max = Number(ymax1.value); plot1.replot(); }
-    outerdiv1.appendChild(ymax1);
-    ymax1.style.position = 'absolute';
-    var maxtick = plot1.axes.yaxis._ticks.length - 1;
-    ymax1.style.top = plot1.axes.yaxis._ticks[maxtick]._elem[0].style.top;
-    ymax1.value = plot1.axes.yaxis.max.toPrecision(3);
-    ymax1.update = function(pos) { ymax1.value = pos.x.toPrecision(3); }
-    
-    
-    ymin1 = document.createElement('input');
-    ymin1.setAttribute('style', 'width:50px');
-    ymin1.onchange = function() { plot1.axes.yaxis.min = Number(ymin1.value); plot1.replot(); }
-    outerdiv1.appendChild(ymin1);
-    ymin1.style.position = 'absolute';
-    ymin1.style.top = plot1.axes.yaxis._ticks[0]._elem[0].style.top;
-    ymin1.value = plot1.axes.yaxis.min.toPrecision(3);
-    
-    xmax1 = document.createElement('input');
-    xmax1.setAttribute('style', 'width:50px');
-    xmax1.onchange = function() { plot1.axes.xaxis.max = Number(xmax1.value); plot1.replot(); }
-    outerdiv1.appendChild(xmax1);
-    xmax1.style.position = 'absolute';
-    xmax1.style.bottom = "0px";
-    var maxtick = plot1.axes.xaxis._ticks.length - 1;
-    xmax1.style.right = String(-1*Number(plot1.axes.xaxis._ticks[maxtick]._elem[0].style.right.replace('px',''))) + 'px';
-    xmax1.value = plot1.axes.xaxis.max.toPrecision(3);
-    
-    xmin1 = document.createElement('input');
-    xmin1.setAttribute('style', 'width:50px');
-    xmin1.onchange = function() { plot1.axes.xaxis.min = Number(xmin1.value); plot1.replot(); }
-    outerdiv1.appendChild(xmin1);
-    xmin1.style.position = 'absolute';
-    xmin1.style.bottom = "0px";
-    xmin1.style.left = String(Number(plot1.axes.xaxis._ticks[0]._elem[0].style.left.replace('px','')) + 85) + 'px';
-    xmin1.value = plot1.axes.xaxis.min.toPrecision(3);
-*/
-    
-    /////////////
-    /// equation
-    /////////////
-    
-    qconveq = document.createElement('div');
-    //eqimg = new Image();
-    //eqimg.src = 'eqs.png';
-    //eqimg.style.width = '160px';
-    //eqimg.style.height= 'auto';
-    //qconveq.appendChild(eqimg);
-    var text =  "<math display='block'><mrow><mi>cos</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03b8;</mi><mo>+</mo><mi>&#x03c6;</mi><mo>)</mo></mrow><mo>=</mo><mi>cos</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03b8;</mi><mo>)</mo></mrow><mi>cos</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03c6;</mi><mo>)</mo></mrow><mo>&#x2212;</mo><mi>sin</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03b8;</mi><mo>)</mo></mrow><mi>sin</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>&#x03c6;</mi><mo>)</mo></mrow></mrow></math>";
-    //outerdiv1.appendChild(qconveq);
-    //qconveq.style.position = 'absolute';
-    //qconveq.style.top = String(plot_height/2.0 - 80) + 'px';
-    //qconveq.style.left = outerdiv1.style.width;
-    
-    ///////////////////////////////
-    // and again
-    ///////////////////////////////
-    
     outerdiv2 = document.getElementById('outer2');
-    //outerdiv2 = document.createElement('div');
-    //outerdiv2.setAttribute('id', 'outer2');
     outerdiv2.setAttribute('style', 'float:right');
-    //outerdiv2.style.setProperty('width', total_width/2.0 - 50, null);
-    
-    //document.body.appendChild(outerdiv2);
+
     outerdiv2.style.position = "relative";
     outerdiv2.style.width = (ft_width + 50).toFixed(0) + 'px';
     outerdiv2.style.height = String(plot_height + 35) + 'px';
@@ -246,19 +166,12 @@ window.onload = function() {
     plotdiv2.setAttribute('id', 'plot2');
     plotdiv2.setAttribute('width', ft_width);
     plotdiv2.setAttribute('height', ft_height);
-    /*
-    plotdiv2.setAttribute('width', (total_width/2.0 - 90));
-    plotdiv2.setAttribute('height', plot_height);
-    */
+
     plotdiv2.setAttribute('style', 'float:right');
     outerdiv2.appendChild(plotdiv2);
-    //plotdiv2.style.width = String(total_width/2.0 - 50 - 85) + 'px';
     plotdiv2.style.width = ft_width.toFixed(0) + 'px';
     plotdiv2.style.height = ft_height.toFixed(0) + 'px';
-    /*
-    plotdiv2.style.width = String(total_width/2.0 - 90) + 'px';
-    plotdiv2.style.height = String(plot_height) + 'px';
-    */
+
     generate_fourier = function(points) {
         var points_plus = jQuery.extend(true, [], points);
         points_plus.push(points_plus[0]); // wrap around to end of object
@@ -320,10 +233,13 @@ window.onload = function() {
     plot2.axes.yaxis.max = 4;
     plot2.replot();
     
+    new_ft_function = generate_fourier(pI.points());
+    plot2.series[0].get_z = new_ft_function;
+
     ft_listener = function() {
         this.update = function() {
-            new_ft_function = generate_fourier(pI.points());
-            plot2.series[0].get_z = new_ft_function;
+            //new_ft_function = generate_fourier(pI.points());
+            //plot2.series[0].get_z = new_ft_function;
             plot2.drawSeries(0);
         }
         return this;
@@ -335,23 +251,6 @@ window.onload = function() {
     pI.p4.listeners.push(ft_listener);
     
     ft_listener.update();
-    //gridxdiv.style.width = String(total_width/2.0 - 90) + 'px';
-    
-    /*
-    var wl_slider = document.createElement('input');
-    wl_slider.setAttribute('type', 'range');
-    wl_slider.setAttribute('min', 0.1);
-    wl_slider.setAttribute('step', 0.05);
-    wl_slider.setAttribute('max', 2.0);
-    wl_slider.value = default_wl;
-    */
-    
-    
-    //wl_slider.onchange = function(bounced) {
-    //    wl_ctl.value = wl_slider.value;
-    //    wl_ctl.onchange(true);
-    //}
-
 
     f1 = function(p) {
         this.p = p;        
@@ -386,10 +285,7 @@ window.onload = function() {
         return this;
     }
     
-    //p1 = f1(pI.p1);
-    //p2 = pointTextControl(pI.p3, 'x', 'x max');
-    //document.body.appendChild(p2.div);
-    
+   
 };
 
 setNonInteractive = function(groblist) {
@@ -398,44 +294,7 @@ setNonInteractive = function(groblist) {
     }
 };
 
-pointTextControl = function(p, coord, label, precision) {
-    // coord should be 'x' or 'y'
-    var precision = precision || 3;
-    this.precision = precision;
-    this.coord = coord;
-    this.p = p;
-    var textbox = document.createElement('input');
-    textbox.setAttribute('type', 'text');
-    textbox.setAttribute('style', 'width:80px');
-    var input_label = document.createElement('label');
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(label))
-    div.appendChild(textbox);
-    this.div = div;
-    this.div.setAttribute('id', 'ptTextControl_' + label);
-    
-    this.textbox = textbox;
-    this.update = function(pos) {
-        textbox.value = pos[coord].toPrecision(precision);
-    }
-    var me = this;
-    this.update_external = function() {
-        var mypos = {}; mypos[coord] = textbox.value;
-        
-        var newpos = p.putCoords ? p.putCoords(mypos) : mypos;
-        var dpos = {}; dpos[coord] = newpos[coord] - p.pos[coord];
-        console.log('updating external: ', mypos, dpos);
-        p.move(dpos);
-        p.parent.redraw();
-    }
-    
-    textbox.onchange = this.update_external;
-    p.listeners.push(this);
-    this.update(p.getCoords());
-    return this;
-}
 
-//window.onresize = function() {window.location.href = window.location.href;}
 </script>
 </head>
 <body bgColor='#eeffdd'>

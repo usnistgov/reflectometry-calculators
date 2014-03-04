@@ -28,11 +28,12 @@
     $.jqplot.VerticalLineInteractor.prototype.init = function(options) {
         $.jqplot.InteractorPlugin.prototype.init.call(this, options);
         //this.points = [];
-        this.width = 4;
+        this.width = 8;
+        this.r = 12;
         this.x0 = 0.0;
         $.extend(this, options);
         this.p = new $.jqplot.PluginPoint();
-        this.p.initialize(this, this.x0, 0);
+        this.p.initialize(this, this.x0, 0, this.r);
         this.vline = new $.jqplot.VerticalLine();
         this.vline.initialize(this, this.p, this.width);
         this.grobs.push(this.vline);
@@ -70,11 +71,12 @@
     $.jqplot.HorizontalLineInteractor.prototype.init = function(options) {
         $.jqplot.InteractorPlugin.prototype.init.call(this, options);
         //this.points = [];
-        this.width = 4;
+        this.width = 8;
+        this.r = 12;
         this.y0 = 0.0;
         $.extend(this, options);
         this.p = new $.jqplot.PluginPoint();
-        this.p.initialize(this, 0, this.y0);
+        this.p.initialize(this, 0, this.y0, this.r);
         this.p.show_pos = false;
         this.hline = new $.jqplot.HorizontalLine();
         this.hline.initialize(this, this.p, this.width);
@@ -117,7 +119,8 @@
         this.points = [];
         this.leftpoints = [];
         this.x_offset = 0;
-        this.width = 4;
+        this.width = 8;
+        this.r = 12;
         $.extend(this, options);
         this.build_segments();
     };
@@ -134,12 +137,12 @@
         var leftpoints = this.leftpoints;
         for (var i in leftpoints) {
             pl = new $.jqplot.PluginPoint();
-            pl.initialize(this, x0, leftpoints[i].y);
+            pl.initialize(this, x0, leftpoints[i].y, this.r);
             pl.n = i;
             pl.show_pos=false;
             this.lp.push(pl);
             pr = new $.jqplot.PluginPoint();
-            pr.initialize(this, x0 + leftpoints[i].segwidth, leftpoints[i].y);
+            pr.initialize(this, x0 + leftpoints[i].segwidth, leftpoints[i].y, this.r);
             pr.n = i;
             pr.show_pos=false;
             this.rp.push(pr);
