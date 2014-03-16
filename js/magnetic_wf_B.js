@@ -504,38 +504,26 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
         
       }
       
+      // experimental!
+      var newB = this.unitary_LAB_SAM_LAB(newB, AGUIDE);
+      // trying this rotation: this is now B_lab
+      // seems to work: the below should really be YA_lab now, will change someday...
       var denom = Cplx.subtract(Cplx.multiply(newB[3][3], newB[1][1]), Cplx.multiply(newB[1][3], newB[3][1])).inverse();
       var YA_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][0]), Cplx.multiply(newB[1][0], newB[3][3])), denom); // r++
       var YB_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][0], newB[3][1]), Cplx.multiply(newB[3][0], newB[1][1])), denom); // r+-
       var YC_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][2]), Cplx.multiply(newB[1][2], newB[3][3])), denom); // r-+
       var YD_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][2], newB[3][1]), Cplx.multiply(newB[3][2], newB[1][1])), denom); // r--
       
-      var cos_e = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
-      var isin_e = new Cplx(0, Math.sin(AGUIDE/2.0*Math.PI/180.));
-
-      var U = [[  cos_e, isin_e],
-               [ isin_e,  cos_e]];
-      var Uinv = [[  cos_e, isin_e.neg()],
-                  [ isin_e.neg(),  cos_e]];
-      
-      var Y_lab = multiply2x2( U, multiply2x2([[YA_sam, YC_sam],[YB_sam, YD_sam]], Uinv)); 
-      
       this.B = B;
       this.C = C;
-//    Rotate polarization axis to lab frame (angle AGUIDE)
-//    Note: not reusing A, instead creating CST
-      
-      this.YA = Y_lab[0][0];
-      this.YB = Y_lab[1][0];
-      this.YC = Y_lab[0][1];
-      this.YD = Y_lab[1][1];
       
       this.YA_sam = YA_sam;
       this.YB_sam = YB_sam;
       this.YC_sam = YC_sam;
       this.YD_sam = YD_sam;
       
-      return [this.YA.copy(), this.YB.copy(), this.YC.copy(), this.YD.copy()];
+      //return [this.YA.copy(), this.YB.copy(), this.YC.copy(), this.YD.copy()];
+      return [this.YA_sam.copy(), this.YB_sam.copy(), this.YC_sam.copy(), this.YD_sam.copy()];
     
 }
 

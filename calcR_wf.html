@@ -95,14 +95,16 @@ window.onload = function() {
         
         wf.init(qmin/2.0, sld);
         
+        var i=0;
         for (var q=qmin; q<qmax; q+=qstep) {
-            qlist.push(q);
+            qlist[i] = q;
             //wf1.init(q/2.0, sld1);
             wf.set_kz_in(q/2.0);
             r = wf.calculateR();
-            rlist.push(r);
-            xy.push([q, Math.log(Math.pow(r.magnitude(),2)) / Math.LN10]);
-            phase.push([q, r.phase()]);
+            rlist[i] = r;
+            xy[i] = [q, Math.log(Math.pow(r.magnitude(),2)) / Math.LN10];
+            phase[i] = [q, r.phase()];
+            i++;
         }
         
         return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile(), wf: wf };
