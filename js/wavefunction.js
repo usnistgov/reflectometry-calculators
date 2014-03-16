@@ -64,10 +64,10 @@ neutron_wavefunction.prototype.calculateR = function() {
         mu = this.sld[i].mu;
         
         nz = Complex.sqrt( 1 - 4 * Math.PI * SLD / Math.pow(this.k0z,2) );
-        nz_array.push(nz);
+        nz_array[i] = nz;
         //kz = Complex.multiply(nz, this.kz_in);
         kz = Complex.multiply(nz, this.k0z);
-        kz_array.push(kz);
+        kz_array[i] = kz;
         kzt = Complex.multiply(kz, thickness);
         cos_kzt = Complex.cos(kzt);
         sin_kzt = Complex.sin(kzt);
@@ -76,15 +76,21 @@ neutron_wavefunction.prototype.calculateR = function() {
         ml[0][1] = Complex.multiply(nz.inverse(), sin_kzt);
         ml[1][0] = Complex.multiply(nz.negative(), sin_kzt);
         ml[1][1] = cos_kzt;
-        ML.push([ml[0].slice(0), ml[1].slice(0)]);
+        ML[i] = [ml[0].slice(0), ml[1].slice(0)];
         
         // matrix dot product
         M_new[0][0] = Complex.add(Complex.multiply(ml[0][0], M[0][0]), Complex.multiply(ml[0][1], M[1][0]));
         M_new[0][1] = Complex.add(Complex.multiply(ml[0][0], M[0][1]), Complex.multiply(ml[0][1], M[1][1]));
         M_new[1][0] = Complex.add(Complex.multiply(ml[1][0], M[0][0]), Complex.multiply(ml[1][1], M[1][0]));
         M_new[1][1] = Complex.add(Complex.multiply(ml[1][0], M[0][1]), Complex.multiply(ml[1][1], M[1][1]));
-        M[0] = M_new[0].slice(0);
-        M[1] = M_new[1].slice(0);
+        
+        M[0][0] = M_new[0][0];
+        M[0][1] = M_new[0][1];
+        M[1][0] = M_new[1][0];
+        M[1][1] = M_new[1][1];
+        //M[0] = M_new[0].slice(0);
+        //M[1] = M_new[1].slice(0);
+        
         //M_running.push([M_new[0].slice(0), M_new[1].slice(0)]);
     }
     nz_array.push(nzf);
