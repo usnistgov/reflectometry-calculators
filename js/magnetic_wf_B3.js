@@ -62,30 +62,87 @@ magnetic_wavefunction.prototype.getProfile = function() {
     return this.profile;
 };
 
-var get_U_sam_lab = function(AGUIDE) {
+var get_U_sam_lab4 = function(AGUIDE) {
     var C = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
     var IS = new Cplx(0, Math.sin(AGUIDE/2.0*Math.PI/180.));
     var U = [ [C , IS, 0 , 0 ],
-              [0 , 0 , C , IS],
               [IS, C , 0 , 0 ],
+              [0 , 0 , C , IS],
               [0 , 0 , IS, C ] ];
     return U;
 }
 
-var get_Uinv_sam_lab = function(AGUIDE) {
+var get_Uinv_sam_lab4 = function(AGUIDE) {
     var C = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
     var NS = new Cplx(0, -Math.sin(AGUIDE/2.0*Math.PI/180.0));
-    var Uinv = [ [C , 0,  NS, 0 ],
-                 [NS, 0 , C , 0 ],
-                 [0,  C , 0 , NS],
-                 [0 , NS, 0,  C ] ];
+    var Uinv = [ [C , NS, 0 , 0 ],
+                 [NS, C , 0 , 0 ],
+                 [0 , 0 , C , NS],
+                 [0 , 0 , NS, C ] ];
     return Uinv;
 }
 
-magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB = function(A, AGUIDE) {
-    var U = get_U_sam_lab(AGUIDE);
-    var Uinv = get_U_sam_lab(AGUIDE);
+magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB4 = function(A, AGUIDE) {
+    var U = get_U_sam_lab4(AGUIDE);
+    var Uinv = get_Uinv_sam_lab4(AGUIDE);
     var CST = multiply4x4( multiply4x4(U, A), Uinv);
+    return CST;
+}
+
+magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB_old = function(A, AGUIDE) {
+    // take a matrix and rotate from LAB to SAMPLE frame and then back
+    // this is more efficient (avoids all the zero multiplications etc) than
+    // doing it by multiplying 2 4x4 matrices twice, which is 8x4x4x2 = 256 ops.
+    // this is only 16*7=112
+    var CC, SS, SCI;
+    var CST = [ [0, 0, 0, 0], 
+                [0, 0, 0, 0], 
+                [0, 0, 0, 0], 
+                [0, 0, 0, 0] ];
+    
+    CC = Math.cos(-AGUIDE/2.*Math.PI/180.); CC *= CC;
+    SS = Math.sin(-AGUIDE/2.*Math.PI/180.); SS *= SS;
+    SCI = new Cplx(0.0, Math.cos(-AGUIDE/2.0*Math.PI/180.)*Math.sin(-AGUIDE/2.0*Math.PI/180.));
+    CST[0][0] = Cplx.sum([Cplx.multiply(CC, A[0][0]), Cplx.multiply(SS, A[1][1]), Cplx.multiply(SCI, Cplx.subtract(A[0][1], A[1][0]))]);
+    CST[0][1] = Cplx.sum([Cplx.multiply(CC, A[0][1]), Cplx.multiply(SS, A[1][0]), Cplx.multiply(SCI, Cplx.subtract(A[0][0], A[1][1]))]);
+    CST[1][0] = Cplx.sum([Cplx.multiply(CC, A[1][0]), Cplx.multiply(SS, A[0][1]), Cplx.multiply(SCI, Cplx.subtract(A[1][1], A[0][0]))]);
+    CST[1][1] = Cplx.sum([Cplx.multiply(CC, A[1][1]), Cplx.multiply(SS, A[0][0]), Cplx.multiply(SCI, Cplx.subtract(A[1][0], A[0][1]))]);
+    CST[0][2] = Cplx.sum([Cplx.multiply(CC, A[0][2]), Cplx.multiply(SS, A[1][3]), Cplx.multiply(SCI, Cplx.subtract(A[0][3], A[1][2]))]);
+    CST[0][3] = Cplx.sum([Cplx.multiply(CC, A[0][3]), Cplx.multiply(SS, A[1][2]), Cplx.multiply(SCI, Cplx.subtract(A[0][2], A[1][3]))]);
+    CST[1][2] = Cplx.sum([Cplx.multiply(CC, A[1][2]), Cplx.multiply(SS, A[0][3]), Cplx.multiply(SCI, Cplx.subtract(A[1][3], A[0][2]))]);
+    CST[1][3] = Cplx.sum([Cplx.multiply(CC, A[1][3]), Cplx.multiply(SS, A[0][2]), Cplx.multiply(SCI, Cplx.subtract(A[1][2], A[0][3]))]);
+    CST[2][0] = Cplx.sum([Cplx.multiply(CC, A[2][0]), Cplx.multiply(SS, A[3][1]), Cplx.multiply(SCI, Cplx.subtract(A[2][1], A[3][0]))]);
+    CST[2][1] = Cplx.sum([Cplx.multiply(CC, A[2][1]), Cplx.multiply(SS, A[3][0]), Cplx.multiply(SCI, Cplx.subtract(A[2][0], A[3][1]))]);
+    CST[3][0] = Cplx.sum([Cplx.multiply(CC, A[3][0]), Cplx.multiply(SS, A[2][1]), Cplx.multiply(SCI, Cplx.subtract(A[3][1], A[2][0]))]);
+    CST[3][1] = Cplx.sum([Cplx.multiply(CC, A[3][1]), Cplx.multiply(SS, A[2][0]), Cplx.multiply(SCI, Cplx.subtract(A[3][0], A[2][1]))]);
+    CST[2][2] = Cplx.sum([Cplx.multiply(CC, A[2][2]), Cplx.multiply(SS, A[3][3]), Cplx.multiply(SCI, Cplx.subtract(A[2][3], A[3][2]))]);
+    CST[2][3] = Cplx.sum([Cplx.multiply(CC, A[2][3]), Cplx.multiply(SS, A[3][2]), Cplx.multiply(SCI, Cplx.subtract(A[2][2], A[3][3]))]);
+    CST[3][2] = Cplx.sum([Cplx.multiply(CC, A[3][2]), Cplx.multiply(SS, A[2][3]), Cplx.multiply(SCI, Cplx.subtract(A[3][3], A[2][2]))]);
+    CST[3][3] = Cplx.sum([Cplx.multiply(CC, A[3][3]), Cplx.multiply(SS, A[2][2]), Cplx.multiply(SCI, Cplx.subtract(A[3][2], A[2][3]))]);
+    
+    return CST
+}
+
+var get_U_sam_lab2 = function(AGUIDE) {
+    var C = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
+    var IS = new Cplx(0, Math.sin(AGUIDE/2.0*Math.PI/180.));
+    var U = [ [C , IS ],
+              [IS,  C ] ];
+    return U;
+}
+
+var get_Uinv_sam_lab2 = function(AGUIDE) {
+    var C = new Cplx(Math.cos(AGUIDE/2.0*Math.PI/180.), 0);
+    var NS = new Cplx(0, -Math.sin(AGUIDE/2.0*Math.PI/180.0));
+    var Uinv = [ [C , NS ],
+                 [NS,  C  ] ];
+    return Uinv;
+}
+
+magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB2 = function(A, AGUIDE) {
+    var U = get_U_sam_lab2(AGUIDE);
+    var Uinv = get_Uinv_sam_lab2(AGUIDE);
+    var CST = multiply2x2( multiply2x2(U, A), Uinv);
     return CST;
 }
 
@@ -569,16 +626,17 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
       var YC_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][2]), Cplx.multiply(newB[1][2], newB[3][3])), denom); // r-+
       var YD_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][2], newB[3][1]), Cplx.multiply(newB[3][2], newB[1][1])), denom); // r--
       
+      var r_lab = this.unitary_LAB_SAM_LAB2([[YA_sam, YB_sam], [YC_sam, YD_sam]], AGUIDE);
       this.B = B;
       this.C = C;
       
-      this.YA_sam = YA_sam;
-      this.YB_sam = YB_sam;
-      this.YC_sam = YC_sam;
-      this.YD_sam = YD_sam;
+      this.YA_lab = r_lab[0][0];
+      this.YB_lab = r_lab[0][1];
+      this.YC_lab = r_lab[1][0];
+      this.YD_lab = r_lab[1][1];
       
       //return [this.YA.copy(), this.YB.copy(), this.YC.copy(), this.YD.copy()];
-      return [this.YA_sam.copy(), this.YB_sam.copy(), this.YC_sam.copy(), this.YD_sam.copy()];
+      return [this.YA_lab.copy(), this.YB_lab.copy(), this.YC_lab.copy(), this.YD_lab.copy()];
     
 }
 

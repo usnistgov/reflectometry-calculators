@@ -446,7 +446,7 @@ window.onload = function() {
         match_x_vals(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_angle);
         var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
-        po.update();
+        //po.update();
         plot2.replot();
     }
     plot2.plugins.interactors.profile_mag.update = function() {
@@ -454,7 +454,7 @@ window.onload = function() {
         match_x_vals(plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
-        po.update();
+        //po.update();
         plot2.replot();
     }
     plot2.plugins.interactors.profile_angle.update = function() {
@@ -462,7 +462,7 @@ window.onload = function() {
         match_x_vals(plot2.plugins.interactors.profile_angle, plot2.plugins.interactors.profile_mag);
         var sld = get_sld(plot2.plugins.interactors.profile_nuc, plot2.plugins.interactors.profile_mag, plot2.plugins.interactors.profile_angle);
         update_plot(sld, plot_choices[current_choice]['data']);
-        po.update();
+        //po.update();
         plot2.replot();
     }
     
@@ -793,11 +793,11 @@ window.onload = function() {
     }
     
     
-    po = new psi_obj();
+    //po = new psi_obj();
     vc.p.listeners.push(e0cursor);
-    vc.p.listeners.push(po);
+    //vc.p.listeners.push(po);
     e0cursor.p.listeners.push(vc);
-    e0cursor.p.listeners.push(po); // wavefunction update!
+    //e0cursor.p.listeners.push(po); // wavefunction update!
     
     
     for (var i in plot_choices) {
@@ -893,7 +893,7 @@ window.onload = function() {
         toggle.setAttribute('type', 'checkbox');
         toggle.setAttribute('name', id);
         toggle.setAttribute('value', text);
-        toggle.onclick = po.update;
+        //toggle.onclick = po.update;
         togglespan.appendChild(toggle);
         togglespan.appendChild(document.createTextNode(text));
         togglespan.appendChild(document.createElement('br'));
