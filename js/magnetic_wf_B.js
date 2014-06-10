@@ -84,7 +84,7 @@ var get_Uinv_sam_lab = function(AGUIDE) {
 
 magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB = function(A, AGUIDE) {
     var U = get_U_sam_lab(AGUIDE);
-    var Uinv = get_U_sam_lab(AGUIDE);
+    var Uinv = get_Uinv_sam_lab(AGUIDE);
     var CST = multiply4x4( multiply4x4(U, A), Uinv);
     return CST;
 }

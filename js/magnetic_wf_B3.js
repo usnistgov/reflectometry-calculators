@@ -146,41 +146,7 @@ magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB2 = function(A, AGUIDE) {
     return CST;
 }
 
-magnetic_wavefunction.prototype.unitary_LAB_SAM_LAB_old = function(A, AGUIDE) {
-    // take a matrix and rotate from LAB to SAMPLE frame and then back
-    // this is more efficient (avoids all the zero multiplications etc) than
-    // doing it by multiplying 2 4x4 matrices twice, which is 8x4x4x2 = 256 ops.
-    // this is only 16*7=112
-    var CC, SS, SCI;
-    var CST = [ [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0] ];
-    
-    CC = Math.cos(-AGUIDE/2.*Math.PI/180.); CC *= CC;
-    SS = Math.sin(-AGUIDE/2.*Math.PI/180.); SS *= SS;
-    SCI = new Cplx(0.0, Math.cos(-AGUIDE/2.0*Math.PI/180.)*Math.sin(-AGUIDE/2.0*Math.PI/180.));
-    CST[0][0] = Cplx.sum([Cplx.multiply(CC, A[0][0]), Cplx.multiply(SS, A[1][1]), Cplx.multiply(SCI, Cplx.subtract(A[0][1], A[1][0]))]);
-    CST[0][1] = Cplx.sum([Cplx.multiply(CC, A[0][1]), Cplx.multiply(SS, A[1][0]), Cplx.multiply(SCI, Cplx.subtract(A[0][0], A[1][1]))]);
-    CST[1][0] = Cplx.sum([Cplx.multiply(CC, A[1][0]), Cplx.multiply(SS, A[0][1]), Cplx.multiply(SCI, Cplx.subtract(A[1][1], A[0][0]))]);
-    CST[1][1] = Cplx.sum([Cplx.multiply(CC, A[1][1]), Cplx.multiply(SS, A[0][0]), Cplx.multiply(SCI, Cplx.subtract(A[1][0], A[0][1]))]);
-    CST[0][2] = Cplx.sum([Cplx.multiply(CC, A[0][2]), Cplx.multiply(SS, A[1][3]), Cplx.multiply(SCI, Cplx.subtract(A[0][3], A[1][2]))]);
-    CST[0][3] = Cplx.sum([Cplx.multiply(CC, A[0][3]), Cplx.multiply(SS, A[1][2]), Cplx.multiply(SCI, Cplx.subtract(A[0][2], A[1][3]))]);
-    CST[1][2] = Cplx.sum([Cplx.multiply(CC, A[1][2]), Cplx.multiply(SS, A[0][3]), Cplx.multiply(SCI, Cplx.subtract(A[1][3], A[0][2]))]);
-    CST[1][3] = Cplx.sum([Cplx.multiply(CC, A[1][3]), Cplx.multiply(SS, A[0][2]), Cplx.multiply(SCI, Cplx.subtract(A[1][2], A[0][3]))]);
-    CST[2][0] = Cplx.sum([Cplx.multiply(CC, A[2][0]), Cplx.multiply(SS, A[3][1]), Cplx.multiply(SCI, Cplx.subtract(A[2][1], A[3][0]))]);
-    CST[2][1] = Cplx.sum([Cplx.multiply(CC, A[2][1]), Cplx.multiply(SS, A[3][0]), Cplx.multiply(SCI, Cplx.subtract(A[2][0], A[3][1]))]);
-    CST[3][0] = Cplx.sum([Cplx.multiply(CC, A[3][0]), Cplx.multiply(SS, A[2][1]), Cplx.multiply(SCI, Cplx.subtract(A[3][1], A[2][0]))]);
-    CST[3][1] = Cplx.sum([Cplx.multiply(CC, A[3][1]), Cplx.multiply(SS, A[2][0]), Cplx.multiply(SCI, Cplx.subtract(A[3][0], A[2][1]))]);
-    CST[2][2] = Cplx.sum([Cplx.multiply(CC, A[2][2]), Cplx.multiply(SS, A[3][3]), Cplx.multiply(SCI, Cplx.subtract(A[2][3], A[3][2]))]);
-    CST[2][3] = Cplx.sum([Cplx.multiply(CC, A[2][3]), Cplx.multiply(SS, A[3][2]), Cplx.multiply(SCI, Cplx.subtract(A[2][2], A[3][3]))]);
-    CST[3][2] = Cplx.sum([Cplx.multiply(CC, A[3][2]), Cplx.multiply(SS, A[2][3]), Cplx.multiply(SCI, Cplx.subtract(A[3][3], A[2][2]))]);
-    CST[3][3] = Cplx.sum([Cplx.multiply(CC, A[3][3]), Cplx.multiply(SS, A[2][2]), Cplx.multiply(SCI, Cplx.subtract(A[3][2], A[2][3]))]);
-    
-    return CST
-}
-
-magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
+magnetic_wavefunction.prototype.calculateR_old = function(AGUIDE) {
     var AGUIDE = AGUIDE || 0.0;
     var I, prevI, L, STEP;
     var YA, YB, YC, YD;
@@ -444,7 +410,7 @@ LOGH=0;
     
 }
 
-magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
+magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
     var AGUIDE = AGUIDE || 0.0;
     var I, prevI, L, Ln, STEP;
     var YA, YB, YC, YD;
@@ -507,9 +473,6 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
         S1L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
         S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
         S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
-        
-        
-        
         inv_S1Ln = S1Ln.inverse();
         inv_mu_S1Ln = Cplx.multiply(inv_mu_Ln, inv_S1Ln);
         S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
@@ -615,11 +578,7 @@ magnetic_wavefunction.prototype.calculateRB = function(AGUIDE) {
         L = Ln;
         
       }
-      
-      // experimental!
-      //var newB = this.unitary_LAB_SAM_LAB(newB, AGUIDE);
-      // trying this rotation: this is now B_lab
-      // seems to work: the below should really be YA_lab now, will change someday...
+
       var denom = Cplx.subtract(Cplx.multiply(newB[3][3], newB[1][1]), Cplx.multiply(newB[1][3], newB[3][1])).inverse();
       var YA_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][0]), Cplx.multiply(newB[1][0], newB[3][3])), denom); // r++
       var YB_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][0], newB[3][1]), Cplx.multiply(newB[3][0], newB[1][1])), denom); // r+-
