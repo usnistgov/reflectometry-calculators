@@ -38,10 +38,6 @@
         <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/interactors/rectangle_interactor_plugin.js"></script>
 
         <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/plotting_api2.js"></script>
-<!-- JQPLOT -->
-<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
-<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css" type="text/css" rel="Stylesheet" />
-<link href="jqplot/jquery.jqplot.min.css" type="text/css" rel="Stylesheet" />
 
 <script type="text/javascript" src="js/reflectivity_sim.js"></script>
 <script type="text/javascript" src="js/complex.js"></script>
@@ -172,7 +168,7 @@ window.onload = function() {
                 }
               }
             },
-            cursor: {show:true, zoom:true},
+            cursor: {show:true, zoom: false},
             interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
                           {type: 'VerticalLine',
                            name: 'vcursor',
