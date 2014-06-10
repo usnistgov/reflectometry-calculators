@@ -10,32 +10,39 @@
   //canvas { border: 1px dotted #888; }*/
   .bk { float: left; margin-right: 4px; }
 </style>
-<!-- JQPLOT -->
-<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
-<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css" type="text/css" rel="Stylesheet" />
-<link href="jqplot/jquery.jqplot.min.css" type="text/css" rel="Stylesheet" />
-            
-        <!-- Reference jQuery and jQuery UI from the CDN. Remember
+<!-- Reference jQuery and jQuery UI from the CDN. Remember
            that the order of these two elements is important -->
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
 <!--        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
 <!--        <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>-->
-        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js" type="text/javascript"></script>
-<!--<script type="text/javascript" src="jquery-1.5.1.min.js"></script>-->
-<script type="text/javascript" src="jqplot/jquery.jqplot.min.js"></script>
-<script type="text/javascript" src="jqplot/jqplot.canvasTextRenderer.min.js"></script>
-<script type="text/javascript" src="jqplot/jqplot.canvasAxisLabelRenderer.min.js"></script>
-<script type="text/javascript" src="jqplot/jqplot.canvasAxisTickRenderer.min.js"></script>
-<script type="text/javascript" src="jqplot/jqplot.cursor.js"></script>
-<script type="text/javascript" src="jqplot/jqplot.enhancedLegendRenderer.js"></script>
-<script type="text/javascript" src="jqplot/jquery.jqplot.InteractiveLegend.js"></script>
-<script type="text/javascript" src="js/interactors_nonprototype.js"></script>
-<script type="text/javascript" src="js/interactor_plugin_base.js"></script>
-<script type="text/javascript" src="js/reflectivity_sim.js"></script>
-<script type="text/javascript" src="js/complex.js"></script>
-<script type="text/javascript" src="js/magnetic_wf_B3.js"></script>
-<script type="text/javascript" src="js/generate_slab_script.js"></script>
-<script type="text/javascript"> 
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js" type="text/javascript"></script>
+<!--		<script type="text/javascript" src="jquery-1.5.1.min.js"></script>-->
+<!--        <script type="text/javascript" src="jquery.jqplot.min.js"></script>-->
+
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot/jquery.jqplot.min.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.canvasTextRenderer.min.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.canvasAxisLabelRenderer.min.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.canvasAxisTickRenderer.min.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.cursor.min.js"></script>
+    
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.errorbarRenderer.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.InteractiveLegend.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.FixedAspect.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.GracefulAxisRenderer.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.touchEvents.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.heatmapRenderer.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.colorbarRenderer.js"></script>
+    
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/interactors/interactors.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/interactors/interactors_plugin_base.js"></script>
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/interactors/rectangle_interactor_plugin.js"></script>
+
+    <script type="text/javascript" src="http://ncnr.nist.gov/instruments/magik/jqplot.science/plugins/plotting_api2.js"></script>
+    <script type="text/javascript" src="js/reflectivity_sim.js"></script>
+    <script type="text/javascript" src="js/complex.js"></script>
+    <script type="text/javascript" src="js/magnetic_wf3.js"></script>
+    <script type="text/javascript" src="js/generate_slab_script.js"></script>
+    <script type="text/javascript"> 
 THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
 
 initial_sld = [
@@ -107,7 +114,7 @@ window.onload = function() {
             //wf1.init(q/2.0, sld1);
             wf.set_kz_in(q/2.0);
             
-            var r = wf.calculateRB(AGUIDE); // angle of external field!
+            var r = wf.calculateR(AGUIDE); // angle of external field!
             for (var i in r) {
                 var ri = r[i];
                 rlist[i].push(ri);
