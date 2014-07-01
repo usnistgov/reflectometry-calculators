@@ -71,6 +71,7 @@ generate_slab_script = function(sldarray, filename) {
         sld = sldarray[i];
         py += "#slds["+String(i)+"].irho.range("+(-1.0).toPrecision(prec)+","+(1.0).toPrecision(prec)+")\n";
     }
+    py += "\n";
     py += "# LAYER THICKNESSES\n"
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
