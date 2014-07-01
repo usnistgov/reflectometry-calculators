@@ -79,6 +79,10 @@ generate_slab_script = function(sldarray, filename) {
     }
     py += "\n";
     py += "# LAYER ROUGHNESSES\n"
+    py += "##################################################################";
+    py += "# the 'interface' associated with layer0 is the boundary between #";
+    py += "# layer0 and layer1, and similarly for layer(N) and layer(N+1)   #";
+    py += "##################################################################";
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
         py += "#s["+String(i)+"].interface.range(0,10)\n";
