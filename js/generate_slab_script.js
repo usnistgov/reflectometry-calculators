@@ -1,6 +1,9 @@
 var prec = 5; // precision
 
 generate_slab_script = function(sldarray, filename) {
+    // sldarray order is based on the old reflpak ordering (beam source side first)
+    // while refl1d builds the slab model from the "bottom", with the substrate slab first
+    sldarray.reverse();
     py = "";
     var filename = filename || "myfile.refl";
     
