@@ -66,6 +66,11 @@ generate_slab_script = function(sldarray, filename) {
         py += "#slds["+String(i)+"].rho.range("+(sld.sld*1e6 - 1.0).toPrecision(prec)+","+(sld.sld*1e6 + 1.0).toPrecision(prec)+")\n";
     }
     py += "\n";
+    py += "# LAYER ABSORPTIONS (imaginary rho)\n";
+    for (var i=0; i<sldarray.length; i++) {
+        sld = sldarray[i];
+        py += "#slds["+String(i)+"].irho.range("+(-1.0).toPrecision(prec)+","+(1.0).toPrecision(prec)+")\n";
+    }
     py += "# LAYER THICKNESSES\n"
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
