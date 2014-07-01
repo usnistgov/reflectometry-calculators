@@ -35,7 +35,7 @@ generate_slab_script = function(sldarray, filename) {
         py += "slds.append(SLD(name='layer"+String(i) + "'";
         py += ", rho="  + (sld.sld*1e6).toPrecision(prec);
         py += ", irho=0.0))\n";
-        py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", 0))\n";
+        py += "s.add( slds["+String(i)+"]("+sld.thickness.toPrecision(prec)+", 0))\n";
     }
     py += "\n";
     //py += "layers = []\n";
@@ -75,7 +75,7 @@ generate_slab_script = function(sldarray, filename) {
     py += "# LAYER THICKNESSES\n"
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
-        py += "#s["+String(i)+"].thickness.range("+String(Math.max(sld.thickness - 100.0, 0))+","+String(sld.thickness + 100.0)+")\n";
+        py += "#s["+String(i)+"].thickness.range("+(Math.max(sld.thickness - 100.0, 0)).toPrecision(prec)+","+(sld.thickness + 100.0).toPrecision(prec)+")\n";
     }
     py += "\n";
     py += "# LAYER ROUGHNESSES\n"
