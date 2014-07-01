@@ -1,9 +1,6 @@
 var prec = 5; // precision
 
 generate_slab_script = function(sldarray, filename) {
-    // sldarray order is based on the old reflpak ordering (beam source side first)
-    // while refl1d builds the slab model from the "bottom", with the substrate slab first
-    sldarray.reverse();
     py = "";
     var filename = filename || "myfile.refl";
     
@@ -53,7 +50,7 @@ generate_slab_script = function(sldarray, filename) {
     py += "\n";
     py += "# === Fit parameters ===\n";
     py += "# \"range\" specifies a fitting range in terms of min/max value\n";
-    py += "# \"pmp\" specifices fitting range in terms of +/-  %\n";
+    py += "# \"pmp\" specifies fitting range in terms of +/-  %\n";
     py += "# \"pm\" specifies fitting range in terms of +/- value\n";
     py += "\n";
     py += "# THETA OFFSET\n";

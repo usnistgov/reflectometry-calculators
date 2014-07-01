@@ -766,7 +766,7 @@ window.onload = function() {
     test_show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
-        var pyscript = generate_slab_script(sldarray, datafilename);
+        var pyscript = generate_slab_script(sldarray.reverse(), datafilename);
         var data_uri = "data:application/octet-stream,"+encodeURIComponent(pyscript);
         var a = document.getElementById('pyscript_data_uri');
         a.href = data_uri;
@@ -778,7 +778,9 @@ window.onload = function() {
     show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
-        var pyscript = generate_slab_script(sldarray, datafilename);
+        // sldarray order is based on the old reflpak ordering (beam source side first)
+        // while refl1d builds the slab model from the "bottom", with the substrate slab first
+        var pyscript = generate_slab_script(sldarray.reverse(), datafilename);
         scriptwin = window.open("", "_blank");
         scriptwin.pyscript = pyscript;
         /*scriptwin.onload = function() {
