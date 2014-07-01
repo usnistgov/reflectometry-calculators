@@ -110,6 +110,11 @@ window.onload = function() {
         return result;
     }
     
+    function getVelocDistX(v, temperature, mass) {
+        var result = Math.sqrt(mass / (2.0 * Math.PI * k_b * temperature));
+        result *= Math.exp(-mass * v * v / (2.0*k_b * temperature))
+        return result;
+    }
     
     var data = [];
     for (var v=220; v<6000; v+=50) {

@@ -32,7 +32,9 @@ generate_slab_script = function(sldarray, filename) {
         //sld = sldi[0];
         //thickness = sldi[1];
         //mu = sldi[2];
-        py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+        py += "slds.append(SLD(name='layer"+String(i) + "'";
+        py += ", rho="  + (sld.sld*1e6).toPrecision(prec);
+        py += ", irho=0.0))\n";
         py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", 0))\n";
     }
     py += "\n";
