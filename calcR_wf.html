@@ -775,22 +775,33 @@ window.onload = function() {
         a.click();     
     }
     
+    saveData = (function () {
+        var a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        return function (data, fileName) {
+            var blob = new Blob([data], {type: "text/plain"}),
+                url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        };
+    }());
+    
     show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
         // sldarray order is based on the old reflpak ordering (beam source side first)
         // while refl1d builds the slab model from the "bottom", with the substrate slab first
         var pyscript = generate_slab_script(sldarray.reverse(), datafilename);
-        scriptwin = window.open("", "_blank");
-        scriptwin.pyscript = pyscript;
-        /*scriptwin.onload = function() {
-            this.document.title = "Refl1D script: " + datafilename;
-            this.document.write(this.pyscript);
-        }*/
-        scriptwin.document.title = "Refl1D script: " + datafilename;
-        var code = scriptwin.document.createElement('pre');
-        scriptwin.document.body.appendChild(code);
-        code.innerHTML = pyscript;
+        var filename = document.getElementById("scriptname").value;
+        saveData(pyscript, filename);
+        //scriptwin = window.open("", "_blank");
+        //scriptwin.document.title = "Refl1D script: " + datafilename;
+        //var code = scriptwin.document.createElement('pre');
+        //scriptwin.document.body.appendChild(code);
+        //code.innerHTML = pyscript;
     }
     document.getElementById("scriptbutton").onclick = show_script;
 }
@@ -800,6 +811,7 @@ window.onload = function() {
     Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
     <a href="" id="pyscript_data_uri"></a>
     <input type="button" value="generate Refl1D script" id="scriptbutton">
+    <input type="text" value="refl1d_script.py" width=20 id="scriptname">
     <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='choices'></div>
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
