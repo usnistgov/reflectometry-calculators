@@ -53,9 +53,9 @@
     <script type="text/javascript" src="js/generate_slab_script.js"></script>
 <script type="text/javascript"> 
 initial_sld = [
-    {thickness: 100, sld: 0, mu: 0},
+    {thickness: 100, sld: 0.0, mu: 0},
     {thickness: 1250, sld: 4.5e-6, mu: 0},
-    {thickness: 100, sld: 1.027e-6, mu: 0}
+    {thickness: 100, sld: 2.069e-6, mu: 0}
 ];
 
 OMEGA = Math.PI;
@@ -108,7 +108,8 @@ window.onload = function() {
         var dp, r;
         var wf = new neutron_wavefunction();
         
-        wf.init(qmin/2.0, sld);
+        // reverse the sld for calculation: in line with the way refl1d shows it;
+        wf.init(qmin/2.0, sld.reverse());
         
         var i=0;
         for (var q=qmin; q<qmax; q+=qstep) {
@@ -122,7 +123,7 @@ window.onload = function() {
             i++;
         }
         
-        return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile(), wf: wf };
+        return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile().reverse(), wf: wf };
     }
     
     function make_plots( xy1, xy2 ) {
@@ -176,7 +177,7 @@ window.onload = function() {
         z += layer.thickness;
     }
         
-    plot2 = $.jqplot ('sldplot', [profilexy, profilexy, profilexy, profilexy], {
+    plot2 = $.jqplot ('sldplot', [profilexy], {
         //series: [ {shadow: false} ],
         seriesDefaults: {shadow: false, markerOptions: {shadow: false, size: 4}},
         grid: {shadow: false},
@@ -202,11 +203,11 @@ window.onload = function() {
             }
           }
         },
-        cursor: {show:true, zoom:false}, 
+        //cursor: {show:true, zoom:false}, 
         interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
                       {type: 'RightAngleSegment',
                        name: 'profile1',
-                       leftpoints: leftpoints.slice(),
+                       leftpoints: jQuery.extend(true, [], leftpoints),
                        color1: 'blue',
                        color2: 'blue'
                        },
@@ -218,9 +219,6 @@ window.onload = function() {
     });
     
     plot2.series[0].data = [];
-    plot2.series[1].data = [];
-    plot2.series[2].data = [];
-    plot2.series[3].data = [];
     
     var e0cursor = plot2.plugins.interactors.e0;
     e0cursor.update = function (pos) {
@@ -375,22 +373,6 @@ window.onload = function() {
             }
             cell.appendChild(entry);
             
-            /*
-            cell = t_row.insertCell(-1);
-            cell.style.textAlign = "center";
-            entry = document.createElement('input');
-            entry.type = "text";
-            entry.style.width = "60px";
-            entry.style.textAlign = "right";
-            entry.index = i;
-            entry.value = (slab.sldm * 1e6).toFixed(3);
-            entry.onchange = function() { 
-                profile_mag.leftpoints[this.index].y = parseFloat(this.value);
-                profile_mag.build_segments();
-                profile_mag.update();
-            }
-            cell.appendChild(entry);
-            */
             cell = t_row.insertCell(-1);
             cell.style.textAlign = "center";
             entry = document.createElement('input');
@@ -423,7 +405,7 @@ window.onload = function() {
         var sld = get_sld(plot2.plugins.interactors.profile1);
         show_table(sld);
         update_plot(0, sld, plot_choices[current_choice]['data']);
-        
+        plot2.redraw();
         //po.update();
         //plot2.replot();
     }
@@ -568,9 +550,10 @@ window.onload = function() {
         }
         plot1.series[1].data = output_data;        
         plot2.plugins.interactors.profile1.update();
-        plot1.axes.xaxis.resetScale();
-        plot1.axes.yaxis.resetScale();
+        
         plot1.replot();
+        plot1.resetAxesScale();
+        plot1.plugins._interactor.zoomMax();
     }
     
     function loadData() {
@@ -592,7 +575,7 @@ window.onload = function() {
     test_show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
-        var pyscript = generate_slab_script(sldarray.reverse(), datafilename);
+        var pyscript = generate_slab_script(sldarray, datafilename);
         var data_uri = "data:application/octet-stream,"+encodeURIComponent(pyscript);
         var a = document.getElementById('pyscript_data_uri');
         a.href = data_uri;
@@ -622,7 +605,7 @@ window.onload = function() {
         //var datafilename = datafilename || "";
         // sldarray order is based on the old reflpak ordering (beam source side first)
         // while refl1d builds the slab model from the "bottom", with the substrate slab first
-        var pyscript = generate_slab_script(sldarray.reverse(), datafilename);
+        var pyscript = generate_slab_script(sldarray, datafilename);
         var filename = document.getElementById("scriptname").value;
         saveData(pyscript, filename);
         //scriptwin = window.open("", "_blank");
