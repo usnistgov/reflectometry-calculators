@@ -773,19 +773,21 @@ window.onload = function() {
         a.download = "refl_script.py";
         a.mimeType = 'application/binary-octal';
         a.click();     
-    }
+    }    
     
     saveData = (function () {
         var a = document.createElement("a");
         document.body.appendChild(a);
         a.style = "display: none";
+        a.id = "savedata";
         return function (data, fileName) {
             var blob = new Blob([data], {type: "text/plain"}),
                 url = window.URL.createObjectURL(blob);
             a.href = url;
             a.download = fileName;
+            //window.open(url, '_blank', fileName);
             a.click();
-            window.URL.revokeObjectURL(url);
+            setTimeout(function() { window.URL.revokeObjectURL(url) }, 1000);
         };
     }());
     
