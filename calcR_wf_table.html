@@ -130,8 +130,8 @@ window.onload = function() {
         
         plot1 = $.jqplot ('rplot', [xy1,  [[0, 0]]], {
             title: 'Reflectivity R=|Ψ←(z=-∞)|²',
-            series: [ {shadow: false, color: 'red', markerOptions: {shadow: false, size: 4}},
-                      {shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}} ],
+            series: [ {shadow: false, color: 'red', label: "calculation", markerOptions: {shadow: false, size: 4}},
+                      {shadow: false, color: 'blue', label: "data", markerOptions: {shadow: false, size: 4}} ],
             grid: {shadow: false},
             sortData: false,
             axes:{
@@ -155,6 +155,7 @@ window.onload = function() {
               }
             },
             cursor: {show:true, zoom:false},
+            legend: {show: true},
             interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
                           {type: 'VerticalLine',
                            name: 'vcursor',
