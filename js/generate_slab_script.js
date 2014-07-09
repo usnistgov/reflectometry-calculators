@@ -12,7 +12,7 @@ generate_slab_script = function(sldarray, filename) {
     py += "## instrument template, load s1, s2, sample_width, and sample broadening\n";
     py += "## sample_broadening = FWHM - 0.5*(s1+s2)/(d1-d2)\n";
     py += "## for NG1, d1 = 1905 mm, d2 = 355.6 mm\n";
-    py += "instrument = NCNR.NG1(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.2) \n";
+    py += "instrument = NCNR.NG1(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.2, sample_broadening=0.0) \n";
     py += "\n";
     py += "## probe object combines instrument and data\n";
     
@@ -113,7 +113,7 @@ generate_slab_script = function(sldarray, filename) {
     for (var i=0; i<sldarray.length; i++) {
         sld = sldarray[i];
         istr = i.toFixed(0);
-        py += "#layer"+istr+".interface.range(0,10)\n";
+        py += "#layer"+istr+".interface.range(0,40)\n";
     }
     py += "\n";
     py += "## === Problem definition ===\n";
