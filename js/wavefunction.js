@@ -114,6 +114,76 @@ neutron_wavefunction.prototype.calculateR = function() {
     return r;
 };
 
+neutron_wavefunction.prototype.calculateR_BA_phase = function() {
+    var SLD, thickness, mu, nz, kz, kzt, cos_kzt, sin_kzt;
+    var kz_array = [this.kz_in];
+    var k0z_sq = Math.pow(this.k0z, 2); 
+    // calculate phases:
+    var z=0, zs = [0];
+    var qz_l = [Complex.sqrt(4.0*(k0z_sq - 4.0 * Math.PI * this.sld[0].sld ))];
+    var phase = new Complex(0,0); phase_sum = [phase];
+    var dsld = [0];
+    for (var i=1; i<this.layer_num_total; i++) {       
+        zs[i] = z;
+        qz_l[i] = Complex.sqrt(4.0*(k0z_sq - 4.0 * Math.PI * this.sld[i].sld));
+        phase_sum[i] = phase.copy();
+        dsld[i] = Complex.subtract(Complex.multiply(this.sld[i].sld, qz_l[i].inverse()), Complex.multiply(this.sld[i-1].sld, qz_l[i-1].inverse()));
+        z+= this.sld[i].thickness;
+        phase = Complex.add(phase, Complex.multiply(qz_l[i], this.sld[i].thickness));
+    }
+
+    var dsld_i, dsld_j, phase_i, phase_j;
+    var R = new Complex(0,0);
+    for (var i=1; i<this.layer_num_total; i++) {
+        for (var j=1; j<this.layer_num_total; j++) {
+            phase_i = phase_sum[i];
+            phase_j = phase_sum[j];
+            dsld_i = dsld[i];
+            dsld_j = dsld[j];
+            R = Complex.add(R, Complex.multiply(Complex.multiply(dsld_i, dsld_j), Complex.cos(Complex.subtract(phase_j, phase_i))));    
+        }
+    }
+    
+    R = Complex.multiply(R, Math.pow(4.0 * Math.PI/(2.0 * this.k0z), 2));
+    var r = Complex.sqrt(R);
+    this.r = r;
+    return r;
+        
+};
+
+neutron_wavefunction.prototype.calculateR_BA = function() {
+    var SLD, thickness, mu, nz, kz, kzt, cos_kzt, sin_kzt;
+    var kz_array = [this.kz_in];
+    var k0z_sq = Math.pow(this.k0z, 2); 
+    // calculate phases:
+    var z=0, zs = [0];
+    var qz = this.k0z * 2.0;
+    var dsld = [0];
+    for (var i=1; i<this.layer_num_total; i++) {       
+        zs[i] = z;
+        dsld[i] = this.sld[i].sld - this.sld[i-1].sld;
+        z+= this.sld[i].thickness;
+    }
+
+    var dsld_i, dsld_j, z_i, z_j;
+    var R = new Complex(0,0);
+    for (var i=1; i<this.layer_num_total; i++) {
+        for (var j=1; j<this.layer_num_total; j++) {
+            z_i = zs[i];
+            z_j = zs[j];
+            dsld_i = dsld[i];
+            dsld_j = dsld[j];
+            R += dsld_i * dsld_j * Math.cos(qz * (z_j - z_i));    
+        }
+    }
+    
+    R *= Math.pow(4.0 * Math.PI / Math.pow(qz, 2), 2);
+    var r = Math.sqrt(R);
+    this.r = r;
+    return r;
+        
+};
+
 using_running = false;
 
 neutron_wavefunction.prototype.calculateCD = function() {

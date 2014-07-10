@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <!-- Enable IE9 Standards mode -->
 <meta http-equiv="X-UA-Compatible" content="IE=9" >
-<title>Reflectivity and wavefunction for a slab profile</title>
+<title>How bad is the Born Approximation?</title>
 <style type="text/css">
   label { display: block; font-family: consolas, monospace; text-align: center; }
   //canvas { border: 1px dotted #888; }
@@ -63,8 +63,11 @@ t0 = new Date(); // time for time-dependent psi - will be updated with function 
 t0_sec = t0.getTime() / 1000; // in seconds
 dt0 = 1.0; // delta t0 for each call of animate()
 show_psi = true;
-webworker = null;
-frameID = null;
+webworker_full = null;
+webworker_ba = null;
+webworker_bap = null;
+frameID = null;  // for the web workers animation;
+
 
 // boilerplate from html5canvastutorials.com
 window.requestAnimFrame = (function(callback){
@@ -91,8 +94,9 @@ window.onload = function() {
     };
     
     
-    plot_choices = {'reflectivity':   {data: 'xy', xlabel: 'Q (inverse Å)', ylabel: 'log₁₀(R)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
-                    'phase':          {data: 'phase', xlabel: 'Q (inverse Å)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
+    plot_choices = {'Full':   {data: 'xy', xlabel: 'Q (inverse Å)', ylabel: 'log₁₀(R)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
+                    'BA':   {data: 'ba', xlabel: 'Q (inverse Å)', ylabel: 'log₁₀(R)', title:'Reflectivity R=|Ψ←(z=-∞)|²'}
+                    //'phase':          {data: 'phase', xlabel: 'Q (inverse Å)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
                     //'spin asymmetry': {data: 'sa', xlabel: 'Q (inverse Å)', ylabel: '(R1 - R2)/(R1 + R2)', title: 'Asymmetry'}
                     };
     current_choice = 'reflectivity';
@@ -130,10 +134,11 @@ window.onload = function() {
     
     function make_plots( xy1, xy2 ) {
         
-        plot1 = $.jqplot ('rplot', [xy1,  [[0, 0]]], {
+        plot1 = $.jqplot ('rplot', [xy1,  [[0, 0]], [[0,0]]], {
             title: 'Reflectivity R=|Ψ←(z=-∞)|²',
-            series: [ {shadow: false, color: 'red', label: "calculation", markerOptions: {shadow: false, size: 4}},
-                      {shadow: false, color: 'blue', label: "data", markerOptions: {shadow: false, size: 4}} ],
+            series: [ {shadow: false, color: 'red', label: "full Schr&ouml;dinger calc.", markerOptions: {shadow: false, size: 4}},
+                      {shadow: false, color: 'blue', label: "Born approximation w/phase", markerOptions: {shadow: false, size: 4}},
+                      {shadow: false, color: 'green', label: "Born approximation", markerOptions: {shadow: false, size: 4}} ],
             grid: {shadow: false},
             sortData: false,
             axes:{
@@ -329,14 +334,13 @@ window.onload = function() {
       
     update_plot_live = function() {
         //var plot_select = $('#choices input:checked').prop('value');
-        var plot_select = plot_choices[current_choice]['data']
         var sld = get_sld(plot2.plugins.interactors.profile1);
-        var series = 0;
-        update_plot(series, sld, plot_select);
+        update_plot(sld);
     }
       
-    update_plot = function(series, sld, plot_select) {
+    update_plot = function(sld) {
         var qmin, qmax, qstep, num_steps;
+        /*
         mydata = plot1.series[1].data;
         if (mydata.length > 1) {
             qmin = mydata[0][0];
@@ -345,22 +349,55 @@ window.onload = function() {
             qstep = (qmax - qmin)/num_steps;
             
         }
-        if (webworker == null) {
-            webworker = new Worker("js/calc_r.js");
+        */
+        if (webworker_full == null) {
+            webworker_full = new Worker("js/calc_r.js");
             
-            webworker.onmessage = function(event) {
-                r[series] = JSON.parse(event.data);
-                plot1.series[0].data = r[0][plot_select];
+            webworker_full.onmessage = function(event) {
+                r[0] = JSON.parse(event.data);
+                plot1.series[0].data = r[0]['xy'];
                 plot1.drawSeries(0);
                 frameID = null;
             }
 
-            webworker.onerror = function(error) {
+            webworker_full.onerror = function(error) {
                 alert("worker error: " + error.message + "\n");
                 //throw error
             }
         }
-        webworker.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep}));
+        if (webworker_ba == null) {
+            webworker_ba = new Worker("js/calc_r_BA.js");
+            
+            webworker_ba.onmessage = function(event) {
+                r[2] = JSON.parse(event.data);
+                plot1.series[2].data = r[2]['xy'];
+                plot1.drawSeries(2);
+                //frameID = null;  // assume the full calculation is slower.
+            }
+
+            webworker_ba.onerror = function(error) {
+                alert("worker error: " + error.message + "\n");
+                //throw error
+            }
+        }
+        if (webworker_bap == null) {
+            webworker_bap = new Worker("js/calc_r_BA_phase.js");
+            
+            webworker_bap.onmessage = function(event) {
+                r[1] = JSON.parse(event.data);
+                plot1.series[1].data = r[1]['xy'];
+                plot1.drawSeries(1);
+                //frameID = null;  // assume the full calculation is slower.
+            }
+
+            webworker_bap.onerror = function(error) {
+                alert("worker error: " + error.message + "\n");
+                //throw error
+            }
+        }
+        webworker_full.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep}));
+        webworker_ba.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep}));
+        webworker_bap.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep}));
         
     }
     
@@ -588,119 +625,20 @@ window.onload = function() {
     vc.p.listeners.push(e0cursor);
     e0cursor.p.listeners.push(vc);
     
-    for (var i in plot_choices) {
-        var choicediv = document.getElementById('choices');
-        var choice = document.createElement('input');
-        choice.setAttribute('id', i + '_choice');
-        choice.setAttribute('type', 'radio');
-        choice.setAttribute('name', 'plots');
-        choice.setAttribute('value', i);
-        choice.onclick = switch_plots;
-      
-        choicediv.appendChild(choice);
-        choicediv.appendChild(document.createTextNode(i));
-    }
-    document.getElementById('reflectivity_choice').checked = true;
+    update_plot_live();
     
-    function get_plot_choice() {
-        return $('#choices input:checked').prop('value');
-    }
-    
-    function set_data(raw_data) {
-        var output_data = [];
-        var x, y, y_out, row;
-        var lines = raw_data.split(/\r\n|\r|\n/g);
-        //var lines = raw_data.split('\n');
-        for (var i in lines) {
-            row = lines[i];
-            if (row[0] != '#') {
-                var rowdata = row.split(/[\s,]+/)
-                //row.split(' ');
-                if (rowdata.length >= 2) {
-                    x = Number(rowdata[0]);
-                    y = Number(rowdata[1]);
-                    y_out = Math.log(y) / Math.LN10;
-                    output_data.push([x, y_out]);
-                }
-            }
-        }
-        plot1.series[1].data = output_data;        
-        plot2.plugins.interactors.profile1.update();
-        
-        plot1.replot();
-        plot1.resetAxesScale();
-        plot1.plugins._interactor.zoomMax();
-    }
-    
-    function loadData() {
-        var file = document.getElementById('datafile').files[0]; // only one file allowed
-        datafilename = file.name;
-        var result = null;
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            set_data(this.result);
-        }
-        reader.readAsText(file);
-    }
-    
-    var fileinput = document.getElementById('datafile');
-    fileinput.onchange = loadData;    
-    
-    
-    
-    test_show_script = function() {
-        var sldarray = get_sld(plot2.plugins.interactors.profile1);
-        //var datafilename = datafilename || "";
-        var pyscript = generate_slab_script(sldarray, datafilename);
-        var data_uri = "data:application/octet-stream,"+encodeURIComponent(pyscript);
-        var a = document.getElementById('pyscript_data_uri');
-        a.href = data_uri;
-        a.download = "refl_script.py";
-        a.mimeType = 'application/binary-octal';
-        a.click();     
-    }    
-    
-    saveData = (function () {
-        var a = document.createElement("a");
-        document.body.appendChild(a);
-        a.style = "display: none";
-        a.id = "savedata";
-        return function (data, fileName) {
-            var blob = new Blob([data], {type: "application/python"}),
-                url = window.URL.createObjectURL(blob);
-            a.href = url;
-            a.download = fileName;
-            //window.open(url, '_blank', fileName);
-            a.click();
-            setTimeout(function() { window.URL.revokeObjectURL(url) }, 1000);
-        };
-    }());
-    
-    show_script = function() {
-        var sldarray = get_sld(plot2.plugins.interactors.profile1);
-        //var datafilename = datafilename || "";
-        // sldarray order is based on the old reflpak ordering (beam source side first)
-        // while refl1d builds the slab model from the "bottom", with the substrate slab first
-        var pyscript = generate_slab_script(sldarray, datafilename);
-        var filename = document.getElementById("scriptname").value;
-        saveData(pyscript, filename);
-        //scriptwin = window.open("", "_blank");
-        //scriptwin.document.title = "Refl1D script: " + datafilename;
-        //var code = scriptwin.document.createElement('pre');
-        //scriptwin.document.body.appendChild(code);
-        //code.innerHTML = pyscript;
-    }
-    document.getElementById("scriptbutton").onclick = show_script;
 }
 </script>
+<style type="text/css">
+    h2 { 
+        text-align: center;
+        font-family: sans;    
+    }
+</style>
 </head>
 <body bgcolor="#ffffcc"> 
-    Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
-    <a href="" id="pyscript_data_uri"></a>
-    <input type="button" value="generate Refl1D script" id="scriptbutton">
-    <input type="text" value="refl1d_script.py" width=20 id="scriptname">
+    <h2>How bad is the Born Approximation for Reflectivity?</h2>
     <div id='rplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
-    <div id='choices'></div>
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='psi_choices'></div>
     <div id='psi_plot'></div>
