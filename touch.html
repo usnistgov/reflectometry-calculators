@@ -1,0 +1,78 @@
+<html>
+    <head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+		<title>touches</title>
+		<!-- Reference the theme's stylesheet on the Google CDN -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jquerymobile/1.4.2/jquery.mobile.min.css" />
+
+        <style>
+            #panel {
+                width: 600px;
+                height: 500px;
+                border: 2px solid;
+                display: block;
+                background-color: gray;
+            }
+        </style>
+        <script type="text/javascript">
+            function handleTwoTouchStart(ev) {
+                var oev = ev.originalEvent;
+                if (oev.touches.length != 2) { return }
+                oev.preventDefault();
+                oev.stopPropagation();
+                touchdown = [true, true];
+                var t1 = oev.touches[0];
+                var t2 = oev.touches[1];
+                center = {x: ((t1.pageX + t2.pageX) / 2.0), y: ((t1.pageY + t2.pageY) / 2.0)};
+                dist = {x: t1.pageX - t2.pageX, y: t1.pageY - t2.pageY}
+                document.getElementById('start').innerHTML = "center: " + JSON.stringify(center);
+                document.getElementById('start').innerHTML += " dist: " + JSON.stringify(dist);
+                
+            }
+            
+            function handleTwoTouchLeave(ev) {
+                var move = document.getElementById('move');
+                move.innerHTML += 'leave' ;
+                move.innerHTML += String(Object.keys(ev));
+            
+            }
+            function handleTwoTouchMove(ev) {
+                var oev = ev.originalEvent;
+                if (oev.targetTouches.length != 2) { return }
+                oev.preventDefault();
+                oev.stopPropagation();
+                var t1 = oev.targetTouches[0];
+                var t2 = oev.targetTouches[1];
+                var new_center = {x: ((t1.pageX + t2.pageX) / 2.0), y: ((t1.pageY + t2.pageY) / 2.0)};
+                var new_dist = {x: t1.pageX - t2.pageX, y: t1.pageY - t2.pageY}
+                var dcenter = {x: new_center.x - center.x, y: new_center.y - center.y};
+                var ddist = {x: new_dist.x - dist.x, y: new_dist.y - dist.y}
+                var move = document.getElementById('move');
+                move.innerHTML = "center: " + JSON.stringify(dcenter);
+                move.innerHTML += " dist: " + JSON.stringify(ddist);
+                move.innerHTML += "<br>" + t1.target.id;
+                move.innerHTML += "<br>" + t2.target.id;
+                
+            }
+            $(document).on( "mobileinit", function() { document.body.innerHTML += "mobile init\n" });
+            window.onload = function() {
+                //$('body').on('swipeleft', function() { document.getElementById('move').innerHTML += "\nswipe left\n"; });
+                //$('body').on('swiperight', function() { document.getElementById('move').innerHTML += "\nswipe right\n"; });
+                //$('body').on('scrollstart', function() { document.getElementById('move').innerHTML += "\nscrollstart\n"; });
+                $('#panel').on('touchleave', handleTwoTouchLeave);
+                $('#panel').on('touchstart', handleTwoTouchStart);
+                $('#panel').on('touchmove', handleTwoTouchMove);
+                //document.body.ontouchstart = function(ev) { document.body.innerHTML += "touchstart " + ev.touches.length + "\n" };
+            }
+        </script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquerymobile/1.4.2/jquery.mobile.min.js"></script>
+    </head>
+    <body id="thebody">
+    <div id="panel"> </div>
+    <div id="start"></div>
+    <div id="move"></div>
+    </body>
+    </html>
