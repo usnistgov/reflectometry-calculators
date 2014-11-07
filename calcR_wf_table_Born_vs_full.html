@@ -162,7 +162,10 @@ window.onload = function() {
               }
             },
             cursor: {show:true, zoom:false},
-            legend: {show: true},
+            legend: {
+                renderer: $.jqplot.InteractiveLegendRenderer,
+                show:true
+            },
             interactors: [{type: 'master', scrollZoom: true, dragPan: true}, 
                           {type: 'VerticalLine',
                            name: 'vcursor',
@@ -176,6 +179,13 @@ window.onload = function() {
     
     profilexy = calc_r(initial_sld).profile;
     for (var i in profilexy) { profilexy[i][1] *= 1e6; }
+    
+    /*
+    $('.show-series-select').change(function(e) {
+        plot1.series[parseInt(e.target.getAttribute('series'))].show = e.target.checked;
+        plot1.redraw();
+    });
+    */
     
     leftpoints = [];
     var z = -1.0 * initial_sld[0].thickness;
@@ -609,12 +619,15 @@ window.onload = function() {
     show_table(sld[0]);
     make_plots( r[0].xy );
     
+    plot1.legend.handleClick = function(e) {
+        var series_num = e.data.series_num || 0;
+        plot1.series[series_num].show = (!(plot1.series[series_num].show));
+        plot1.redraw();
+    }
+    
     var vc = plot1.plugins.interactors.vcursor;
     vc.update = function(pos) {
         this.p.coords.x = 2 * Math.sqrt(4 * Math.PI * pos.y / 1.0e6);
-        //plot1.replot();
-        //setTimeout(function() { plot1.plugins._interactor.redraw(); }, 0);        
-        //setTimeout(function() { plot1.plugins._interactor.redraw(); }, 0);
         plot1.plugins._interactor.redraw(); // master
         plot1.plugins._interactor.redraw(); // master
         //plot1.drawSeries(0);
