@@ -209,12 +209,6 @@ C later in the calculation when we divide by DETW.
         }
     }
     
-    B = [];
-    B.push([ [1, 0, 0, 0], 
-             [0, 1, 0, 0], 
-             [0, 0, 1, 0], 
-             [0, 0, 0, 1] ]);
-    
     C = [ [1, 0, 0, 0], 
           [0, 1, 0, 0], 
           [0, 0, 1, 0], 
@@ -232,10 +226,10 @@ C later in the calculation when we divide by DETW.
         prevI = I-1;
         L = L+STEP;
         sld_L = this.sld[L];
-        var EXPTH_L = expth[L]; // need to fill this above!
-        S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+        var EXPTH_L = expth[L].copy(); // need to fill this above!
+        S1 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  -PI4*sld_L.sldi));
         // this was -PI4*Imag(sld) in magnetic.cc - why? 
-        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)); 
+        S3 = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  -PI4*sld_L.sldi)); 
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
         if (Math.abs(S1.x) > Math.abs(S3.x))
@@ -244,9 +238,10 @@ C later in the calculation when we divide by DETW.
           LOGH = Math.abs(S3.x)*sld_L.thickness;
 
 LOGH=0;
-    
+        var COSHS1, SINHS1;
+/*        
 //    Calculate 2*COSH/H and 2*SINH/H for D*S1
-/*
+        var X, EPA, EMA, SINB, COSB;
         X    = Cplx.multiply(S1, sld_L.thickness);
         EPA  = Math.exp(X.x-LOGH);
         EMA  = Math.exp(-X.x-LOGH);
@@ -255,11 +250,12 @@ LOGH=0;
         COSHS1 = new Cplx((EPA+EMA)*COSB, (EPA-EMA)*SINB);
         SINHS1 = new Cplx((EPA-EMA)*COSB, (EPA+EMA)*SINB);
 */      
-      COSHS1 = Cplx.twocosh(Cplx.multiply(S1, sld_L.thickness));
-      SINHS1 = Cplx.twosinh(Cplx.multiply(S1, sld_L.thickness));
+        COSHS1 = Cplx.twocosh(Cplx.multiply(S1, sld_L.thickness));
+        SINHS1 = Cplx.twosinh(Cplx.multiply(S1, sld_L.thickness));
 
-//    Calculate 2*COSH/H and 2*SINH/H for D*S3
+        var COSHS3, SINHS3;
 /*
+//    Calculate 2*COSH/H and 2*SINH/H for D*S3
         X    = Cplx.multiply(S3, sld_L.thickness); //S3*D[L];
         EPA  = Math.exp(X.x-LOGH);
         EMA  = Math.exp(-X.x-LOGH);
@@ -268,8 +264,8 @@ LOGH=0;
         COSHS3 = new Cplx((EPA+EMA)*COSB, ((EPA-EMA)*SINB));
         SINHS3 = new Cplx((EPA-EMA)*COSB, ((EPA+EMA)*SINB));
 */
-      COSHS3 = Cplx.twocosh(Cplx.multiply(S3, sld_L.thickness));
-      SINHS3 = Cplx.twosinh(Cplx.multiply(S3, sld_L.thickness));
+        COSHS3 = Cplx.twocosh(Cplx.multiply(S3, sld_L.thickness));
+        SINHS3 = Cplx.twosinh(Cplx.multiply(S3, sld_L.thickness));
 //    Generate A using a factor of 0.25 since we are using
 //    2*cosh/H and 2*sinh/H rather than cosh/H and sinh/H
         var A = [ [0, 0, 0, 0], 
@@ -330,6 +326,7 @@ LOGH=0;
       //prevI = I-1;
       //CST = this.unitary_LAB_SAM_LAB_old(B[prevI], AGUIDE);
       CST = this.unitary_LAB_SAM_LAB_old(C, AGUIDE);
+      
 
 //    Use corrected versions of X,Y,ZI, and ZS to account for effect
 //    of incident and substrate media
@@ -337,12 +334,15 @@ LOGH=0;
 //    media --- use gepore.f directly for a more complete solution
       L=L+STEP;
       sld_L = this.sld[L];
-      ZS=Cplx.multiply(CI, Cplx.sqrt(new Cplx(KSQREL-PI4*sld_L.sld, -PI4*sld_L.sldi)));
+      ZS=Cplx.multiply(CI, Cplx.sqrt(new Cplx(KSQREL-PI4*sld_L.sld, PI4*sld_L.sldi)));
+
       // this was +PI4*Imag(sld) in magnetic.cc Don't know why.
       ZI=Cplx.multiply(CI, Math.abs(KZ));
 
-      X=-1.;
+      X=new Cplx(-1.0, 0.0);
       Y=Cplx.multiply(ZI, ZS);
+
+      //console.log(ZS, KSQREL-PI4*sld_L.sld, +PI4*sld_L.sldi);
 
 //    W below is U and V is -V of printed versions
       V11 = Cplx.sum([Cplx.multiply(ZS, CST[0][0]), Cplx.multiply(X, CST[2][0]), Cplx.multiply(Y, CST[0][2]), (Cplx.multiply(ZI, CST[2][2])).negative()]);

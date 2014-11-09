@@ -54,8 +54,9 @@ THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
 
 initial_sld = [
     {thickness: 100, sld: 0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0},
-    {thickness: 1250, sld: 4.5e-6, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0},
-    {thickness: 100, sld: 1.027e-6, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0}
+    {thickness: 200, sld: 4.0e-6, mu: 0, thetaM: 0.0, sldm: 1.0e-6, sldi: 0},
+    {thickness: 200, sld: 2.0e-6, mu: 0, thetaM: THETA_M, sldm: 1.0e-6, sldi: 0},
+    {thickness: 100, sld: 4.0e-6, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0}
 ];
 
 OMEGA = Math.PI;
@@ -240,8 +241,8 @@ window.onload = function() {
     for (var i in initial_sld) {
         var layer = initial_sld[i]
         leftpoints.push( {x: z, y: layer.sld * 1e6, segwidth: layer.thickness} );
-        mag_leftpoints.push( {x: z, y: 1.0, segwidth: layer.thickness} );
-        angle_leftpoints.push( {x: z, y: THETA_M, segwidth: layer.thickness} );
+        mag_leftpoints.push( {x: z, y: layer.sldm * 1e6, segwidth: layer.thickness} );
+        angle_leftpoints.push( {x: z, y: layer.thetaM, segwidth: layer.thickness} );
         z += layer.thickness;
     }
     
