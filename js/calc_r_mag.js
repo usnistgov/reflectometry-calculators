@@ -1,4 +1,4 @@
-importScripts('complex.js', 'magnetic_wf3b.js');
+importScripts('complex.js', 'magnetic_wf_B3.js');
 
 calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
     var qmin = (qmin == null) ? 0.0001 : qmin;

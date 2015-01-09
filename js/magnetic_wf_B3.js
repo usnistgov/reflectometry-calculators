@@ -470,12 +470,12 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
         var sld_Ln = this.sld[Ln];
         var mu_Ln = expth[Ln];
         var inv_mu_Ln = mu_Ln.inverse();       
-        S1L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
+        S1L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)).negative();
+        S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi)).negative();
+        S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi))).negative();
         inv_S1Ln = S1Ln.inverse();
         inv_mu_S1Ln = Cplx.multiply(inv_mu_Ln, inv_S1Ln);
-        S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
+        S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi))).negative();
         inv_S3Ln = S3Ln.inverse();
         inv_mu_S3Ln = Cplx.multiply(inv_mu_Ln, inv_S3Ln);
         
@@ -519,22 +519,28 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
     for (I=1; I < N-1; I++) {
         //console.log(z.toString());
         Ln = L+STEP;
-        sld_L = this.sld[L];
+        //sld_L = this.sld[L];
+        sld_L = sld_Ln;
         var sld_Ln = this.sld[Ln];
-        var mu_L = expth[L]; // need to fill this above!
+        //var mu_L = expth[L]; // need to fill this above!
+        mu_L = mu_Ln;
         var mu_Ln = expth[Ln];
         var inv_mu_Ln = mu_Ln.inverse();       
         var mu_ratio = Cplx.multiply(mu_L, inv_mu_Ln);
 
-        S1L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        muS1L = Cplx.multiply(mu_L, S1L);
-        S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
-        muS3L = Cplx.multiply(mu_L, S3L);
+        //S1L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld + sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+        //muS1L = Cplx.multiply(mu_L, S1L);
+        //S3L = Cplx.sqrt(new Cplx(PI4*(sld_L.sld - sld_L.sldm)-KSQREL,  PI4*sld_L.sldi));
+        //muS3L = Cplx.multiply(mu_L, S3L);
+        var S1L = S1Ln;
+        var muS1L = inv_mu_S1Ln.inverse();
+        var S3L = inv_S3Ln.inverse();
+        var muS3L = inv_mu_S3Ln.inverse();
         
-        S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
+        S1Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld + sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi))).negative();
         inv_S1Ln = S1Ln.inverse();
         inv_mu_S1Ln = Cplx.multiply(inv_mu_Ln, inv_S1Ln);
-        S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi)));
+        S3Ln = (Cplx.sqrt(new Cplx(PI4*(sld_Ln.sld - sld_Ln.sldm)-KSQREL,  PI4*sld_Ln.sldi))).negative();
         inv_S3Ln = S3Ln.inverse();
         inv_mu_S3Ln = Cplx.multiply(inv_mu_Ln, inv_S3Ln);
         
@@ -570,6 +576,7 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
         
         //    Matrix update C=A*C
         var newB = multiply4x4(A, newB);
+        //var newB = multiply4x4(newB, A);
         // C = multiply4x4(A, C);
         // B.push(A);
         B.push(newB);
@@ -585,7 +592,7 @@ magnetic_wavefunction.prototype.calculateR = function(AGUIDE) {
       var YC_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][3], newB[3][2]), Cplx.multiply(newB[1][2], newB[3][3])), denom); // r-+
       var YD_sam = Cplx.multiply(Cplx.subtract(Cplx.multiply(newB[1][2], newB[3][1]), Cplx.multiply(newB[3][2], newB[1][1])), denom); // r--
       
-      var r_lab = this.unitary_LAB_SAM_LAB2([[YA_sam, YB_sam], [YC_sam, YD_sam]], AGUIDE);
+      var r_lab = this.unitary_LAB_SAM_LAB2([[YA_sam, YC_sam], [YB_sam, YD_sam]], AGUIDE);
       this.B = B;
       this.C = C;
       
