@@ -47,16 +47,16 @@
 
 <script type="text/javascript" src="js/reflectivity_sim.js"></script>
 <script type="text/javascript" src="js/complex.js"></script>
-<script type="text/javascript" src="js/magnetic_wf3.js"></script>
+<script type="text/javascript" src="js/magnetic_wf_B3.js"></script>
 <script type="text/javascript" src="js/generate_mag_slab_script.js"></script>
 <script type="text/javascript"> 
 THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
 
 initial_sld = [
-    {thickness: 100, sld: 0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0},
-    {thickness: 200, sld: 4.0e-6, mu: 0, thetaM: 0.0, sldm: 1.0e-6, sldi: 0},
-    {thickness: 200, sld: 2.0e-6, mu: 0, thetaM: THETA_M, sldm: 1.0e-6, sldi: 0},
-    {thickness: 100, sld: 4.0e-6, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0}
+    {thickness: 100, sld: 0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0},
+    {thickness: 200, sld: 4.0e-6, mu: 0, thetaM: 0.0, sldm: 1.0e-6, sldi: 0.0},
+    {thickness: 200, sld: 2.0e-6, mu: 0, thetaM: THETA_M, sldm: 1.0e-6, sldi: 0.0},
+    {thickness: 100, sld: 4.0e-6, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0}
 ];
 
 OMEGA = Math.PI;
@@ -389,9 +389,9 @@ window.onload = function() {
             
             sld.push({ sld: profile_nuc.leftpoints[i].y * 1e-6, 
                        thickness: profile_nuc.leftpoints[i].segwidth, 
-                       mu: 0, 
+                       mu: 0.0, 
                        thetaM: profile_angle.leftpoints[i].y, 
-                       sldi: 0, 
+                       sldi: 0.0, 
                        sldm: profile_mag.leftpoints[i].y *1e-6 });
         }
         return sld;
