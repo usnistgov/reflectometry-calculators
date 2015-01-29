@@ -2,7 +2,7 @@ var prec = 5; // precision
 
 generate_slab_script = function(sldarray, filename) {
     py = "";
-    var filename = filename || "myfile.refl";
+    //var filename = filename || "myfile.refl";
     
     // adding the initiol import statements:
     py += "from refl1d.names import *\n";
@@ -17,7 +17,10 @@ generate_slab_script = function(sldarray, filename) {
     py += "## probe object combines instrument and data\n";
     
     // link to the datafile specified
+    if (filename == null) { py += "#" } // comment out filename if not defined
     py += "probe = instrument.load('" + filename + "', back_reflectivity=False)\n";
+    if (filename != null) { py += "#" } // comment out non-data load if file defined
+    py += "probe = instrument.probe(T=numpy.linspace(0.0001, 8.0, 1001))\n";
     py += "\n";
     py += "## === Stack ===\n";
     py += "\n";
