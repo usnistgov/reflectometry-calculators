@@ -336,15 +336,11 @@ window.onload = function() {
     }
       
     update_plot = function(series, sld, plot_select) {
-        var qmin, qmax, qstep, num_steps;
-        mydata = plot1.series[1].data;
-        if (mydata.length > 1) {
-            qmin = mydata[0][0];
-            qmax = mydata[mydata.length-1][0];
-            num_steps = Math.max(250, 2.0 * mydata.length + 1);
-            qstep = (qmax - qmin)/num_steps;
-            
-        }
+        var qmin = parseFloat(document.getElementById('qmin').value);
+        var qmax = parseFloat(document.getElementById('qmax').value);
+        var numpoints = parseFloat(document.getElementById('numpoints').value);
+        var qstep = (qmax - qmin)/numpoints;
+        
         if (webworker == null) {
             webworker = new Worker("js/calc_r.js");
             
@@ -463,6 +459,62 @@ window.onload = function() {
         }
         t.appendChild(t_table);
     }
+    
+    makeQRangeControls = function(id, qplot) {
+        var qRangeControlsDiv = document.createElement('div');
+        qRangeControlsDiv.setAttribute('class', 'q-range-controls');
+        if (id) qRangeControlsDiv.setAttribute('id', id);
+        
+        var qmin_control, qmax_control, numpoints_control;
+        
+        function onchange() {
+            plot1.axes.xaxis.min = parseFloat(qmin_control.value);
+            plot1.axes.xaxis.max = parseFloat(qmax_control.value);
+
+            plot1.axes.xaxis.resetDataBounds();
+            plot1.axes.yaxis.resetDataBounds();
+            
+            plot1.redraw();
+            update_plot_live();
+        }
+        
+        var qmin_label = document.createElement('label');
+        qmin_label.textContent = "qmin: ";
+        qmin_control = document.createElement('input');
+        qmin_control.setAttribute('id', 'qmin');
+        qmin_control.setAttribute('type', 'number');
+        qmin_control.setAttribute('value', '0.0001');
+        qmin_control.onchange = onchange;
+        qmin_label.appendChild(qmin_control);
+        
+        var qmax_label = document.createElement('label');
+        qmax_label.textContent = "qmax: ";
+        qmax_control = document.createElement('input');
+        qmax_control.setAttribute('id', 'qmax');
+        qmax_control.setAttribute('type', 'number');
+        qmax_control.setAttribute('value', '0.1');
+        qmax_control.onchange = onchange;
+        qmax_label.appendChild(qmax_control);
+        
+        var numpoints_label = document.createElement('label');
+        numpoints_label.textContent = "nPts: ";
+        numpoints_control = document.createElement('input');
+        numpoints_control.setAttribute('id', 'numpoints');
+        numpoints_control.setAttribute('type', 'number');
+        numpoints_control.setAttribute('value', '251');
+        numpoints_control.onchange = onchange;
+        numpoints_label.appendChild(numpoints_control);
+       
+        qRangeControlsDiv.appendChild(qmin_label);
+        qRangeControlsDiv.appendChild(document.createElement('br'));
+        qRangeControlsDiv.appendChild(qmax_label);
+        qRangeControlsDiv.appendChild(document.createElement('br'));
+        qRangeControlsDiv.appendChild(numpoints_label);
+        return qRangeControlsDiv;
+        
+    }
+    
+    document.getElementById('bottom_controls').appendChild(makeQRangeControls('qrange'));
     
     function match_x_vals(prof1, prof2) {
         for (var i=0; i<prof1.rp.length; i++) {
@@ -693,6 +745,15 @@ window.onload = function() {
     document.getElementById("scriptbutton").onclick = show_script;
 }
 </script>
+<style type="text/css"> 
+    .q-range-controls {
+        vertical-align: top;
+        display: inline-block;
+    }
+    #sld_table {
+        display: inline-block;
+    }
+</style>
 </head>
 <body bgcolor="#ffffcc"> 
     Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
@@ -704,7 +765,9 @@ window.onload = function() {
     <div id='sldplot' style="position: relative; height: 350px; user-select: none; -webkit-user-select: none; -moz-user-select: none;"></div>
     <div id='psi_choices'></div>
     <div id='psi_plot'></div>
-    <div id='sld_table' align='center'></div>
+    <div id="bottom_controls">
+        <div id='sld_table' align='center'></div>
+    </div>
     <div id='footer'><p>Last modified 02-July-2014 by website owner: NCNR (attn: Brian Maranville)</p></div>
 </body>
 </html>
