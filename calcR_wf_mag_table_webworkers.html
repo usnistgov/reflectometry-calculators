@@ -588,6 +588,8 @@ window.onload = function() {
         
     }
     
+    document.getElementById('bottom_controls').appendChild(makeQRangeControls('qrange'));
+    
     function match_x_vals(prof1, prof2) {
         for (var i=0; i<prof1.rp.length; i++) {
             prof2.rp[i].coords.x = prof1.rp[i].coords.x;
@@ -1125,6 +1127,8 @@ window.onload = function() {
     <div id='psi_choices'></div>
     <div id='psi_plot'></div>
     <div id="guide_input_div">Guide field angle epsilon - common choices: 270 (along sample y, in-plane) and 0 (along sample z, out-of-plane): <input type="text" id="guide_angle" value="270.0"></input></div>
-    <div id='sld_table' align='center'></div>
+    <div id='bottom_controls' align='center'>
+        <div id='sld_table'></div>
+    </div>
 </body>
 </html>
