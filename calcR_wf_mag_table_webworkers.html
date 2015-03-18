@@ -439,8 +439,8 @@ window.onload = function() {
     }
     
     update_plot = function(sld, plot_select) {
-        var qmin = parseFloat(document.getElementById('qMin').value);
-        var qmax = parseFloat(document.getElementById('qMax').value);
+        var qmin = parseFloat(document.getElementById('qmin').value);
+        var qmax = parseFloat(document.getElementById('qmax').value);
         var numpoints = parseFloat(document.getElementById('numpoints').value);
         var qstep = (qmax - qmin)/numpoints + 1;
         /*
@@ -478,9 +478,6 @@ window.onload = function() {
     show_table = function(sld) {
         var t = document.getElementById('sld_table');
         t.innerHTML = "";
-        
-        var wrapper = document.createElement('div');
-        wrapper.setAttribute("class", "sld-table-wrapper");
 
         var t_table = document.createElement('table');
         t_table.border = "1";
@@ -563,8 +560,8 @@ window.onload = function() {
             
             
         }
-        wrapper.appendChild(t_table);
-        t.appendChild(wrapper);
+
+        t.appendChild(t_table);
     }
     
     makeQRangeControls = function(id) {
@@ -573,7 +570,7 @@ window.onload = function() {
         if (id) qRangeControlsDiv.setAttribute('id', id);
         
         var qmin_label = document.createElement('label');
-        qmin_label.textContent = "qMin: ";
+        qmin_label.textContent = "qmin: ";
         var qmin_control = document.createElement('input');
         qmin_control.setAttribute('id', 'qmin');
         qmin_control.setAttribute('type', 'number');
@@ -581,7 +578,7 @@ window.onload = function() {
         qmin_label.appendChild(qmin_control);
         
         var qmax_label = document.createElement('label');
-        qmax_label.textContent = "qMax: ";
+        qmax_label.textContent = "qmax: ";
         var qmax_control = document.createElement('input');
         qmax_control.setAttribute('id', 'qmax');
         qmax_control.setAttribute('type', 'number');
@@ -1137,6 +1134,9 @@ window.onload = function() {
 <style type="text/css"> 
     .q-range-controls {
         vertical-align: top;
+        display: inline-block;
+    }
+    #sld_table {
         display: inline-block;
     }
 </style>
