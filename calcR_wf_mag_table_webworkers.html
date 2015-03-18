@@ -444,15 +444,6 @@ window.onload = function() {
         var numpoints = parseFloat(document.getElementById('numpoints').value);
         var qstep = (qmax - qmin)/numpoints;
        
-        /*
-        mydata = plot1.series[4].data;
-        if (mydata.length > 1) {
-            qmin = mydata[0][0];
-            qmax = mydata[mydata.length-1][0];
-            qstep = (qmax - qmin)/250.0;
-            
-        }
-        */
         var AGUIDE = parseFloat(document.getElementById('guide_angle').value);
         if (webworker == null) {
             webworker = new Worker("js/calc_r_mag.js");
@@ -576,8 +567,8 @@ window.onload = function() {
             plot1.axes.xaxis.min = parseFloat(qmin_control.value);
             plot1.axes.xaxis.max = parseFloat(qmax_control.value);
 
-            plot1.axes.xaxis.resetScale();
-            plot1.axes.yaxis.resetScale();
+            plot1.axes.xaxis.resetDataBounds();
+            plot1.axes.yaxis.resetDataBounds();
             
             plot1.redraw();
             update_plot_live();
