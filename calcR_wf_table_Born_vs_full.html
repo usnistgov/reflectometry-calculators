@@ -151,6 +151,7 @@ window.onload = function() {
               },
               yaxis:{
                 label: 'log₁₀(R)',
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
                 renderer: $.jqplot.GracefulAxisRenderer,
                 tickOptions: {
                     formatString: "%.2g",
@@ -203,8 +204,6 @@ window.onload = function() {
           xaxis:{
             label: 'z (Å) Beam direction is left-to-right (zero near top of sample) ',
             renderer: $.jqplot.GracefulAxisRenderer,
-            //labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            //tickRenderer: $.jqplot.CanvasAxisTickRenderer,
             tickOptions: {
                 formatString: "%.0f"
             }
@@ -212,8 +211,7 @@ window.onload = function() {
           yaxis:{
             label: 'SLD<br>(10⁻⁶ Å⁻²)',
             renderer: $.jqplot.GracefulAxisRenderer,
-            //labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            //tickRenderer: $.jqplot.CanvasAxisTickRenderer,
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
             tickOptions: {
                 formatString: "%.2g",
                 // fix for ticks drifting to the left in accordionview!
