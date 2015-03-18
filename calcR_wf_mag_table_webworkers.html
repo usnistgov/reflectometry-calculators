@@ -564,10 +564,16 @@ window.onload = function() {
         t.appendChild(t_table);
     }
     
-    makeQRangeControls = function(id) {
+    makeQRangeControls = function(id, qplot) {
         var qRangeControlsDiv = document.createElement('div');
         qRangeControlsDiv.setAttribute('class', 'q-range-controls');
         if (id) qRangeControlsDiv.setAttribute('id', id);
+        
+        function onchange() {
+            plot1.axes.xaxis.resetScale();
+            plot1.axes.yaxis.resetScale();
+            plot1.replot();
+        }
         
         var qmin_label = document.createElement('label');
         qmin_label.textContent = "qmin: ";
@@ -575,6 +581,7 @@ window.onload = function() {
         qmin_control.setAttribute('id', 'qmin');
         qmin_control.setAttribute('type', 'number');
         qmin_control.setAttribute('value', '0.0001');
+        qmin_control.onchange = onchange;
         qmin_label.appendChild(qmin_control);
         
         var qmax_label = document.createElement('label');
@@ -583,6 +590,7 @@ window.onload = function() {
         qmax_control.setAttribute('id', 'qmax');
         qmax_control.setAttribute('type', 'number');
         qmax_control.setAttribute('value', '0.1');
+        qmax_control.onchange = onchange;
         qmax_label.appendChild(qmax_control);
         
         var numpoints_label = document.createElement('label');
@@ -591,6 +599,7 @@ window.onload = function() {
         numpoints_control.setAttribute('id', 'numpoints');
         numpoints_control.setAttribute('type', 'number');
         numpoints_control.setAttribute('value', '251');
+        numpoints_control.onchange = onchange;
         numpoints_label.appendChild(numpoints_control);
        
         qRangeControlsDiv.appendChild(qmin_label);
@@ -603,6 +612,7 @@ window.onload = function() {
     }
     
     document.getElementById('bottom_controls').appendChild(makeQRangeControls('qrange'));
+    
     
     function match_x_vals(prof1, prof2) {
         for (var i=0; i<prof1.rp.length; i++) {
