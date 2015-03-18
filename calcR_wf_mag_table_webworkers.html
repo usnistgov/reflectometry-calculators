@@ -153,19 +153,16 @@ window.onload = function() {
             grid: {shadow: false},
             sortData: false,
             legend: {show: true, placement: 'outsideGrid', renderer: $.jqplot.InteractiveLegendRenderer},
+            axesDefaults: {renderer: $.jqplot.GracefulAxisRenderer},
             axes:{
               xaxis:{
                 label: 'Q (inverse Å)', 
-                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-                tickRenderer: $.jqplot.CanvasAxisTickRenderer,
                 tickOptions: {
                     formatString: "%.2g"
                 }
               },
               yaxis:{
                 label: 'log₁₀(R)',
-                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-                tickRenderer: $.jqplot.CanvasAxisTickRenderer,
                 tickOptions: {
                     formatString: "%.2g",
                     // fix for ticks drifting to the left in accordionview!
@@ -263,19 +260,16 @@ window.onload = function() {
                  {color:'magenta', label:'Magnetic angle (rad)'},
                  {color:'green', label:'k0²/4π'}],
         legend: {show: true, renderer: $.jqplot.EnhancedLegendRenderer},
+        axesDefaults: {renderer: $.jqplot.GracefulAxisRenderer},
         axes:{
           xaxis:{
             label: 'z (Å) Beam direction is left-to-right (zero near top of sample) ', 
-            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
             tickOptions: {
                 formatString: "%.0f"
             }
           },
           yaxis:{
             label: 'SLD (10⁻⁶ Å⁻²) and amplitude Ψ (arb.) ',
-            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
             tickOptions: {
                 formatString: "%.2g",
                 // fix for ticks drifting to the left in accordionview!
