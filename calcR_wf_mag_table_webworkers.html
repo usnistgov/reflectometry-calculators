@@ -472,11 +472,14 @@ window.onload = function() {
     
     show_table = function(sld) {
         var t = document.getElementById('sld_table');
-
         t.innerHTML = "";
+        
+        var wrapper = document.createElement('div');
+        wrapper.setAttribute("class", "sld-table-wrapper");
+
         var t_table = document.createElement('table');
         t_table.border = "1";
-        t_table.display = "inline-block";
+        t_table.setAttribute("display", "inline-block");
         var t_titles = t_table.insertRow(-1);
         t_titles.style.fontWeight = "bold";
         var cell, t_row, slab, entry;
@@ -555,10 +558,11 @@ window.onload = function() {
             
             
         }
-        t.appendChild(t_table);
+        wrapper.appendChild(t_table);
+        t.appendChild(wrapper);
     }
     
-    function makeQRangeControls(id) {
+    makeQRangeControls = function(id) {
         var qRangeControlsDiv = document.createElement('div');
         qRangeControlsDiv.setAttribute('class', 'q-range-controls');
         if (id) qRangeControlsDiv.setAttribute('id', id);
