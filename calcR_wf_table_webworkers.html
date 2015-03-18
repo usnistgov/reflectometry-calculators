@@ -342,7 +342,7 @@ window.onload = function() {
             
             webworker.onmessage = function(event) {
                 r[series] = JSON.parse(event.data);
-                plot1.series[0].data = r[0][plot_select];
+                plot1.series[0].data = r[series][plot_select];
                 plot1.drawSeries(0);
                 frameID = null;
             }
