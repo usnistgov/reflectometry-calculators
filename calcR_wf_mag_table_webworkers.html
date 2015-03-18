@@ -443,6 +443,7 @@ window.onload = function() {
         var qmax = parseFloat(document.getElementById('qmax').value);
         var numpoints = parseFloat(document.getElementById('numpoints').value);
         var qstep = (qmax - qmin)/numpoints;
+       
         /*
         mydata = plot1.series[4].data;
         if (mydata.length > 1) {
@@ -569,15 +570,22 @@ window.onload = function() {
         qRangeControlsDiv.setAttribute('class', 'q-range-controls');
         if (id) qRangeControlsDiv.setAttribute('id', id);
         
+        var qmin_control, qmax_control, numpoints_control;
+        
         function onchange() {
+            plot1.axes.xaxis.min = parseFloat(qmin_control.value);
+            plot1.axes.xaxis.max = parseFloat(qmax_control.value);
+
             plot1.axes.xaxis.resetScale();
             plot1.axes.yaxis.resetScale();
-            plot1.replot();
+            
+            plot1.redraw();
+            update_plot_live();
         }
         
         var qmin_label = document.createElement('label');
         qmin_label.textContent = "qmin: ";
-        var qmin_control = document.createElement('input');
+        qmin_control = document.createElement('input');
         qmin_control.setAttribute('id', 'qmin');
         qmin_control.setAttribute('type', 'number');
         qmin_control.setAttribute('value', '0.0001');
@@ -586,7 +594,7 @@ window.onload = function() {
         
         var qmax_label = document.createElement('label');
         qmax_label.textContent = "qmax: ";
-        var qmax_control = document.createElement('input');
+        qmax_control = document.createElement('input');
         qmax_control.setAttribute('id', 'qmax');
         qmax_control.setAttribute('type', 'number');
         qmax_control.setAttribute('value', '0.1');
@@ -595,7 +603,7 @@ window.onload = function() {
         
         var numpoints_label = document.createElement('label');
         numpoints_label.textContent = "nPts: ";
-        var numpoints_control = document.createElement('input');
+        numpoints_control = document.createElement('input');
         numpoints_control.setAttribute('id', 'numpoints');
         numpoints_control.setAttribute('type', 'number');
         numpoints_control.setAttribute('value', '251');
