@@ -163,6 +163,7 @@ window.onload = function() {
               },
               yaxis:{
                 label: 'log₁₀(R)',
+                labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
                 tickOptions: {
                     formatString: "%.2g",
                     // fix for ticks drifting to the left in accordionview!
@@ -475,6 +476,7 @@ window.onload = function() {
         t.innerHTML = "";
         var t_table = document.createElement('table');
         t_table.border = "1";
+        t_table.display = "inline-block";
         var t_titles = t_table.insertRow(-1);
         t_titles.style.fontWeight = "bold";
         var cell, t_row, slab, entry;
@@ -554,6 +556,32 @@ window.onload = function() {
             
         }
         t.appendChild(t_table);
+    }
+    
+    function makeQRangeControls(id) {
+        var qRangeControlsDiv = document.createElement('div');
+        qRangeControlsDiv.setAttribute('class', 'q-range-controls');
+        if (id) qRangeControlsDiv.setAttribute('id', id);
+        
+        var qmin_label = document.createElement('label');
+        qmin_label.textContent = "qMin: ";
+        var qmin_control = document.createElement('input');
+        qmin_control.setAttribute('type', 'number');
+        qmin_control.setAttribute('value', '0.0001');
+        qmin_label.appendChild(qmin_control);
+        
+        var qmax_label = document.createElement('label');
+        qmax_label.textContent = "qMax: ";
+        var qmax_control = document.createElement('input');
+        qmax_control.setAttribute('type', 'number');
+        qmax_control.setAttribute('value', '0.1');
+        qmax_label.appendChild(qmax_control);
+       
+        qRangeControlsDiv.appendChild(qmin_label);
+        qRangeControlsDiv.appendChild(document.createElement('br'));
+        qRangeControlsDiv.appendChild(qmax_label);
+        return qRangeControlsDiv;
+        
     }
     
     function match_x_vals(prof1, prof2) {
