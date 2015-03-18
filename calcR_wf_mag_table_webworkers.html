@@ -442,7 +442,7 @@ window.onload = function() {
         var qmin = parseFloat(document.getElementById('qmin').value);
         var qmax = parseFloat(document.getElementById('qmax').value);
         var numpoints = parseFloat(document.getElementById('numpoints').value);
-        var qstep = (qmax - qmin)/numpoints + 1;
+        var qstep = (qmax - qmin)/numpoints;
         /*
         mydata = plot1.series[4].data;
         if (mydata.length > 1) {
