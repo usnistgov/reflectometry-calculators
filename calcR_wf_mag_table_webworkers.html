@@ -270,6 +270,7 @@ window.onload = function() {
           },
           yaxis:{
             label: 'SLD (10⁻⁶ Å⁻²) and amplitude Ψ (arb.) ',
+            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
             tickOptions: {
                 formatString: "%.2g",
                 // fix for ticks drifting to the left in accordionview!
