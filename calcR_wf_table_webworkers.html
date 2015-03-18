@@ -340,18 +340,21 @@ window.onload = function() {
         if (webworker == null) {
             webworker = new Worker("js/calc_r.js");
             
-            webworker.onmessage = function(event) {
-                r[series] = JSON.parse(event.data);
-                plot1.series[0].data = r[series][plot_select];
-                plot1.drawSeries(0);
-                frameID = null;
-            }
+            
 
             webworker.onerror = function(error) {
                 alert("worker error: " + error.message + "\n");
                 //throw error
             }
         }
+        webworker.onmessage = function(event) {
+                var message = JSON.parse(event.data);
+                r[series] = message;
+                plot1.series[0].data = r[series][plot_select];
+                console.log(series, plot_select);
+                plot1.drawSeries(0);
+                frameID = null;
+            }
         webworker.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep}));
         
     }

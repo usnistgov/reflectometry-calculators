@@ -447,23 +447,20 @@ window.onload = function() {
         var AGUIDE = parseFloat(document.getElementById('guide_angle').value);
         if (webworker == null) {
             webworker = new Worker("js/calc_r_mag.js");
-            
-            webworker.onmessage = function(event) {
-                r = JSON.parse(event.data);
-                for (var i=0; i<4; i++) {
-                    plot1.series[i].data = r[plot_select][i];
-                    plot1.drawSeries(i);
-                }
-                //plot1.resetAxesScale();
-                //plot1.replot();  
-                frameID = null;
-            }
 
             webworker.onerror = function(error) {
                 alert("worker error: " + error.message + "\n");
                 //throw error
             }
         }
+        webworker.onmessage = function(event) {
+                r = JSON.parse(event.data);
+                for (var i=0; i<4; i++) {
+                    plot1.series[i].data = r[plot_select][i];
+                    plot1.drawSeries(i);
+                }
+                frameID = null;
+            }
         webworker.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE}));
     }
     
