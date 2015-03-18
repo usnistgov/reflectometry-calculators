@@ -439,7 +439,11 @@ window.onload = function() {
     }
     
     update_plot = function(sld, plot_select) {
-        var qmin, qmax, qstep;
+        var qmin = parseFloat(document.getElementById('qMin').value);
+        var qmax = parseFloat(document.getElementById('qMax').value);
+        var numpoints = parseFloat(document.getElementById('numpoints').value);
+        var qstep = (qmax - qmin)/numpoints + 1;
+        /*
         mydata = plot1.series[4].data;
         if (mydata.length > 1) {
             qmin = mydata[0][0];
@@ -447,6 +451,7 @@ window.onload = function() {
             qstep = (qmax - qmin)/250.0;
             
         }
+        */
         var AGUIDE = parseFloat(document.getElementById('guide_angle').value);
         if (webworker == null) {
             webworker = new Worker("js/calc_r_mag.js");
@@ -570,6 +575,7 @@ window.onload = function() {
         var qmin_label = document.createElement('label');
         qmin_label.textContent = "qMin: ";
         var qmin_control = document.createElement('input');
+        qmin_control.setAttribute('id', 'qmin');
         qmin_control.setAttribute('type', 'number');
         qmin_control.setAttribute('value', '0.0001');
         qmin_label.appendChild(qmin_control);
@@ -577,13 +583,24 @@ window.onload = function() {
         var qmax_label = document.createElement('label');
         qmax_label.textContent = "qMax: ";
         var qmax_control = document.createElement('input');
+        qmax_control.setAttribute('id', 'qmax');
         qmax_control.setAttribute('type', 'number');
         qmax_control.setAttribute('value', '0.1');
         qmax_label.appendChild(qmax_control);
+        
+        var numpoints_label = document.createElement('label');
+        numpoints_label.textContent = "nPts: ";
+        var numpoints_control = document.createElement('input');
+        numpoints_control.setAttribute('id', 'numpoints');
+        numpoints_control.setAttribute('type', 'number');
+        numpoints_control.setAttribute('value', '251');
+        numpoints_label.appendChild(numpoints_control);
        
         qRangeControlsDiv.appendChild(qmin_label);
         qRangeControlsDiv.appendChild(document.createElement('br'));
         qRangeControlsDiv.appendChild(qmax_label);
+        qRangeControlsDiv.appendChild(document.createElement('br'));
+        qRangeControlsDiv.appendChild(numpoints_label);
         return qRangeControlsDiv;
         
     }
@@ -1117,6 +1134,12 @@ window.onload = function() {
     document.getElementById('guide_angle').onchange = plot2.plugins.interactors.profile_nuc.update;
 }
 </script>
+<style type="text/css"> 
+    .q-range-controls {
+        vertical-align: top;
+        display: inline-block;
+    }
+</style>
 </head>
 <body bgcolor="#ffffcc"> 
     Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
