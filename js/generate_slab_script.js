@@ -9,18 +9,12 @@ generate_slab_script = function(sldarray, filename) {
     py += "from copy import copy\n";
     py += "\n";
     py += "## === Data files ===\n";
-    py += "## instrument template, load s1, s2, sample_width, and sample broadening\n";
-    py += "## sample_broadening = FWHM - 0.5*(s1+s2)/(d1-d2)\n";
-    py += "## for NG1, d1 = 1905 mm, d2 = 355.6 mm\n";
-    py += "instrument = NCNR.NG1(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.2, sample_broadening=0.0) \n";
-    py += "\n";
-    py += "## probe object combines instrument and data\n";
     
     // link to the datafile specified
     if (filename == "") { py += "#" } // comment out filename if not defined
-    py += "probe = instrument.load('" + filename + "', back_reflectivity=False)\n";
+    py += "probe = load4('" + filename + "', back_reflectivity=False)\n";
     if (filename != "") { py += "#" } // comment out non-data load if file defined
-    py += "probe = instrument.probe(T=numpy.linspace(0.0001, 8.0, 1001))\n";
+    py += "probe = Probe(T=numpy.linspace(0.0001, 8.0, 1001), L=5)\n";
     py += "\n";
     py += "## === Stack ===\n";
     py += "\n";

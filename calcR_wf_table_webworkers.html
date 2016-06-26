@@ -660,6 +660,8 @@ window.onload = function() {
     function set_data(raw_data) {
         var output_data = [];
         var x, y, y_out, row;
+        var xmax = -Infinity,
+            xmin = Infinity;
         var lines = raw_data.split(/\r\n|\r|\n/g);
         //var lines = raw_data.split('\n');
         for (var i in lines) {
@@ -669,15 +671,19 @@ window.onload = function() {
                 //row.split(' ');
                 if (rowdata.length >= 2) {
                     x = Number(rowdata[0]);
+                    xmax = Math.max(xmax, x);
+                    xmin = Math.min(xmin, x);
                     y = Number(rowdata[1]);
                     y_out = Math.log(y) / Math.LN10;
                     output_data.push([x, y_out]);
                 }
             }
         }
-        plot1.series[1].data = output_data;        
+        plot1.series[1].data = output_data; 
+        $("input#qmin").val(xmin);
+        $("input#qmax").val(xmax);
         plot2.plugins.interactors.profile1.update();
-        
+
         plot1.replot();
         plot1.resetAxesScale();
         plot1.plugins._interactor.zoomMax();
