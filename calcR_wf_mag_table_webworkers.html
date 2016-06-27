@@ -142,17 +142,24 @@ window.onload = function() {
     
     function make_plots( xy1, xy2, xy3, xy4 ) {
         
-        plot1 = $.jqplot ('rplot', [xy1, xy2, xy3, xy4, [[0, 0]]], {
+        plot1 = $.jqplot ('rplot', [xy1, xy2, xy3, xy4, [[0, 0]], [[0, 0]], [[0, 0]], [[0, 0]]], {
             title: 'Reflectivity R=|Ψ←(z=-∞)|²',
-            seriesDefaults: {breakOnNull: true, shadow: false, markerOptions: {shadow: false, size: 4}},
-            series: [ {label: '+ +', color: 'red'},
-                      {label: '+ -', shadow: false, color: 'green', markerOptions: {shadow: false, size: 4}},
-                      {label: '- +', shadow: false, color: 'yellow', markerOptions: {shadow: false, size: 4}},
-                      {label: '- -', shadow: false, color: 'blue', markerOptions: {shadow: false, size: 4}},
-                      {label: 'data', shadow: false, color: 'black', markerOptions: {shadow: false, size: 4}} ],
+            seriesDefaults: {breakOnNull: true, shadow: false, markerOptions: {shadow: false, size: 4}, lineWidth: 1.5},
+            series: [ {label: '+ +', shadow: false, color: 'red', showMarker: false},
+                      {label: '+ -', shadow: false, color: 'green', showMarker: false},
+                      {label: '- +', shadow: false, color: 'yellow', showMarker: false},
+                      {label: '- -', shadow: false, color: 'blue', showMarker: false},
+                      {label: '+ + data', shadow: false, color: 'red', showLine: false},
+                      {label: '+ - data ', shadow: false, color: 'green', showLine: false},
+                      {label: '- + data', shadow: false, color: 'yellow', showLine: false},
+                      {label: '- - data', shadow: false, color: 'blue', showLine: false}
+            ],
             grid: {shadow: false},
             sortData: false,
-            legend: {show: true, placement: 'outsideGrid', renderer: $.jqplot.InteractiveLegendRenderer},
+            legend: {
+                show: true, placement: 'outsideGrid', 
+                renderer: $.jqplot.InteractiveLegendRenderer
+            },
             axesDefaults: {renderer: $.jqplot.GracefulAxisRenderer},
             axes:{
               xaxis:{
@@ -964,24 +971,39 @@ window.onload = function() {
     }
 
     function set_data(raw_data) {
-        var output_data = [];
+        var series_lookup = {
+            '++': 4, 
+            '+-': 5,
+            '-+': 6,
+            '--': 7
+        }
         var x, y, y_out, row;
-        var lines = raw_data.split(/\r\n|\r|\n/g);
-        //var lines = raw_data.split('\n');
-        for (var i in lines) {
-            row = lines[i];
-            if (row[0] != '#') {
-                var rowdata = row.split(/[\s,]+/)
-                //row.split(' ');
-                if (rowdata.length >= 2) {
-                    x = Number(rowdata[0]);
-                    y = Number(rowdata[1]);
-                    y_out = Math.log(y) / Math.LN10;
-                    output_data.push([x, y_out]);
+        var sections = raw_data.split(/\r\n\r\n|\r\r|\n\n/g);
+        for (var s=0; s<sections.length; s++) {
+            var lines = sections[s].split(/\r\n|\r|\n/g);
+            var output_data = [];
+            var metadata = {};
+            //var lines = raw_data.split('\n');
+            for (var i in lines) {
+                row = lines[i];
+                if (row[0] == '#') {
+                    $.extend(true, metadata, JSON.parse('{' + row.replace(/[#]+/, '') + '}'))
+                }
+                else {
+                    var rowdata = row.split(/[\s,]+/)
+                    //row.split(' ');
+                    if (rowdata.length >= 2) {
+                        x = Number(rowdata[0]);
+                        y = Number(rowdata[1]);
+                        y_out = Math.log(y) / Math.LN10;
+                        output_data.push([x, y_out]);
+                    }
                 }
             }
+            var series_num = series_lookup[metadata.polarization];
+            series_num = (series_num == null) ? 4 : series_num;
+            plot1.series[series_num].data = output_data;
         }
-        plot1.series[4].data = output_data;        
         plot2.plugins.interactors.profile_nuc.update();
         plot1.axes.xaxis.resetScale();
         plot1.axes.yaxis.resetScale();
