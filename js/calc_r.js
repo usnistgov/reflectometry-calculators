@@ -21,7 +21,7 @@ calc_r = function(sld, qmin, qmax, qstep) {
         wf.set_kz_in(q/2.0);
         r = wf.calculateR();
         rlist[i] = r;
-        xy[i] = [q, Math.log(Math.pow(r.magnitude(),2)) / Math.LN10];
+        xy[i] = [q, r.magsq()];
         phase[i] = [q, r.phase()];
         i++;
     }
