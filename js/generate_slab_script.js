@@ -1,6 +1,6 @@
 var prec = 5; // precision
 
-generate_slab_script = function(sldarray, filename) {
+generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L) {
     py = "";
     //var filename = filename || "myfile.refl";
     
@@ -14,7 +14,12 @@ generate_slab_script = function(sldarray, filename) {
     if (filename == "") { py += "#" } // comment out filename if not defined
     py += "probe = load4('" + filename + "', back_reflectivity=False)\n";
     if (filename != "") { py += "#" } // comment out non-data load if file defined
-    py += "probe = Probe(T=numpy.linspace(0.0001, 8.0, 1001), L=5)\n";
+    py += "probe = Probe(T=numpy.linspace(";
+    py += ((tmin == null) ? 0.0001 : tmin).toPrecision(prec) + ", ";
+    py += ((tmax == null) ? 0.1000 : tmax).toPrecision(prec) + ", ";
+    py += ((nPts == null) ? 251 : nPts).toFixed(0) + "), ";
+    py += "L=";
+    py += ((L == null) ? 5.0 : L).toPrecision(prec) + ")\n";
     py += "\n";
     py += "## === Stack ===\n";
     py += "\n";
@@ -29,7 +34,7 @@ generate_slab_script = function(sldarray, filename) {
         istr = i.toFixed(0);
         py += "sld" + i.toFixed(0) + " = SLD(name='sld"+String(i) + "'";
         py += ", rho="  + (sld.sld*1e6).toPrecision(prec);
-        py += ", irho=0.0)\n";
+        py += ", irho=" + ((sld.mu || 0.0)*1e6).toPrecision(prec) + ")\n";
         //py += "s.add( slds["+String(i)+"]("+sld.thickness.toPrecision(prec)+", 0))\n";
     }
     py += "\n";

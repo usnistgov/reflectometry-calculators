@@ -4,7 +4,7 @@ generate_slab_script = function(sldarray, filename) {
     py = "";
     var filename = filename || "myfile.refl";
     
-    // adding the initiol import statements:
+    // adding the initial import statements:
     py += "from refl1d.names import *\n";
     py += "from copy import copy\n";
     py += "\n";
