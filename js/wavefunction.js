@@ -44,9 +44,19 @@ neutron_wavefunction.prototype.getProfile = function() {
     }
     return this.profile;
 }
+
+function calc_nz(sld, k0z) {
+    var SLD = new Complex(sld.sld, (sld.mu == null) ? 0 : -Math.abs(sld.mu));
+    var nz = Complex.sqrt( 
+            Complex.subtract(1, 
+                Complex.multiply(4*Math.PI/Math.pow(k0z,2), SLD)
+            )
+        );
+    return nz
+}
     
 neutron_wavefunction.prototype.calculateR = function() {
-    var SLD, thickness, mu, nz, kz, kzt, cos_kzt, sin_kzt;
+    var thickness, nz, kz, kzt, cos_kzt, sin_kzt;
     var M = [[Complex.one, Complex.zero],[Complex.zero, Complex.one]];
     var M_new = [[0,0],[0,0]];
     var ML = [[M[0].slice(0), M[1].slice(0)]];
@@ -54,18 +64,16 @@ neutron_wavefunction.prototype.calculateR = function() {
     //var kz_array = [this.k0z];
     var kz_array = [this.kz_in];
     //var ml = [[0,0],[0,0]];
-    var nz0 = Complex.sqrt( 1 - 4 * Math.PI * this.sld[0].sld / Math.pow(this.k0z,2) );
-    var nzf = Complex.sqrt( 1 - 4 * Math.PI * this.sld[this.sld.length - 1].sld / Math.pow(this.k0z,2) );
+    // explicitly enforce mu is zero in fronting:
+    var sld0 = {sld: this.sld[0].sld, mu: 0}
+    var nz0 = calc_nz(sld0, this.k0z);
+    var nzf = calc_nz(this.sld[this.sld.length -1], this.k0z);
     var nz_array = [nz0];
     for (var i=1; i<this.layer_num_total-1; i++) {
         var ml = [[0,0],[0,0]];
-        SLD = this.sld[i].sld;
         thickness = this.sld[i].thickness;
-        mu = this.sld[i].mu;
-        
-        nz = Complex.sqrt( 1 - 4 * Math.PI * SLD / Math.pow(this.k0z,2) );
+        nz = calc_nz(this.sld[i], this.k0z);
         nz_array[i] = nz;
-        //kz = Complex.multiply(nz, this.kz_in);
         kz = Complex.multiply(nz, this.k0z);
         kz_array[i] = kz;
         kzt = Complex.multiply(kz, thickness);
