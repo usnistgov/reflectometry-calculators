@@ -301,9 +301,9 @@
           r = Math.exp (-z * z - 0.5625) *
               Math.exp ((z - ax) * (z + ax) + R / S);
           if (hx > 0)
-            return r / x;
+            return r / ax;
           else
-            return two - r / x;
+            return two - r / ax;
         }
       else
         {
