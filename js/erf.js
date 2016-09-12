@@ -104,10 +104,10 @@
   var erf = function(x)
     {
       //int32_t hx, ix, i;
-      var hx, ix, i;
+      var hx, ix, ax, i;
       //double R, S, P, Q, s, y, z, r;
       var R, S, P, Q, s, y, z, r;
-      var ax = Math.abs(x);
+      ax = Math.abs(x);
       hx = getHighWord(x);
       ix = hx & 0x7fffffff;
       if (isNaN(x)) { return NaN } /* erf(nan)=nan */
@@ -205,6 +205,115 @@
         }
     }
 
+  var erfc = function(x)
+    {
+      //int32_t hx, ix;
+      var hx, ix, ax;
+      //double R, S, P, Q, s, y, z, r;
+      var R, S, P, Q, s, y, z, r;
+      ax = Math.abs(x);
+      hx = getHighWord(x);
+      ix = hx & 0x7fffffff;
+      if (isNaN(x)) { return NaN } /* erfc(nan)=nan */
+      else if (!isFinite(x)) { return (1-Math.sign(x)) } /* erf(+-inf)=+-1 */
+      else if (ix < 0x3feb0000)                  /* |x|<0.84375 */
+        {
+          var r1, r2, s1, s2, s3, z2, z4;
+          if (ix < 0x3c700000)              /* |x|<2**-56 */
+            return one - x;
+          z = x * x;
+          r1 = pp[0] + z * pp[1]; z2 = z * z;
+          r2 = pp[2] + z * pp[3]; z4 = z2 * z2;
+          s1 = one + z * qq[1];
+          s2 = qq[2] + z * qq[3];
+          s3 = qq[4] + z * qq[5];
+          r = r1 + z2 * r2 + z4 * pp[4];
+          s = s1 + z2 * s2 + z4 * s3;
+          y = r / s;
+          if (hx < 0x3fd00000)              /* x<1/4 */
+            {
+              return one - (x + x * y);
+            }
+          else
+            {
+              r = x * y;
+              r += (x - half);
+              return half - r;
+            }
+        }
+      else if (ix < 0x3ff40000)                  /* 0.84375 <= |x| < 1.25 */
+        {
+          var s2, s4, s6, P1, P2, P3, P4, Q1, Q2, Q3, Q4;
+          s = ax - one;
+          P1 = pa[0] + s * pa[1]; s2 = s * s;
+          Q1 = one + s * qa[1];   s4 = s2 * s2;
+          P2 = pa[2] + s * pa[3]; s6 = s4 * s2;
+          Q2 = qa[2] + s * qa[3];
+          P3 = pa[4] + s * pa[5];
+          Q3 = qa[4] + s * qa[5];
+          P4 = pa[6];
+          Q4 = qa[6];
+          P = P1 + s2 * P2 + s4 * P3 + s6 * P4;
+          Q = Q1 + s2 * Q2 + s4 * Q3 + s6 * Q4;
+          if (hx >= 0)
+            {
+              z = one - erx; return z - P / Q;
+            }
+          else
+            {
+              z = erx + P / Q; return one + z;
+            }
+        }
+      else if (ix < 0x403c0000)                  /* |x|<28 */
+        {
+          s = one / (ax * ax);
+          if (ix < 0x4006DB6D)              /* |x| < 1/.35 ~ 2.857143*/
+            {
+              var R1, R2, R3, R4, S1, S2, S3, S4, s2, s4, s6, s8;
+              R1 = ra[0] + s * ra[1]; s2 = s * s;
+              S1 = one + s * sa[1];  s4 = s2 * s2;
+              R2 = ra[2] + s * ra[3]; s6 = s4 * s2;
+              S2 = sa[2] + s * sa[3]; s8 = s4 * s4;
+              R3 = ra[4] + s * ra[5];
+              S3 = sa[4] + s * sa[5];
+              R4 = ra[6] + s * ra[7];
+              S4 = sa[6] + s * sa[7];
+              R = R1 + s2 * R2 + s4 * R3 + s6 * R4;
+              S = S1 + s2 * S2 + s4 * S3 + s6 * S4 + s8 * sa[8];
+            }
+          else                              /* |x| >= 1/.35 ~ 2.857143 */
+            {
+              var R1, R2, R3, S1, S2, S3, S4, s2, s4, s6;
+              if (hx < 0 && ix >= 0x40180000)
+                return two - tiny;                           /* x < -6 */
+              R1 = rb[0] + s * rb[1]; s2 = s * s;
+              S1 = one + s * sb[1];  s4 = s2 * s2;
+              R2 = rb[2] + s * rb[3]; s6 = s4 * s2;
+              S2 = sb[2] + s * sb[3];
+              R3 = rb[4] + s * rb[5];
+              S3 = sb[4] + s * sb[5];
+              S4 = sb[6] + s * sb[7];
+              R = R1 + s2 * R2 + s4 * R3 + s6 * rb[6];
+              S = S1 + s2 * S2 + s4 * S3 + s6 * S4;
+            }
+          z = ax;
+          setLowWord (z, 0);
+          r = Math.exp (-z * z - 0.5625) *
+              Math.exp ((z - ax) * (z + ax) + R / S);
+          if (hx > 0)
+            return r / x;
+          else
+            return two - r / x;
+        }
+      else
+        {
+          if (hx > 0)
+            return tiny * tiny;
+          else
+            return two - tiny;
+        }
+    }
+
   // use the "get high word" function, 
   // adapted from https://github.com/math-io/float64-get-high-word
   // and https://github.com/kgryte/utils-is-little-endian
@@ -299,6 +408,7 @@
   }
   
   exports.erf = erf;
+  exports.erfc = erfc;
   
 })(Math);
 
