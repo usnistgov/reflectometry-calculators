@@ -398,7 +398,12 @@ window.onload = function() {
               .attr("size", "7")
               .style("font-family", "inherit")
               .property("value", d[c].toPrecision(5))
-              .on("change", function() {d[c] = parseFloat(this.value); profile_interactor.update()});
+              .on("change", function() {
+                d[c] = parseFloat(this.value);
+                profile_interactor.update();
+                update_profile_limits(data);
+                update_plot_live();
+              });
           })
           tr.append("td")
             .append("button")
@@ -412,13 +417,21 @@ window.onload = function() {
               data.splice(i+1, 0, new_row); 
               table_draw(data);
               profile_interactor.update();
+              update_profile_limits(data);
+              update_plot_live();
             });
           tr.append("td")
             .append("button")
             .attr("type", "button")
             .style("color", "red")
             .text("x")
-            .on("click", function() {tr.remove(); data.splice(i, 1); profile_interactor.update()});
+            .on("click", function() {
+              tr.remove();
+              data.splice(i, 1);
+              profile_interactor.update()
+              update_profile_limits(data);
+              update_plot_live();
+            });
         });
     }
     
