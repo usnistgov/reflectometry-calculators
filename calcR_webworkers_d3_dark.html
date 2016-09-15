@@ -82,25 +82,30 @@ html, body {
     stroke-opacity: 1;
 }
 
-#sldplot path.line {
+#sldplot path.edge, path.extension {
     fill: none;
     stroke-width: 12px;
     stroke-linejoin: round;
     stroke-opacity: 0.5;
 }
 
+#sldplot path.extension {
+    stroke-linejoin: miter;
+    stroke-dasharray: 5,15; 
+}
+
 .highlight {
     stroke-width: 4.5px;
 }
  
-.dot {
+.corner {
     /* consider the stroke-with the mouse detect radius? */
     stroke: transparent;
     stroke-width: 10px;  
     cursor: pointer;
 }
  
-.dot:hover {
+.corner:hover, .corner.selected {
     stroke: rgba(68, 127, 255, 0.3);
 }
 
@@ -174,7 +179,7 @@ hr.betweenplots {
 initial_sld = [
     {thickness: 0, sld: 2.069, mu: 0},
     {thickness: 1250, sld: 4.5, mu: 0},
-    {thickness: 100, sld: 0.0, mu: 0}    
+    {thickness: 0, sld: 0.0, mu: 0}    
 ];
 
 OMEGA = Math.PI;
@@ -186,19 +191,6 @@ webworker = null;
 frameID = null;
 sld_plot = null;
 refl_plot = null;
-
-// boilerplate from html5canvastutorials.com
-window.requestAnimFrame = (function(callback){
-    return window.requestAnimationFrame ||
-    window.webkitRequestAnimationFrame ||
-    window.mozRequestAnimationFrame ||
-    window.oRequestAnimationFrame ||
-    window.msRequestAnimationFrame ||
-    function(callback){
-        window.setTimeout(callback, 1000 / 60);
-    };
-})();
-// end boilerplate from html5canvastutorials.com
 
 window.onload = function() {
     var layout = $('body').layout({
@@ -214,7 +206,12 @@ window.onload = function() {
 
 
     var webworker = new Worker("js/calc_r.js");
-    webworker.onerror = function(error) {alert("worker error: " + error.message + "\n")}
+    var webworker_queue = [],
+        webworker_busy = false;
+    webworker.onerror = function(error) {
+      webworker_busy = false;
+      alert("worker error: " + error.message + "\n");
+    }
     
     datafilename = "";
     sld_plot = null;
@@ -274,7 +271,7 @@ window.onload = function() {
         return Math.max(pre, Math.max.apply(Math, get_column_vals(cur))) }, -Infinity);
       return limits;
     }
-    
+        
     function make_plots( xy1, xy2 ) {
       var sld_plot_opts = {
         show_line: true,
@@ -302,10 +299,10 @@ window.onload = function() {
       var profile_opts = { 
         type:'Profile', 
         name:'profile',
-        radius: 5,
+        radius: 10,
         series: [
-          {"id": "sld"},
-          {"id": "mu"}
+          {"id": "mu", color1: "LightCoral"},
+          {"id": "sld", color1: "DodgerBlue"}
         ],
         profile_data: initial_sld
       }
@@ -347,11 +344,29 @@ window.onload = function() {
       refl_plot.zoomRect(true);
       refl_plot.ytransform("log");
       
-
+      // start the update loop:
+      function process_queue(timestamp) {
+        if (!webworker_busy) {
+          var message = webworker_queue.pop();
+          if (message != null) {
+            webworker_busy = true;
+            webworker.postMessage(message);
+          }
+        }
+        window.requestAnimationFrame(process_queue);
+      }
+      
+      window.requestAnimationFrame(process_queue);
     };
     
     make_plots();
     
+    function update_profile_limits(sld_array) {
+      var col_ids = sld_plot.options().series.map(function(s) {return s.id});
+      var limits = get_limits(sld_array, col_ids);
+      sld_plot.min_x(limits.min_x).max_x(limits.max_x).min_y(limits.min_y).max_y(limits.max_y);
+    }
+
     var table_draw = function(data) {
       var target_id = "sld_table",
       chart = sld_plot;
@@ -409,6 +424,7 @@ window.onload = function() {
     
     profile_interactor.dispatch.on("changed.table_update", table_draw);
     profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
+    profile_interactor.dispatch.on("changed.sld_update", update_profile_limits);
     table_draw(initial_sld);
       
     function update_plot_live() {
@@ -426,30 +442,19 @@ window.onload = function() {
         var numpoints = parseFloat(document.getElementById('nPts').value);
         var qstep = (qmax - qmin)/numpoints;
         
-        if (webworker == null) {
-            webworker = new Worker("js/calc_r.js");
-            
-            
-
-            webworker.onerror = function(error) {
-                alert("worker error: " + error.message + "\n");
-                //throw error
-            }
-        }
         webworker.onmessage = function(event) {
                 var message = JSON.parse(event.data);
                 r[series] = message;
                 var sd = refl_plot.source_data() || [];
                 sd[0] = r[series][plot_select];
                 refl_plot.source_data(sd);
-                refl_plot.update();
-                frameID = null;
+                webworker_busy = false;
             }
         var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; return dd});
-        webworker.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep}));
-        
+        var message = JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep})
+        webworker_queue[0] = message;        
     }
-    
+        
     makeQRangeControls = function(target_id) {
         var qRangeControls = d3.select("#" + target_id).append('div')
           .classed("q-range-controls", true)
