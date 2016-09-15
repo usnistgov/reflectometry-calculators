@@ -162,7 +162,7 @@ hr.betweenplots {
     <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
     <script src="../d3-science/xy-chart.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/rectangle-interactor.js"></script>
-    <script src="../d3-science/profile-chart.js"></script>
+    <script src="../d3-science/profile-interactor.js"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/rectangle-select.js"></script>
     
 <style type="text/css">
@@ -219,6 +219,7 @@ window.onload = function() {
     datafilename = "";
     sld_plot = null;
     refl_plot = null;
+    profile_interactor = null;
     r = [];
     sld = [];
     
@@ -260,26 +261,65 @@ window.onload = function() {
         return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile().reverse(), wf: wf };
     }
     
+    function get_limits(sld_array, col_ids) {
+      var limits = {};
+      function get_column_vals(item) {
+        return col_ids.map(function(id) { return item[id] });
+      }
+      limits.min_x = 0; // thickness along x
+      limits.max_x = sld_array.reduce(function(t, d) { return t+d.thickness }, 0);
+      limits.min_y = sld_array.reduce(function(pre, cur) {
+        return Math.min(pre, Math.min.apply(Math, get_column_vals(cur))) }, Infinity);
+      limits.max_y = sld_array.reduce(function(pre, cur) {
+        return Math.max(pre, Math.max.apply(Math, get_column_vals(cur))) }, -Infinity);
+      return limits;
+    }
+    
     function make_plots( xy1, xy2 ) {
-        
-       sld_plot = magProfileChart({
-            show_line: true,
-            zoomScroll: true,
-            point_size: 10, 
-            axes: {
-              xaxis: {label: "z (Ångström)"}, 
-              yaxis: {label: "SLD (10⁻⁶ Å⁻²)"}
-            },
-            series: [
-              {label: "SLDₙ x10⁻⁶", id: "sld"},
-              {label: "iSLDₙ x10⁻⁶", id: "mu"},
-            ]
-          })
+      var sld_plot_opts = {
+        show_line: true,
+        zoomScroll: true,
+        autoscale: false,
+        point_size: 10, 
+        axes: {
+          xaxis: {label: "z (Ångström)"}, 
+          yaxis: {label: "SLD (10⁻⁶ Å⁻²)"}
+        },
+        series: [
+          {label: "SLDₙ x10⁻⁶", id: "sld"},
+          {label: "iSLDₙ x10⁻⁶", id: "mu"},
+        ]
+      }
+      
+      var col_ids = sld_plot_opts.series.map(function(s) {return s.id});
+      jQuery.extend(true, sld_plot_opts, get_limits(initial_sld, col_ids));
+      sld_plot = xyChart(sld_plot_opts);
   
       d3.select("#sldplot")
-        .data([initial_sld])
+        .data([[]])
         .call(sld_plot);
-              
+        
+      var profile_opts = { 
+        type:'Profile', 
+        name:'profile',
+        radius: 5,
+        series: [
+          {"id": "sld"},
+          {"id": "mu"}
+        ],
+        profile_data: initial_sld
+      }
+      
+      profile_interactor = new profileInteractor(profile_opts);
+      var constraints = [
+        function(p, d, i) {p[0].thickness = 0},
+        function(p, d, i) {p.slice(-1)[0].mu = 0},
+        function(p, d, i) {p.slice(-1)[0].thickness = 0},
+        function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)}
+      ];
+      profile_interactor.constraints(constraints);
+      
+      sld_plot.interactors(profile_interactor);
       sld_plot.zoomScroll(true);
       
       refl_plot = xyChart({
@@ -343,7 +383,7 @@ window.onload = function() {
               .attr("size", "7")
               .style("font-family", "inherit")
               .property("value", d[c].toPrecision(5))
-              .on("change", function() {d[c] = parseFloat(this.value); chart.source_data(data)});
+              .on("change", function() {d[c] = parseFloat(this.value); profile_interactor.update()});
           })
           tr.append("td")
             .append("button")
@@ -356,19 +396,19 @@ window.onload = function() {
               new_row.thickness = 0;
               data.splice(i+1, 0, new_row); 
               table_draw(data);
-              chart.source_data(data);
+              profile_interactor.update();
             });
           tr.append("td")
             .append("button")
             .attr("type", "button")
             .style("color", "red")
             .text("x")
-            .on("click", function() {tr.remove(); data.splice(i, 1); chart.source_data(data)});
+            .on("click", function() {tr.remove(); data.splice(i, 1); profile_interactor.update()});
         });
     }
     
-    sld_plot.dispatch.on("zoomed.table_update", table_draw);
-    sld_plot.dispatch.on("zoomed.refl_update", update_plot_live);
+    profile_interactor.dispatch.on("changed.table_update", table_draw);
+    profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
     table_draw(initial_sld);
       
     function update_plot_live() {
