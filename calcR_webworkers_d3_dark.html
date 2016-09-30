@@ -322,7 +322,6 @@ window.onload = function() {
       refl_plot = xyChart({
         show_line: true,
         show_points: false,
-        ytransform: 'linear',
         legend: {show: true},
         point_size: 2,
         axes: {
@@ -343,6 +342,22 @@ window.onload = function() {
         
       refl_plot.zoomRect(true);
       refl_plot.ytransform("log");
+      
+      refl_plot.svg.on("mouseover.setLogLinHandler", function() {
+        d3.select("body").on("keydown.toggleLogLin", function() {
+          if (d3.event.key.toLowerCase() == "l") {
+            var transform_now = refl_plot.ytransform();
+            if (transform_now == "log") {
+              refl_plot.ytransform("linear");
+            } else {
+              refl_plot.ytransform("log");
+            }
+          }
+        })
+      });
+      refl_plot.svg.on("mouseout.setLogLinHandler", function() {
+        d3.select("body").on("keydown.toggleLogLin", null)
+      })
       
       // start the update loop:
       function process_queue(timestamp) {
