@@ -476,6 +476,7 @@ window.onload = function() {
                 var sd = refl_plot.source_data() || [];
                 sd[0] = r[series][plot_select];
                 refl_plot.source_data(sd);
+                refl_plot.update();
                 webworker_busy = false;
             }
         var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; return dd});
