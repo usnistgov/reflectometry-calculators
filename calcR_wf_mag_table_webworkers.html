@@ -468,7 +468,8 @@ window.onload = function() {
                 }
                 frameID = null;
             }
-        webworker.postMessage(JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE}));
+        var message = JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE});
+        webworker.postMessage(message);
     }
     
     show_table = function(sld) {

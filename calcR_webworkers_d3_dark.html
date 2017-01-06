@@ -165,10 +165,8 @@ hr.betweenplots {
     <script type="text/javascript" src="js/generate_slab_script.js"></script>
     
     <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-    <script src="../d3-science/xy-chart.js" charset="utf-8"></script>
-    <script src="//ncnr.nist.gov/instruments/magik/d3-science/rectangle-interactor.js"></script>
-    <script src="../d3-science/profile-interactor.js"></script>
-    <script src="//ncnr.nist.gov/instruments/magik/d3-science/rectangle-select.js"></script>
+    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/xy-chart.js" charset="utf-8"></script>
+    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/profile-interactor.js"></script>
     
 <style type="text/css">
   .ui-layout-pane {
@@ -290,7 +288,7 @@ window.onload = function() {
       
       var col_ids = sld_plot_opts.series.map(function(s) {return s.id});
       jQuery.extend(true, sld_plot_opts, get_limits(initial_sld, col_ids));
-      sld_plot = xyChart(sld_plot_opts);
+      sld_plot = new xyChart.default(sld_plot_opts);
   
       d3.select("#sldplot")
         .data([[]])
@@ -307,7 +305,7 @@ window.onload = function() {
         profile_data: initial_sld
       }
       
-      profile_interactor = new profileInteractor(profile_opts);
+      profile_interactor = new profileInteractor.default(profile_opts);
       var constraints = [
         function(p, d, i) {p[0].thickness = 0},
         function(p, d, i) {p.slice(-1)[0].mu = 0},

@@ -47,13 +47,13 @@ c     alpha = beam angular divergence (radians)
     */
     
     default_parameters = {
-        "sl": {label: "sample length (mm)", value: 10},
-        "theta": {label: "incident angle (deg)", value: 0.1},
-        "slitr": {label: "slit ratio, w1/w2", value: 0.2},
-        "d12": {label: "distance from slit 1 to slit 2 (mm)", value: 927},
-        "d2s": {label: "distance from slit 2 to sample (mm)", value: 45},
-        "ds3": {label: "distance from sample to slit 3 (mm)", value: 45},
-        "ds4": {label: "distance from sample to slit 4 (mm)", value: 120},
+        "sl": {label: "S<sub>L</sub>: illuminated sample length (mm)", value: 30},
+        "theta": {label: "incident beam angle (deg)", value: 0.2},
+        "slitr": {label: "slit ratio, w<sub>1</sub>/w<sub>2</sub>", value: 1},
+        "d12": {label: "L<sub>12</sub>: distance between slits 1 & 2 (mm)", value: 1429},
+        "d2s": {label: "L<sub>2S</sub>: distance between slit 2 & sample (mm)", value: 330},
+        "ds3": {label: "L<sub>S3</sub>: distance between sample & slit 3 (mm)", value: 267},
+        "ds4": {label: "L<sub>S4</sub>: distance between sample & slit4 (mm)", value: 1156},
         //"ws" : {label: "sample 'width' at angle theta (mm)", value: 0.1},
         //"w1" : {label: "slit width 1 (mm)", value: 1.0},
         //"w2" : {label: "slit width 2 (mm)", value: 1.0},
@@ -79,12 +79,12 @@ c     alpha = beam angular divergence (radians)
         var w3=w2+2.0*(d2s+ds3)*Math.tan(alpha)
         var w4=w2+2.0*(d2s+ds4)*Math.tan(alpha);
         
-        var output = "ws: " + ws.toPrecision(4);
-        output += ", w1: " + w1.toPrecision(4);
-        output += ", w2: " + w2.toPrecision(4);
-        output += ", w3: " + w3.toPrecision(4);
-        output += ", w4: " + w4.toPrecision(4);
-        output += ", alpha: " + alpha.toPrecision(4);
+        var output = "w<sub>s</sub> (mm): " + ws.toPrecision(4);
+        output += ", w<sub>1</sub> (mm): " + w1.toPrecision(4);
+        output += ", w<sub>2</sub> (mm): " + w2.toPrecision(4);
+        output += ", w<sub>3</sub> (mm): " + w3.toPrecision(4);
+        output += ", w<sub>4</sub> (mm): " + w4.toPrecision(4);
+        output += ", divergence (deg): " + (alpha*180./Math.PI).toPrecision(4);
         var output_dict = {ws:ws, w1:w1, w2:w2, w3:w3, w4:w4, alpha:alpha};
         
         document.getElementById(divtarget).innerHTML = output;
@@ -126,10 +126,14 @@ c     alpha = beam angular divergence (radians)
         makeInputTable(default_parameters, 'table_div', 1);
         calculate_width(default_parameters, 'results_div');
     }
+
+    
     
 </script>
 <body>
+<div id="diagram"><img src="http://ncnr.nist.gov/instruments/pbr/footprint.png" width = "640px"></div>
 <div id="table_div"></div>
 <div id="results_div"></div>
+
 </body>
 </html>

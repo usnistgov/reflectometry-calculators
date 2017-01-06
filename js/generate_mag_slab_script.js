@@ -1,6 +1,6 @@
 var prec = 5; // precision
 
-generate_slab_script = function(sldarray, filename) {
+generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, Aguide) {
     py = "";
     var filename = filename || "myfile.refl";
     
@@ -16,6 +16,22 @@ generate_slab_script = function(sldarray, filename) {
     py += "# instrument = NCNR.NG1(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.2) \n";
     py += "\n";
     py += "# probe object combines instrument and data\n";
+    
+    // link to the datafile specified
+    if (filename == "") { py += "#" } // comment out filename if not defined
+    py += "probe = load4('" + filename + "', back_reflectivity=False)\r\n";
+    if (filename != "") { py += "#" } // comment out non-data load if file defined
+    py += "xs_probes = [Probe(T=numpy.linspace(";
+    py += ((tmin == null) ? 0.0001 : tmin).toPrecision(prec) + ", ";
+    py += ((tmax == null) ? 0.1000 : tmax).toPrecision(prec) + ", ";
+    py += ((nPts == null) ? 251 : nPts).toFixed(0) + "), ";
+    py += "L=";
+    py += ((L == null) ? 5.0 : L).toPrecision(prec) + ") for xs in range(4)]\n";
+    if (filename != "") { py += "#" };
+    py += "probe = PolarizedNeutronProbe(xs_probes, Aguide=" + Aguide.toPrecision(prec) + ")\n";
+    py += "\n";
+    py += "## === Stack ===\n";
+    py += "\n";
     
     // link to the datafile specified
     py += "# probe = instrument.load_magnetic('" + filename + "', back_reflectivity=False)\n";

@@ -24,13 +24,13 @@ calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
         for (var i in r) {
             var ri = r[i];
             rlist[i].push(ri);
-            var ri_mag = ri.magnitude();
-            var log_data = (ri_mag <= 1e-10) ? null : Math.log(Math.pow(ri.magnitude(),2)) / Math.LN10;
-            xy[i].push([q, log_data]);
+            //var ri_mag = ri.magnitude();
+            //var log_data = (ri_mag <= 1e-10) ? null : Math.log(Math.pow(ri.magnitude(),2)) / Math.LN10;
+            xy[i].push([q, ri.magsq()]);
             phase[i].push([q, ri.phase()]);
         }
-        var rpp = Math.pow(r[0].magnitude(), 2);
-        var rmm = Math.pow(r[3].magnitude(), 2);
+        var rpp = r[0].magsq();
+        var rmm = r[3].magsq();
         var sum = rpp + rmm;
         sa[0].push([q, (rpp - rmm)/(rpp + rmm)]);
         var empt = [q, null];
