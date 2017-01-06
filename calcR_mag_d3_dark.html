@@ -179,10 +179,10 @@ THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
 AGUIDE = 270;
 
 initial_sld = [
-    {thickness: 0, sld: 0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0},
-    {thickness: 200, sld: 4.0, mu: 0, thetaM: 0.0, sldm: 1.0, sldi: 0.0},
-    {thickness: 200, sld: 2.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0},
-    {thickness: 0, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0}
+    {thickness: 0, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0},
+    {thickness: 200, sld: 2.0, mu: 0, thetaM: 0.0, sldm: 1.0, sldi: 0.0},
+    {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0},
+    {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0}
 ];
 
 OMEGA = Math.PI;
@@ -305,10 +305,10 @@ window.onload = function() {
           yaxis: {label: "R (I/I₀)"}
         },
         series: [
-          {label: "+ +", show_points: false},
-          {label: "+ -", show_points: false},
-          {label: "- +", show_points: false},
           {label: "- -", show_points: false},
+          {label: "- +", show_points: false},
+          {label: "+ -", show_points: false},
+          {label: "+ +", show_points: false},
           {label: "data", show_points: true}
         ]
       })
@@ -460,7 +460,7 @@ window.onload = function() {
                 webworker_busy = false;
             }
         var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
-        var message = JSON.stringify({sld: sld, qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE})
+        var message = JSON.stringify({sld: sld.slice().reverse(), qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE})
         webworker_queue[0] = message;        
     }
   

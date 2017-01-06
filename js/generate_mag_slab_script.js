@@ -2,7 +2,7 @@ var prec = 5; // precision
 
 generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, Aguide) {
     py = "";
-    var filename = filename || "myfile.refl";
+    //var filename = filename || "myfile.refl";
     
     // adding the initial import statements:
     py += "from refl1d.names import *\n";
@@ -29,14 +29,6 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, Aguide)
     py += ((L == null) ? 5.0 : L).toPrecision(prec) + ") for xs in range(4)]\n";
     if (filename != "") { py += "#" };
     py += "probe = PolarizedNeutronProbe(xs_probes, Aguide=" + Aguide.toPrecision(prec) + ")\n";
-    py += "\n";
-    py += "## === Stack ===\n";
-    py += "\n";
-    
-    // link to the datafile specified
-    py += "# probe = instrument.load_magnetic('" + filename + "', back_reflectivity=False)\n";
-    py += "\n# new-style loader for data with dQ precalculated by reduction:\n";
-    py += "probe = load4('" + filename + "', back_reflectivity=False)\n";
     
     py += "\n";
     py += "# === Stack ===\n";
