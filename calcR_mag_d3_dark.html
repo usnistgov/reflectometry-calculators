@@ -255,10 +255,10 @@ window.onload = function() {
           yaxis: {label: "SLD (10⁻⁶ Å⁻²), θ (rad)"}
         },
         series: [
-          {label: "SLDₙ x10⁻⁶", id: "sld"},
-          {label: "SLDₘ x10⁻⁶", id: "sldm"},
-          {label: "θ (rad)", id: "thetaM"},
-          {label: "iSLDₙ x10⁻⁶", id: "mu"},
+          {label: "SLDₙ x10⁻⁶", id: "sld", bgcolor: "DodgerBlue"},
+          {label: "SLDₘ x10⁻⁶", id: "sldm", bgcolor: "LightGray"},
+          {label: "θ (rad)", id: "thetaM", bgcolor: "LightGreen"},
+          {label: "iSLDₙ x10⁻⁶", id: "mu", bgcolor: "LightCoral"},
         ]
       }
       
@@ -276,7 +276,7 @@ window.onload = function() {
         radius: 10,
         series: [
           {"id": "mu", color1: "LightCoral"},
-          {"id": "sldm", color1: "LightYellow"},
+          {"id": "sldm", color1: "LightGray"},
           {"id": "thetaM", color1: "LightGreen"},
           {"id": "sld", color1: "DodgerBlue"}
         ],
@@ -367,15 +367,19 @@ window.onload = function() {
       var options = chart.options();
       var colnames = options.series.map(function(s) {return s.label});
       var colids = options.series.map(function(s) {return s.id});
+      var colcolors = options.series.map(function(s) {return s.bgcolor || "none"});
       colnames.splice(0,0,"thickness");
       colids.splice(0,0,"thickness");
+      colcolors.splice(0,0,"none");
       var target = d3.select("#" + target_id)
       target.selectAll("table").remove();
       var table = target.append("table");
       var thead = table.append("thead");
       var colhead = thead.append("tr")
-      colnames.forEach(function(c) {
-        colhead.append("th").text(c);
+      colnames.forEach(function(c,i) {
+        var id = colids[i],
+            bgcolor = colcolors[i];
+        colhead.append("th").text(c).attr("id", colids[i]).style("background-color", bgcolor);
       });
       table.append("tbody")
       var sel = target.select("table tbody").selectAll("tr").data(data);
