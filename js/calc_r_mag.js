@@ -1,5 +1,7 @@
 importScripts('complex.js', 'magnetic_wf_B3.js');
 
+minimum_intensity = 1e-15;
+
 calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
     var qmin = (qmin == null) ? 0.0001 : qmin;
     var qmax = (qmax == null) ? 0.1 : qmax;
@@ -26,7 +28,8 @@ calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
             rlist[i].push(ri);
             //var ri_mag = ri.magnitude();
             //var log_data = (ri_mag <= 1e-10) ? null : Math.log(Math.pow(ri.magnitude(),2)) / Math.LN10;
-            xy[i].push([q, ri.magsq()]);
+            var risq = ri.magsq();
+            xy[i].push([q, (risq > minimum_intensity) ? risq : null]);
             phase[i].push([q, ri.phase()]);
         }
         var rpp = r[3].magsq();
