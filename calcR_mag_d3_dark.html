@@ -136,8 +136,8 @@ text.position-cursor {
   padding-bottom: 1em;
 }
 
-label.qcontrols {
-    padding-right: 1em;
+.controls label, .controls button {
+    margin-right: 1em;
 }
 
 #centerpane, #right {
@@ -431,7 +431,7 @@ window.onload = function() {
               update_plot_live();
             });
         });
-    }
+    }      
     
     profile_interactor.dispatch.on("changed.table_update", table_draw);
     profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
@@ -470,7 +470,7 @@ window.onload = function() {
   
     makeQRangeControls = function(target_id) {
         var qRangeControls = d3.select("#" + target_id).append('div')
-          .classed("q-range-controls", true)
+          .classed("q-range controls", true)
           
         qRangeControls.selectAll("label.qcontrols").data([
           {"label": "qmin", "default": "0.0001"},
@@ -490,6 +490,25 @@ window.onload = function() {
     }
     
     makeQRangeControls('q_controls');
+          
+    function makeFileControls(target_id) {
+      var fileControls = d3.select("#" + target_id).append('div')
+          .classed("file-range controls", true)
+      
+      fileControls.append("button")
+        .text("export")
+        .on("click", export_table)
+      
+      fileControls.append("label")
+        .text("import:")
+        .append("input")
+          .attr("id", "table_import_file")
+          .attr("multiple", false)
+          .attr("type", "file")
+          .on("change", import_table)
+    }
+    
+    makeFileControls('file_controls');
     
     update_plot(0, initial_sld, 'xy');
     
@@ -534,8 +553,6 @@ window.onload = function() {
     var fileinput = document.getElementById('datafile');
     fileinput.onchange = loadData;    
     
-    
-    
     test_show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
@@ -548,7 +565,7 @@ window.onload = function() {
         a.click();     
     }    
     
-    saveData = (function () {
+    var saveData = (function () {
         var a = document.createElement("a");
         document.body.appendChild(a);
         a.style = "display: none";
@@ -582,6 +599,40 @@ window.onload = function() {
         saveData(pyscript, filename);
     }
     document.getElementById("scriptbutton").onclick = show_script;
+    
+    function export_table() {
+      // skip the header...
+      var table_data = d3.selectAll("#sld_table table tr").data().slice(1);
+      saveData(d3.tsv.format(table_data), "sld_table.txt");
+    }
+    
+    function import_table() {
+      var file_input = document.getElementById('table_import_file')
+      var file = file_input.files[0]; // only one file allowed
+      var result = null;
+      file_input.value = "";
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var new_data = d3.tsv.parse(this.result);
+        new_data.forEach(function(d) {
+          for (var key in d) {
+            if (d.hasOwnProperty(key)) {
+              // convert everything to numbers.
+              d[key] = +d[key];
+            }
+          }
+        });
+        initial_sld.splice(0, initial_sld.length + 1);
+        $.extend(true, initial_sld, new_data);
+        table_draw(initial_sld);
+        update_profile_limits(initial_sld);
+        profile_interactor.update();
+        sld_plot.resetzoom();
+        update_plot_live();
+      }
+      reader.readAsText(file);
+    }
+    
 }
 </script>
 <style type="text/css"> 
@@ -609,6 +660,7 @@ window.onload = function() {
     <div id="right" class="ui-layout-east">
       <div id='q_controls'></div>
       <div id='sld_table' align='center'></div>
+      <div id='file_controls' align='center'></div>
     </div>
     
     
