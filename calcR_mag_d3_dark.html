@@ -207,6 +207,11 @@ window.onload = function() {
         ,  center__onresize:    autofit
       });
 
+    var plot_choices = {'reflectivity':   {data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
+                    'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
+                    'spin asymmetry': {data: 'sa', xlabel: 'Q (Å⁻¹)', ylabel: '(R++ - R--)/(R++ + R--)', title: 'Asymmetry'}
+                    };
+    var current_choice = 'reflectivity';
 
     var webworker = new Worker("js/calc_r_mag.js");
     var webworker_queue = [],
@@ -301,8 +306,8 @@ window.onload = function() {
         legend: {show: true},
         point_size: 2,
         axes: {
-          xaxis: {label: "Q (Å⁻¹)"}, 
-          yaxis: {label: "R (I/I₀)"}
+          xaxis: {label: plot_choices[current_choice].xlabel}, 
+          yaxis: {label: plot_choices[current_choice].ylabel}
         },
         series: [
           {label: "- -", show_points: false},
@@ -437,17 +442,53 @@ window.onload = function() {
     profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
     profile_interactor.dispatch.on("changed.sld_update", update_profile_limits);
     table_draw(initial_sld);
+    
+    function make_plots_switcher(target_id) {
+      var choices = Object.keys(plot_choices);
+      var switchControls = d3.select("#" + target_id)
+        .selectAll("label.plot_choices").data(choices)
+      switchControls.enter().append("label")
+        .text(function(d) { return d })
+        .append("input")
+          .attr("type", "radio")
+          .attr("class", "plot-choice")
+          .attr("name", "plot_choice_switcher")
+          .attr("value", function(d) { return d })
+          .on("change", function() {
+            if (this.checked) {
+              current_choice = this.value;
+              var plot_choice = plot_choices[current_choice];
+              refl_plot.options().axes.yaxis.label = plot_choice.ylabel;
+              update_plot_live();
+            }
+          })
+      //d3.selectAll('input.plot-choice[value="' + current_choice + '"]').property("checked", true);
       
+      //update_plot_live();
+    }
+    
+    make_plots_switcher("plots_switcher");
+      
+    
+    function switch_plots() {
+        var new_choice = this.value;
+        if (new_choice != current_choice) {
+            current_choice = new_choice;
+        }
+        update_plot_live();
+    };
+    
+    
     function update_plot_live() {
         //var plot_select = $('#choices input:checked').prop('value');
-        //var plot_select = plot_choices[current_choice]['data'];
-        var plot_select = 'xy';
+        var plot_select = plot_choices[current_choice]['data'];
+        //var plot_select = 'xy';
         var sld = initial_sld;
         var series = 0;
         update_plot(series, sld, plot_select);
     }
       
-    update_plot = function(series, sld, plot_select) {
+    function update_plot(series, sld, plot_select) {
         var qmin = parseFloat(document.getElementById('qmin').value);
         var qmax = parseFloat(document.getElementById('qmax').value);
         var numpoints = parseFloat(document.getElementById('nPts').value);
@@ -487,6 +528,30 @@ window.onload = function() {
             .attr("id", function(d) {return d.label})
             .attr("value", function(d) {return d.default})
             .on("change", update_plot_live);
+        
+        var loglin = qRangeControls.append('div');
+        loglin
+          .append("label")
+          .text("y-scale: linear")
+          .append("input")
+            .attr("type", "radio")
+            .property("checked", false)
+            .attr("name", "loglin")
+            .attr("value", "linear")
+            .on("change", update_loglin)
+        loglin
+          .append("label")
+          .text("log")
+          .append("input")
+            .attr("type", "radio")
+            .property("checked", true)
+            .attr("name", "loglin")
+            .attr("value", "log")
+            .on("change", update_loglin)
+            
+        function update_loglin() {
+          refl_plot.ytransform(this.value);
+        }
     }
     
     makeQRangeControls('q_controls');
@@ -510,7 +575,9 @@ window.onload = function() {
     
     makeFileControls('file_controls');
     
-    update_plot(0, initial_sld, 'xy');
+    //update_plot_live();
+    
+    //update_plot(0, initial_sld, 'xy');
     
     function set_data(raw_data) {
         var output_data = [];
@@ -633,6 +700,10 @@ window.onload = function() {
       reader.readAsText(file);
     }
     
+    
+    var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');
+    current_item.property("checked", true);
+    current_item.on("change").call(current_item.node());
 }
 </script>
 <style type="text/css"> 
@@ -653,11 +724,12 @@ window.onload = function() {
         <input type="text" value="refl1d_script.py" width=20 id="scriptname">
     </div>
     <div id="centerpane" class="ui-layout-center">
-        <div id='rplot' keydown='console.log("click", this);'></div>
+        <div id='rplot'></div>
         <hr class="betweenplots">
         <div id='sldplot'></div>
     </div>
     <div id="right" class="ui-layout-east">
+      <div id='plots_switcher'></div>
       <div id='q_controls'></div>
       <div id='sld_table' align='center'></div>
       <div id='file_controls' align='center'></div>

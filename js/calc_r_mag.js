@@ -29,8 +29,8 @@ calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
             xy[i].push([q, ri.magsq()]);
             phase[i].push([q, ri.phase()]);
         }
-        var rpp = r[0].magsq();
-        var rmm = r[3].magsq();
+        var rpp = r[3].magsq();
+        var rmm = r[0].magsq();
         var sum = rpp + rmm;
         sa[0].push([q, (rpp - rmm)/(rpp + rmm)]);
         var empt = [q, null];
