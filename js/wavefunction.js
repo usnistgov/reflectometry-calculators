@@ -12,6 +12,7 @@ neutron_wavefunction.prototype.init = function(kz_in, sld) {
     // sld is an array of slabs with sld, thickness and absorption
     this.kz_in = kz_in;
     this.sld = sld;
+    this.sld_reverse = sld.slice().reverse();
     this.ML = null;
     this.r = null;
     this.layer_num_total = this.sld.length;
@@ -26,9 +27,11 @@ neutron_wavefunction.prototype.init = function(kz_in, sld) {
 
 neutron_wavefunction.prototype.set_kz_in = function(kz_in) {
     this.kz_in = kz_in;
-    this.k0z = Complex.sqrt( Math.pow(kz_in, 2) + 4 * Math.PI * this.sld_incident );
+    var sld = (kz_in < 0) ? this.sld_reverse : this.sld;
+    var sld_incident = sld[0].sld;
+    this.k0z = Complex.sqrt( Math.pow(kz_in, 2) + 4 * Math.PI * sld_incident );
     var nz = [];
-    for (var i in this.sld) {
+    for (var i in sld) {
         nz.push( Complex.sqrt( 1 - 4 * Math.PI * this.sld[i].sld / Math.pow(this.k0z,2) ));
     }
     this.nz = nz;
@@ -60,21 +63,23 @@ neutron_wavefunction.prototype.calculateR = function() {
     var M = [[Complex.one, Complex.zero],[Complex.zero, Complex.one]];
     var M_new = [[0,0],[0,0]];
     var ML = [[M[0].slice(0), M[1].slice(0)]];
+    var sld = (this.kz_in < 0) ? this.sld_reverse : this.sld;
+    var k0z = this.k0z;
     //var M_running = [[M[0].slice(0), M[1].slice(0)]];
     //var kz_array = [this.k0z];
     var kz_array = [this.kz_in];
     //var ml = [[0,0],[0,0]];
     // explicitly enforce mu is zero in fronting:
-    var sld0 = {sld: this.sld[0].sld, mu: 0}
-    var nz0 = calc_nz(sld0, this.k0z);
-    var nzf = calc_nz(this.sld[this.sld.length -1], this.k0z);
+    var sld0 = {sld: sld[0].sld, mu: 0}
+    var nz0 = calc_nz(sld0, k0z);
+    var nzf = calc_nz(sld[sld.length -1], k0z);
     var nz_array = [nz0];
     for (var i=1; i<this.layer_num_total-1; i++) {
         var ml = [[0,0],[0,0]];
-        thickness = this.sld[i].thickness;
-        nz = calc_nz(this.sld[i], this.k0z);
+        thickness = sld[i].thickness;
+        nz = calc_nz(sld[i], k0z);
         nz_array[i] = nz;
-        kz = Complex.multiply(nz, this.k0z);
+        kz = Complex.multiply(nz, k0z);
         kz_array[i] = kz;
         kzt = Complex.multiply(kz, thickness);
         cos_kzt = Complex.cos(kzt);
@@ -103,7 +108,7 @@ neutron_wavefunction.prototype.calculateR = function() {
     }
     nz_array.push(nzf);
     //kz_array.push(Complex.multiply(nzf, this.kz_in));
-    kz_array.push(Complex.multiply(nzf, this.k0z));
+    kz_array.push(Complex.multiply(nzf, k0z));
     ML.push([[1,0],[0,1]]);
     //M_running.push([[1,0],[0,1]]);
     
