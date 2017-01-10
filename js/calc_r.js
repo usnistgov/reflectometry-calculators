@@ -6,9 +6,9 @@ calc_r = function(sld, qmin, qmax, qstep) {
     var qstep = (qstep == null) ? 0.0003 : qstep;
     var rlist = [];
     var qlist = [];
-    var xy = [];
+    var xy = [[]];
     var phase_int = [];
-    var phase = [];
+    var phase = [[]];
     var sa = [];
     var dp, r;
     var wf = new neutron_wavefunction();
@@ -21,8 +21,8 @@ calc_r = function(sld, qmin, qmax, qstep) {
         wf.set_kz_in(q/2.0);
         r = wf.calculateR();
         rlist[i] = r;
-        xy[i] = [q, r.magsq()];
-        phase[i] = [q, r.phase()];
+        xy[0][i] = [q, r.magsq()];
+        phase[0][i] = [q, r.phase()];
         i++;
     }
     
