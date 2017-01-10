@@ -28,12 +28,21 @@ var app_options = {
     {label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
   ],
   worker_script: "js/calc_r_mag.js",
+  series_lookup: {
+      '--': 4, 
+      '-+': 5,
+      '+-': 6,
+      '++': 7
+  },
   reflplot_series_opts: [
-    {label: "- -", show_points: false},
-    {label: "- +", show_points: false},
-    {label: "+ -", show_points: false},
-    {label: "+ +", show_points: false},
-    {label: "data", show_points: true}
+    {label: "- -", show_points: false, color: "RoyalBlue"},
+    {label: "- +", show_points: false, color: "DarkGreen"},
+    {label: "+ -", show_points: false, color: "Maroon"},
+    {label: "+ +", show_points: false, color: "LightSeaGreen"},
+    {label: "data - -", show_points: true, show_line: false, color: "RoyalBlue"},
+    {label: "data - +", show_points: true, show_line: false, color: "DarkGreen"},
+    {label: "data + -", show_points: true, show_line: false, color: "Maroon"},
+    {label: "data + +", show_points: true, show_line: false, color: "LightSeaGreen"}
   ],
   constraints: [
     function(p, d, i) {p[0].thickness = 0},
@@ -160,7 +169,7 @@ var app_init = function(opts) {
         .on("click", svg_exporter(refl_plot))
       
       d3.select("#rplot")
-        .data([[[[0,1.0], [0.2, 0.0001]]]])
+        .data([[[[0, 1], [0.2, 1]]]])
         .call(refl_plot);
         
       refl_plot.zoomRect(true);
@@ -339,7 +348,8 @@ var app_init = function(opts) {
                 var message = JSON.parse(event.data);
                 r[series] = message;
                 var sd = refl_plot.source_data() || [];
-                sd = r[series][plot_select];
+                var new_data = r[series][plot_select];
+                Array.prototype.splice.apply(sd, [0, new_data.length].concat(new_data));
                 refl_plot.source_data(sd);
                 refl_plot.update();
                 webworker_busy = false;
@@ -421,28 +431,41 @@ var app_init = function(opts) {
     //update_plot(0, initial_sld, 'xy');
     
     function set_data(raw_data) {
-        var output_data = [];
-        var x, y, row;
+      var series_lookup = opts.series_lookup;
+        var x, y, y_out, row;
         var xmax = -Infinity,
             xmin = Infinity;
-        var lines = raw_data.split(/\r\n|\r|\n/g);
-        for (var i in lines) {
-            row = lines[i];
-            if (row[0] != '#') {
-                var rowdata = row.split(/[\s,]+/)
-                if (rowdata.length >= 2) {
-                    x = Number(rowdata[0]);
-                    xmax = Math.max(xmax, x);
-                    xmin = Math.min(xmin, x);
-                    y = Number(rowdata[1]);
-                    output_data.push([x, y]);
+        var sd = refl_plot.source_data() || [];
+        var sections = raw_data.split(/\r\n\r\n|\r\r|\n\n/g);
+        for (var s=0; s<sections.length; s++) {
+            var lines = sections[s].split(/\r\n|\r|\n/g);
+            var output_data = [];
+            var metadata = {};
+            //var lines = raw_data.split('\n');
+            for (var i in lines) {
+                row = lines[i];
+                if (row[0] == '#') {
+                  try { $.extend(true, metadata, JSON.parse('{' + row.replace(/[#]+/, '') + '}')) }
+                  catch (e) {}
+                }
+                else {
+                    var rowdata = row.split(/[\s,]+/)
+                    //row.split(' ');
+                    if (rowdata.length >= 2) {
+                        x = Number(rowdata[0]);
+                        xmax = Math.max(xmax, x);
+                        xmin = Math.min(xmin, x);
+                        y = Number(rowdata[1]);
+                        output_data.push([x, y]);
+                    }
                 }
             }
+            var series_num = series_lookup[metadata.polarization];
+            series_num = (series_num == null) ? Object.keys(series_lookup).length : series_num;
+            sd[series_num] = output_data;
         }
         $("input#qmin").val(xmin);
         $("input#qmax").val(xmax);
-        var sd = refl_plot.source_data() || [];
-        sd[1] = output_data;
         refl_plot.source_data(sd);
         update_plot_live();
     }

@@ -45,9 +45,10 @@
         {label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
       ],
       worker_script: "js/calc_r.js",
+      series_lookup: {"unpolarized": 1},
       reflplot_series_opts: [
         {label: "theory", show_points: false},
-        {label: "data", show_points: true}
+        {label: "data", show_points: true, show_line: false}
       ],
       constraints: [
         function(p, d, i) {p[0].thickness = 0},
