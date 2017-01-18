@@ -104,8 +104,8 @@ var app_init = function(opts) {
       }
       var top_roughness = (sld_array.slice(-2,-1)[0] || {}).roughness || 0;
       var bottom_roughness = (sld_array.slice(0,1)[0] || {}).roughness || 0;
-      limits.min_x = 0 - bottom_roughness; // thickness along x
-      limits.max_x = sld_array.reduce(function(t, d) { return t+d.thickness }, 0) + top_roughness;
+      limits.min_x = 0 - 2*bottom_roughness; // thickness along x
+      limits.max_x = sld_array.reduce(function(t, d) { return t+d.thickness }, 0) + 2*top_roughness;
       limits.min_y = sld_array.reduce(function(pre, cur) {
         return Math.min(pre, Math.min.apply(Math, get_column_vals(cur))) }, Infinity);
       limits.max_y = sld_array.reduce(function(pre, cur) {
@@ -266,6 +266,7 @@ var app_init = function(opts) {
       return function() {
         var svg = chart.export_svg();
         d3.select(svg).selectAll("circle.corner").style("r", "0px");
+        d3.select(svg).selectAll("path.edge, path.extension").style("visibility", "hidden");
         var serializer = new XMLSerializer();
         var output = serializer.serializeToString(svg);
         var filename = prompt("Save svg as:", "plot.svg");
