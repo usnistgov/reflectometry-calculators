@@ -72,6 +72,12 @@ var app_init = function(opts) {
       webworker_busy = false;
       alert("worker error: " + error.message + "\n");
     }
+    webworker.onmessage = function(event) {
+      var message = JSON.parse(event.data);
+      if (message.ready) {
+        update_plot_live();
+      }
+    }
     
     var datafilename = "";
     var sld_plot = null;
@@ -96,8 +102,10 @@ var app_init = function(opts) {
       function get_column_vals(item) {
         return col_ids.map(function(id) { return item[id] });
       }
-      limits.min_x = 0; // thickness along x
-      limits.max_x = sld_array.reduce(function(t, d) { return t+d.thickness }, 0);
+      var top_roughness = (sld_array.slice(-2,-1)[0] || {}).roughness || 0;
+      var bottom_roughness = (sld_array.slice(0,1)[0] || {}).roughness || 0;
+      limits.min_x = 0 - bottom_roughness; // thickness along x
+      limits.max_x = sld_array.reduce(function(t, d) { return t+d.thickness }, 0) + top_roughness;
       limits.min_y = sld_array.reduce(function(pre, cur) {
         return Math.min(pre, Math.min.apply(Math, get_column_vals(cur))) }, Infinity);
       limits.max_y = sld_array.reduce(function(pre, cur) {
@@ -112,7 +120,7 @@ var app_init = function(opts) {
         autoscale: false,
         point_size: 10, 
         axes: {
-          xaxis: {label: "z (Ångström)"}, 
+          xaxis: {label: "z (Ångström, from substrate)"}, 
           yaxis: {label: "SLD (10⁻⁶ Å⁻²), θ (rad)"}
         },
         series: opts.sldplot_series_opts
@@ -152,25 +160,25 @@ var app_init = function(opts) {
           dx: 2,
           color1: s.color1,
           functional: function(x) { 
-            var y = 0, z = 0, layer, l=0, roughness;
+            var y = 0, z = 0, layer, l=0, scaled_roughness;
             var cid = s.id;
             //console.log(initial_sld[0].sld);
             if (initial_sld.length > 1) {
-              layer = initial_sld[l];
-              roughness = layer.roughness;
+              layer = initial_sld[l];              
+              scaled_roughness = layer.roughness * Math.sqrt(2);
               y += layer[cid];
-              y -= layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+              y -= layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
               for (l=1; l<initial_sld.length-1; l++) {
                 // first up:
                 layer = initial_sld[l];
-                y += layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+                y += layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
                 // then down:
                 z += layer.thickness;
-                roughness = layer.roughness;
-                y -= layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+                scaled_roughness = layer.roughness * Math.sqrt(2);
+                y -= layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
               }
               layer = initial_sld[l];
-              y += layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+              y += layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
             }
               
             return y;
@@ -178,9 +186,7 @@ var app_init = function(opts) {
           show_lines: true
         }
       });
-      
-      console.log(roughness_opts);
-      
+            
       profile_interactor = new profileInteractor.default(profile_opts);
       roughness_interactors = roughness_opts.map(function(o) {
         var ri = new monotonicFunctionInteractor.default(o); 
@@ -312,6 +318,7 @@ var app_init = function(opts) {
                 d[c] = parseFloat(this.value);
                 profile_interactor.update();
                 update_profile_limits(data);
+                update_roughnesses();
                 update_plot_live();
               });
           })
@@ -328,6 +335,7 @@ var app_init = function(opts) {
               table_draw(data);
               profile_interactor.update();
               update_profile_limits(data);
+              update_roughnesses();
               update_plot_live();
             });
           tr.append("td")
@@ -340,6 +348,7 @@ var app_init = function(opts) {
               data.splice(i, 1);
               profile_interactor.update()
               update_profile_limits(data);
+              update_roughnesses();
               update_plot_live();
             });
         });
@@ -617,5 +626,5 @@ var app_init = function(opts) {
     
     var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');
     current_item.property("checked", true);
-    current_item.on("change").call(current_item.node());
+    //current_item.on("change").call(current_item.node());
 }

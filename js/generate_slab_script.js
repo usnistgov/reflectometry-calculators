@@ -46,7 +46,7 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L) {
         istr = i.toFixed(0);
         py += "layer" + istr + " = Slab(material=sld"+istr;
         py += ", thickness="  + sld.thickness.toPrecision(prec);
-        py += ", interface=0.0)\r\n";
+        py += ", interface=" + (sld.roughness || 0.0).toPrecision(prec) + ")\r\n";
         //py += "s.add( slds["+String(i)+"]("+sld.thickness.toPrecision(prec)+", 0))\r\n";
     }
     py += "\r\n";

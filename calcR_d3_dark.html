@@ -61,7 +61,7 @@
         function(p, d, i) {p.slice(-1)[0].thickness = 0},
         function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)}
       ],
-      east_size: 400
+      east_size: 450
     };
     window.onload = function() {
         console.log(Module);
@@ -71,7 +71,7 @@
     var Module = Module || {};
     Module['memoryInitializerPrefixURL'] = '//www.ncnr.nist.gov/instruments/magik/webalglib/webfit/';
     Module.postRun = Module.postRun || [];
-    Module.postRun.push(function() { app_init(app_options); });
+    Module.postRun.push(function() { app_init(app_options); $("#AGUIDE_label").css("display", "none"); });
 </script>   
 <script src="//www.ncnr.nist.gov/instruments/magik/webalglib/webfit/app.js"></script> 
 </head>
