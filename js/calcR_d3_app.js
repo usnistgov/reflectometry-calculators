@@ -11,10 +11,10 @@ var AGUIDE = 270;
 
 var app_options = {
   initial_sld: [
-    {thickness: 0, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0},
-    {thickness: 200, sld: 2.0, mu: 0, thetaM: 0.0, sldm: 1.0, sldi: 0.0},
-    {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0},
-    {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0}
+    {thickness: 0, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 10},
+    {thickness: 200, sld: 2.0, mu: 0, thetaM: 0.0, sldm: 1.0, sldi: 0.0, roughness: 10},
+    {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0, roughness: 10},
+    {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 0}
   ],
   plot_choices: {
     'reflectivity':   {data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
@@ -141,7 +141,8 @@ var app_init = function(opts) {
         name:'profile',
         radius: 10,
         series: opts.sldplot_series_opts,
-        profile_data: initial_sld
+        profile_data: initial_sld,
+        show_lines: true
       }
       
       var roughness_opts = opts.sldplot_series_opts.map(function(s,i) {

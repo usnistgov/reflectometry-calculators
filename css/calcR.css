@@ -83,7 +83,7 @@ html, body {
     fill: none;
     stroke-width: 12px;
     stroke-linejoin: round;
-    stroke-opacity: 0.5;
+    stroke-opacity: 0.25;
 }
 
 #sldplot path.extension {

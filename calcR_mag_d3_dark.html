@@ -23,13 +23,21 @@
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/jquery-extend.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/xy-chart.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/profile-interactor.js"></script>
+    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/monotonic-function-interactor.js"></script>
+
     
     <script src="js/calcR_d3_app.js"></script>
     
 <script type="text/javascript">
     window.onload = function() {
-        app_init(app_options);
+        //app_init(app_options);
     }
+    var Module = Module || {};
+    Module['memoryInitializerPrefixURL'] = '//www.ncnr.nist.gov/instruments/magik/webalglib/webfit/';
+    Module.postRun = Module.postRun || [];
+    Module.postRun.push(function() { app_init(app_options); });
+</script>   
+<script src="//www.ncnr.nist.gov/instruments/magik/webalglib/webfit/app.js"></script> 
 </script>    
 </head>
 <body bgcolor="#ffffcc"> 

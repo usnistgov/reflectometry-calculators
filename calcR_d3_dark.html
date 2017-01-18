@@ -69,10 +69,11 @@
         $("#AGUIDE_label").css("display", "none");
     }
     var Module = Module || {};
+    Module['memoryInitializerPrefixURL'] = '//www.ncnr.nist.gov/instruments/magik/webalglib/webfit/';
     Module.postRun = Module.postRun || [];
     Module.postRun.push(function() { app_init(app_options); });
 </script>   
-<script src="app.js"></script> 
+<script src="//www.ncnr.nist.gov/instruments/magik/webalglib/webfit/app.js"></script> 
 </head>
 <body bgcolor="#ffffcc"> 
     <div id="top_panel" class="ui-layout-north">
