@@ -84,6 +84,11 @@ neutron_wavefunction.prototype.calculateR = function() {
         kzt = Complex.multiply(kz, thickness);
         cos_kzt = Complex.cos(kzt);
         sin_kzt = Complex.sin(kzt);
+        if (sld[i].roughness) {
+            var damping = Math.exp(-Math.pow((sld[i].roughness * 2 * k0z), 2));
+            sin_kzt = Complex.multiply(sin_kzt, damping);
+        }
+        
         
         ml[0][0] = cos_kzt;
         ml[0][1] = Complex.multiply(nz.inverse(), sin_kzt);

@@ -23,18 +23,23 @@
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/jquery-extend.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/xy-chart.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/profile-interactor.js"></script>
+    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/monotonic-function-interactor.js"></script>
+    
+    
     
     <script src="js/calcR_d3_app.js"></script>
    
 <script type="text/javascript">
     var THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
     var AGUIDE = 270;
+    
+    
 
     var app_options = {
       initial_sld: [
-        {thickness: 0, sld: 2.069, mu: 0},
-        {thickness: 1250, sld: 4.5, mu: 0},
-        {thickness: 0, sld: 0.0, mu: 0}    
+        {thickness: 0, sld: 2.069, mu: 0, roughness: 10},
+        {thickness: 1250, sld: 4.5, mu: 0, roughness: 10},
+        {thickness: 0, sld: 0.0, mu: 0, roughness: 0}    
       ],
       plot_choices: {
         'reflectivity':   {data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
@@ -59,10 +64,15 @@
       east_size: 400
     };
     window.onload = function() {
-        app_init(app_options);
+        console.log(Module);
+        
         $("#AGUIDE_label").css("display", "none");
     }
-</script>    
+    var Module = Module || {};
+    Module.postRun = Module.postRun || [];
+    Module.postRun.push(function() { app_init(app_options); });
+</script>   
+<script src="app.js"></script> 
 </head>
 <body bgcolor="#ffffcc"> 
     <div id="top_panel" class="ui-layout-north">

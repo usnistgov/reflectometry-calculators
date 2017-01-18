@@ -77,6 +77,8 @@ var app_init = function(opts) {
     var sld_plot = null;
     var refl_plot = null;
     var profile_interactor = null;
+    var roughness_interactors = null;
+    var update_roughnesses = null;
     var r = [];
     var sld = [];
     var initial_sld = opts.initial_sld;
@@ -142,11 +144,56 @@ var app_init = function(opts) {
         profile_data: initial_sld
       }
       
+      var roughness_opts = opts.sldplot_series_opts.map(function(s,i) {
+        return {
+          type: "functional",
+          name: "smoothed",
+          dx: 2,
+          color1: s.color1,
+          functional: function(x) { 
+            var y = 0, z = 0, layer, l=0, roughness;
+            var cid = s.id;
+            //console.log(initial_sld[0].sld);
+            if (initial_sld.length > 1) {
+              layer = initial_sld[l];
+              roughness = layer.roughness;
+              y += layer[cid];
+              y -= layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+              for (l=1; l<initial_sld.length-1; l++) {
+                // first up:
+                layer = initial_sld[l];
+                y += layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+                // then down:
+                z += layer.thickness;
+                roughness = layer.roughness;
+                y -= layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+              }
+              layer = initial_sld[l];
+              y += layer[cid]*0.5*(Module.Math.erf((x - z)/roughness) + 1);
+            }
+              
+            return y;
+          },
+          show_lines: true
+        }
+      });
+      
+      console.log(roughness_opts);
+      
       profile_interactor = new profileInteractor.default(profile_opts);
+      roughness_interactors = roughness_opts.map(function(o) {
+        var ri = new monotonicFunctionInteractor.default(o); 
+        sld_plot.interactors(ri);
+        return ri;
+      });
+      
+      update_roughnesses = function() {
+        roughness_interactors.forEach(function(r) { r.update(); });
+      }
       
       profile_interactor.constraints(opts.constraints);
-      
       sld_plot.interactors(profile_interactor);
+
       sld_plot.zoomScroll(true);
       
       refl_plot = xyChart.default({
@@ -232,9 +279,9 @@ var app_init = function(opts) {
       var colnames = series.map(function(s) {return s.label});
       var colids = series.map(function(s) {return s.id});
       var colcolors = series.map(function(s) {return s.color1 || "none"});
-      colnames.splice(0,0,"thickness");
-      colids.splice(0,0,"thickness");
-      colcolors.splice(0,0,"none");
+      colnames.splice(0,0,"thickness", "roughness");
+      colids.splice(0,0,"thickness", "roughness");
+      colcolors.splice(0,0,"none","none");
       var target = d3.select("#" + target_id)
       target.selectAll("table").remove();
       var table = target.append("table");
@@ -300,6 +347,7 @@ var app_init = function(opts) {
     profile_interactor.dispatch.on("changed.table_update", table_draw);
     profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
     profile_interactor.dispatch.on("changed.sld_update", update_profile_limits);
+    profile_interactor.dispatch.on("changed.line_update", update_roughnesses);
     table_draw(initial_sld);
     
     function make_plots_switcher(target_id) {
