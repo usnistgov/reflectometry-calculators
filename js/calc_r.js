@@ -1,9 +1,10 @@
 Module = {
   postRun: function() {
     postMessage('{"ready": true}');
-  }
+  },
+  memoryInitializerPrefixURL: 'refl/'
 };
-importScripts('complex.js', 'wavefunction.js', 'refl.js');
+importScripts('complex.js', 'wavefunction.js', 'refl/refl.js');
 
 calc_r = function(sld, qmin, qmax, qstep) {
     var qmin = (qmin == null) ? 0.0001 : qmin;
