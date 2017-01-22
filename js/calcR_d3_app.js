@@ -139,7 +139,8 @@ var app_init = function(opts) {
         name:'profile',
         radius: 10,
         series: opts.sldplot_series_opts,
-        profile_data: initial_sld
+        profile_data: initial_sld,
+        show_lines: true
       }
       
       profile_interactor = new profileInteractor.default(profile_opts);
