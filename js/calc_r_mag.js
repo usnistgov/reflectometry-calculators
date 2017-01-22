@@ -15,6 +15,7 @@ function radians(angle) {
 }
 
 function calculate_U1_U3(H, rhoM, thetaM, Aguide) {
+  var thetaM = thetaM * Math.PI;
   var EPS = Number.EPSILON;
   var B2SLD = 2.31604654;  // Scattering factor for B field 1e-6
   var phiH = radians(Aguide - 270.0);
