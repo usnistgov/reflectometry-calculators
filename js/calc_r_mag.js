@@ -158,6 +158,9 @@ var calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
     double Aguide,
     val kz
 */
+function magsq(a) {
+  return Math.pow(a[0], 2) + Math.pow(a[1], 2);
+}
 
 var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     var qmin = (qmin == null) ? 0.0001 : qmin;
@@ -169,7 +172,7 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     var phase = [[], [], [], []];
     var sa = [[], [], [], []];
     var dp, r;
-    var H=1.0;
+    var H=0.0;
     
     var depth = [],
         sigma = [],
@@ -204,7 +207,15 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
       kz[i++] = q/2.0;
     }
     var R = Module.magrefl(depth, sigma, rho, irho, rhoM, u1Real, u1Imag, u3Real, u3Imag, AGUIDE, kz);
-    console.log(R);
+    
+    
+    R.Ra.forEach(function(_,i) {
+      xy[0][i] = [2*kz[i], magsq(R.Ra[i])];
+      xy[1][i] = [2*kz[i], magsq(R.Rb[i])];
+      xy[2][i] = [2*kz[i], magsq(R.Rc[i])];
+      xy[3][i] = [2*kz[i], magsq(R.Rd[i])];
+    });
+    return {xy: xy};
 }
 
 onmessage = function(event) {
@@ -214,8 +225,8 @@ onmessage = function(event) {
     var qmax = data.qmax;
     var qstep = data.qstep;
     var AGUIDE = data.AGUIDE;
-    var r = calc_r(sld, qmin, qmax, qstep, AGUIDE);
-    calc_r_new(sld, qmin, qmax, qstep, AGUIDE);
+    //var r = calc_r(sld, qmin, qmax, qstep, AGUIDE);
+    var r = calc_r_new(sld, qmin, qmax, qstep, AGUIDE);
     postMessage(JSON.stringify(r));
     return;
 }
