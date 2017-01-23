@@ -6,7 +6,8 @@
 "use strict";
 
 
-var THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
+//var THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
+var THETA_M = 1.0/2.0; // 90 degrees by default.
 var AGUIDE = 270;
 
 var app_options = {
@@ -24,7 +25,7 @@ var app_options = {
   sldplot_series_opts: [
     {label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
     {label: "SLDₘ x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
-    {label: "θ (rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
+    {label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
     {label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
   ],
   worker_script: "js/calc_r_mag.js",
@@ -121,7 +122,7 @@ var app_init = function(opts) {
         point_size: 10, 
         axes: {
           xaxis: {label: "z (Ångström, from substrate)"}, 
-          yaxis: {label: "SLD (10⁻⁶ Å⁻²), θ (rad)"}
+          yaxis: {label: "SLD (10⁻⁶ Å⁻²), θ (π rad)"}
         },
         series: opts.sldplot_series_opts
       }
@@ -312,7 +313,7 @@ var app_init = function(opts) {
             var entry = tr.append("td")
               .append("input")
               .attr("type", "text")
-              .attr("size", "7")
+              .attr("size", "6")
               .style("font-family", "inherit")
               .property("value", d[c].toPrecision(5))
               .on("change", function() {
@@ -360,6 +361,7 @@ var app_init = function(opts) {
     profile_interactor.dispatch.on("changed.sld_update", update_profile_limits);
     profile_interactor.dispatch.on("changed.line_update", update_roughnesses);
     table_draw(initial_sld);
+    layout.sizePane('east', $("div#sld_table table").outerWidth() + 20); // padding is 10 on each side.
     
     function make_plots_switcher(target_id) {
       var choices = Object.keys(opts.plot_choices);
