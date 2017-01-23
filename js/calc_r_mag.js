@@ -207,7 +207,57 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     for (var q=qmin; q<qmax; q+=qstep) {    
       kz[i++] = q/2.0;
     }
-    var R = Module.magrefl(depth, sigma, rho, irho, rhoM, u1Real, u1Imag, u3Real, u3Imag, AGUIDE, kz);
+    // run calculation with AGUIDE set to zero, as we are rotating M in u1, u3 calculation.
+    var R = Module.magrefl(depth, sigma, rho, irho, rhoM, u1Real, u1Imag, u3Real, u3Imag, 0, kz);
+    
+    
+    R.Ra.forEach(function(_,i) {
+      xy[0][i] = [2*kz[i], magsq(R.Ra[i])];
+      xy[1][i] = [2*kz[i], magsq(R.Rb[i])];
+      xy[2][i] = [2*kz[i], magsq(R.Rc[i])];
+      xy[3][i] = [2*kz[i], magsq(R.Rd[i])];
+    });
+    return {xy: xy};
+}
+
+var calc_r_new_new = function(sld, qmin, qmax, qstep, AGUIDE) {
+    var qmin = (qmin == null) ? 0.0001 : qmin;
+    var qmax = (qmax == null) ? 0.1 : qmax;
+    var qstep = (qstep == null) ? 0.0003 : qstep;
+    var AGUIDE = (AGUIDE == null) ? 270.0 : AGUIDE;
+    var xy = [[], [], [], []];
+    var phase_int = [];
+    var phase = [[], [], [], []];
+    var sa = [[], [], [], []];
+    var dp, r;
+    var H=0.0;
+    
+    var depth = [],
+        sigma = [],
+        rho = [],
+        irho = [],
+        rhoM = [],
+        thetaM = [],
+        kz = [];
+        
+    sld.forEach(function(layer, l) {
+      depth[l] = layer.thickness;
+      sigma[l] = layer.roughness;
+      rho[l] = layer.sld * 1e6;
+      rhoM[l] = layer.sldm * 1e6;
+      irho[l] = layer.mu * 1e6;
+      thetaM[l] = layer.thetaM * Math.PI;
+    });
+    
+    // cut off first element of sigma:
+    sigma.splice(0, 1);
+    
+    var i=0;
+    for (var q=qmin; q<qmax; q+=qstep) {    
+      kz[i++] = q/2.0;
+    }
+    // run calculation with AGUIDE set to zero, as we are rotating M in u1, u3 calculation.
+    var R = Module.magrefl_less(depth, sigma, rho, irho, rhoM, thetaM, 0, AGUIDE, kz);
     
     
     R.Ra.forEach(function(_,i) {
@@ -227,7 +277,7 @@ onmessage = function(event) {
     var qstep = data.qstep;
     var AGUIDE = data.AGUIDE;
     //var r = calc_r(sld, qmin, qmax, qstep, AGUIDE);
-    var r = calc_r_new(sld, qmin, qmax, qstep, AGUIDE);
+    var r = calc_r_new_new(sld, qmin, qmax, qstep, AGUIDE);
     postMessage(JSON.stringify(r));
     return;
 }
