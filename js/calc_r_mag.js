@@ -189,9 +189,9 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     sld.forEach(function(layer, l) {
       depth[l] = layer.thickness;
       sigma[l] = layer.roughness;
-      rho[l] = layer.sld * 1e6;
-      rhoM[l] = layer.sldm * 1e6;
-      irho[l] = layer.mu * 1e6;
+      rho[l] = layer.sld;
+      rhoM[l] = layer.sldm;
+      irho[l] = layer.mu;
       
       var u = calculate_U1_U3(H, layer.sldm, layer.thetaM, AGUIDE);
       u1Real[l] = u.u1.x;
@@ -243,9 +243,9 @@ var calc_r_new_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     sld.forEach(function(layer, l) {
       depth[l] = layer.thickness;
       sigma[l] = layer.roughness;
-      rho[l] = layer.sld * 1e6;
-      rhoM[l] = layer.sldm * 1e6;
-      irho[l] = layer.mu * 1e6;
+      rho[l] = layer.sld;
+      rhoM[l] = layer.sldm;
+      irho[l] = layer.mu;
       thetaM[l] = layer.thetaM * Math.PI;
     });
     

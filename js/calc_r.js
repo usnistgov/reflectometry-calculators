@@ -48,8 +48,8 @@ calc_r_new = function(sld, qmin, qmax, qstep) {
     sld.forEach(function(layer, l) {
       depth[l] = layer.thickness;
       sigma[l] = layer.roughness;
-      rho[l] = layer.sld * 1e6;
-      irho[l] = layer.mu * 1e6;
+      rho[l] = layer.sld;
+      irho[l] = layer.mu;
     });
     
     // cut off first element of sigma:

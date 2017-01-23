@@ -157,3 +157,8 @@ hr.betweenplots {
     border-color: white;
     opacity: 0.4;
 }
+
+.fit.log {
+    width: 100%;
+    text-align: left;
+}

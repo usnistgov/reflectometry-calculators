@@ -17,6 +17,7 @@ var app_options = {
     {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0, roughness: 10},
     {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 0}
   ],
+  to_fit: [],
   plot_choices: {
     'reflectivity':   {data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
     'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
@@ -89,6 +90,7 @@ var app_init = function(opts) {
     var r = [];
     var sld = [];
     var initial_sld = opts.initial_sld;
+    var to_fit = opts.to_fit;
     var current_choice = Object.keys(opts.plot_choices)[0];
     
     function autofit() {
@@ -166,7 +168,7 @@ var app_init = function(opts) {
             //console.log(initial_sld[0].sld);
             if (initial_sld.length > 1) {
               layer = initial_sld[l];              
-              scaled_roughness = layer.roughness * Math.sqrt(2);
+              scaled_roughness = Math.abs(layer.roughness) * Math.sqrt(2);
               y += layer[cid];
               y -= layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
               for (l=1; l<initial_sld.length-1; l++) {
@@ -175,7 +177,7 @@ var app_init = function(opts) {
                 y += layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
                 // then down:
                 z += layer.thickness;
-                scaled_roughness = layer.roughness * Math.sqrt(2);
+                scaled_roughness = Math.abs(layer.roughness) * Math.sqrt(2);
                 y -= layer[cid]*0.5*(Module.Math.erf((x - z)/scaled_roughness) + 1);
               }
               layer = initial_sld[l];
@@ -207,6 +209,7 @@ var app_init = function(opts) {
       refl_plot = xyChart.default({
         show_line: true,
         show_points: false,
+        show_errorbars: true,
         legend: {show: true},
         point_size: 2,
         axes: {
@@ -415,7 +418,7 @@ var app_init = function(opts) {
                 refl_plot.update();
                 webworker_busy = false;
             }
-        var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
+        //var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
         var message = JSON.stringify({sld: sld.slice().reverse(), qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE})
         webworker_queue[0] = message;        
     }
@@ -487,6 +490,23 @@ var app_init = function(opts) {
     
     makeFileControls('file_controls');
     
+    function makeFitControls(target_id) {
+      var fitControls = d3.select("#" + target_id).append('div')
+          .classed("fit controls", true)
+      
+      fitControls.append("button")
+        .text("fit")
+        .on("click", fit)
+        
+      fitControls.append("label")
+        .text("fit log:")
+      
+      fitControls.append("div")
+        .append("pre")
+        .classed("fit log", true)
+    }
+    
+    makeFitControls('fit_controls');
     //update_plot_live();
     
     //update_plot(0, initial_sld, 'xy');
@@ -494,6 +514,9 @@ var app_init = function(opts) {
     function set_data(raw_data) {
       var series_lookup = opts.series_lookup;
         var x, y, y_out, row;
+        var kz_list = [], 
+            R_list = [], 
+            dR_list = [];
         var xmax = -Infinity,
             xmin = Infinity;
         var sd = refl_plot.source_data() || [];
@@ -514,17 +537,35 @@ var app_init = function(opts) {
                     //row.split(' ');
                     if (rowdata.length >= 2) {
                         x = Number(rowdata[0]);
+                        kz_list.push([x/2.0, s]);
                         xmax = Math.max(xmax, x);
                         xmin = Math.min(xmin, x);
                         y = Number(rowdata[1]);
-                        output_data.push([x, y]);
+                        R_list.push(y);
+                        if (rowdata.length > 2) {
+                          var dy = Number(rowdata[2]);
+                          dR_list.push(dy);
+                          var yerr = {
+                            xupper: x,
+                            xlower: x, 
+                            yupper: y + dy,
+                            ylower: y - dy
+                          } 
+                          output_data.push([x, y, yerr]);
+                        } else {
+                          dR_list.push(1);
+                          output_data.push([x, y]);
+                        }
                     }
                 }
             }
             var series_num = series_lookup[metadata.polarization];
             series_num = (series_num == null) ? Object.keys(series_lookup).length : series_num;
             sd[series_num] = output_data;
+            
         }
+        
+        app_options.data = {kz_list: kz_list, R_list: R_list, dR_list: dR_list};
         $("input#qmin").val(xmin);
         $("input#qmax").val(xmax);
         refl_plot.source_data(sd);
@@ -606,8 +647,8 @@ var app_init = function(opts) {
       file_input.value = "";
       var reader = new FileReader();
       reader.onload = function(e) {
-        var new_data = d3.tsv.parse(this.result);
-        new_data.forEach(function(d) {
+        var new_sld = d3.tsv.parse(this.result);
+        new_sld.forEach(function(d) {
           for (var key in d) {
             if (d.hasOwnProperty(key)) {
               // convert everything to numbers.
@@ -616,7 +657,7 @@ var app_init = function(opts) {
           }
         });
         initial_sld.splice(0, initial_sld.length + 1);
-        $.extend(true, initial_sld, new_data);
+        $.extend(true, initial_sld, new_sld);
         table_draw(initial_sld);
         update_profile_limits(initial_sld);
         profile_interactor.update();
@@ -626,6 +667,89 @@ var app_init = function(opts) {
       reader.readAsText(file);
     }
     
+    function sld_to_params() {
+        var sld = initial_sld.slice().reverse();
+        var tf = to_fit.slice().reverse();
+        var layers = sld.length;
+        var c = [];
+        var s = [];
+        var bndu = [];
+        var bndl = [];
+        
+        var columns = ["thickness", "roughness", "sld", "mu"];
+        var scales = [10, 0.1, 0.1, 0.1];
+        
+        columns.forEach(function(col, ci) {
+            c = c.concat(sld.map(l=>l[col]));
+            s = s.concat(sld.map(l=>scales[ci]));
+            bndl = bndl.concat(sld.map((l,i)=> (tf[i] && tf[i][col]) ? -Infinity : l[col]));
+            bndu = bndu.concat(sld.map((l,i)=> (tf[i] && tf[i][col]) ? +Infinity : l[col]));
+        })
+        
+        console.log({c: c, s: s, bndl: bndl, bndu: bndu});
+        return {c: c, s: s, bndl: bndl, bndu: bndu, layers: layers}
+    }
+    
+    function params_to_sld(params) {
+      var layers = initial_sld.length;
+      var c = params.c;
+      var sld = initial_sld.slice().reverse();
+      var columns = ["thickness", "roughness", "sld", "mu"];
+      var ptr = 0;
+      columns.forEach(function(col, ci) {
+        sld.forEach(function(l, i) {
+          l[col] = c[ptr++];
+        })
+      });
+      return sld.reverse();
+    }
+    
+    function fit_report(params) {
+      var columns = ["thickness", "roughness", "sld", "mu"];
+      var sld = initial_sld.slice().reverse();
+      var tf = to_fit.slice().reverse();
+      var output = "";
+      var ptr = 0;
+      columns.forEach(function(col, ci) {
+        sld.forEach(function(l, i) {
+          if (tf[i] && tf[i][col]) {
+            output += col + "_" + i + " =\t" + params.c[ptr].toPrecision(6) + " +/- " + params.c_err[ptr].toPrecision(6) + "\n";
+          }
+          ptr++;
+        })
+      });
+      output += "\n";
+      output += "reduced chi-squared = \t" + params.wrmserror.toPrecision(6) + "\n";
+      output += "iterations = \t" + params.iterations.toFixed() + "\n";
+      return output;
+    }
+            
+    
+    function fit() {
+        var params = sld_to_params();
+        var xs = JSON.stringify(opts.data.kz_list); // qz to kz
+        var ys = JSON.stringify(opts.data.R_list);
+        var ws = JSON.stringify(opts.data.dR_list.map(dy=>1.0/dy));
+        var cs = JSON.stringify(params.c);
+        var ss = JSON.stringify(params.s);
+        
+        var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
+        var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
+        console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
+        var str_result = Module.fit_refl(xs, ys, ws, cs, ss, lower_bound, upper_bound);
+        var result = JSON.parse(str_result);
+        
+        var new_sld = params_to_sld(result);
+        initial_sld.splice(0, initial_sld.length + 1);
+        $.extend(true, initial_sld, new_sld);
+        table_draw(initial_sld);
+        update_profile_limits(initial_sld);
+        profile_interactor.update();
+        sld_plot.resetzoom();
+        update_plot_live();
+        
+        d3.select("pre.fit.log").text(fit_report(result));    
+    }
     
     var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');
     current_item.property("checked", true);
