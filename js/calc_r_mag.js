@@ -173,7 +173,7 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     var phase = [[], [], [], []];
     var sa = [[], [], [], []];
     var dp, r;
-    var H=0.0;
+    var H=0.05;
     
     var depth = [],
         sigma = [],
@@ -277,7 +277,7 @@ onmessage = function(event) {
     var qstep = data.qstep;
     var AGUIDE = data.AGUIDE;
     //var r = calc_r(sld, qmin, qmax, qstep, AGUIDE);
-    var r = calc_r_new_new(sld, qmin, qmax, qstep, AGUIDE);
+    var r = calc_r_new(sld, qmin, qmax, qstep, AGUIDE);
     postMessage(JSON.stringify(r));
     return;
 }

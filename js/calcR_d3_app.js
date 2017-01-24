@@ -685,7 +685,8 @@ var app_init = function(opts) {
       reader.readAsText(file);
     }
     
-    function sld_to_params() {
+    function sld_to_params(extra_param_values) {
+      var extra_param_values = extra_param_values || [];
         var sld = initial_sld.slice().reverse();
         var tf = to_fit.slice().reverse();
         var layers = sld.length;
@@ -695,6 +696,7 @@ var app_init = function(opts) {
         var bndl = [];
         
         var columns = opts.fitting.columns;
+        var extra_params = opts.fitting.extra_params;
         var scales = opts.fitting.scales;
         
         columns.forEach(function(col, ci) {
@@ -703,6 +705,11 @@ var app_init = function(opts) {
             bndl = bndl.concat(sld.map((l,i)=> (tf[i] && tf[i][col]) ? -Infinity : l[col]));
             bndu = bndu.concat(sld.map((l,i)=> (tf[i] && tf[i][col]) ? +Infinity : l[col]));
         })
+        
+        c = c.concat(extra_param_values);
+        s = s.concat(scales.slice(columns.length));
+        bndl = bndl.concat(extra_param_values); // don't fit for now
+        bndu = bndu.concat(extra_param_values);
         
         console.log({c: c, s: s, bndl: bndl, bndu: bndu});
         return {c: c, s: s, bndl: bndl, bndu: bndu, layers: layers}
@@ -747,30 +754,32 @@ var app_init = function(opts) {
             
     
     function fit() {
-        var params = sld_to_params();
-        var xs = JSON.stringify(opts.data.kz_list); // qz to kz
-        var ys = JSON.stringify(opts.data.R_list);
-        var ws = JSON.stringify(opts.data.dR_list.map(dy=>1.0/dy));
-        var cs = JSON.stringify(params.c);
-        var ss = JSON.stringify(params.s);
-        
-        var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
-        var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
-        console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
-        var fit_func = opts.fit_func
-        var str_result = Module[opts.fitting.funcname].call(null, xs, ys, ws, cs, ss, lower_bound, upper_bound);
-        var result = JSON.parse(str_result);
-        
-        var new_sld = params_to_sld(result);
-        initial_sld.splice(0, initial_sld.length + 1);
-        $.extend(true, initial_sld, new_sld.sld);
-        table_draw(initial_sld);
-        update_profile_limits(initial_sld);
-        profile_interactor.update();
-        sld_plot.resetzoom();
-        update_plot_live();
-        
-        d3.select("pre.fit.log").text(fit_report(result));    
+      var H = 0; // for now
+      var AGUIDE = +d3.select("input#AGUIDE").node().value;
+      var params = sld_to_params([H, AGUIDE]);
+      var xs = JSON.stringify(opts.data.kz_list); // qz to kz
+      var ys = JSON.stringify(opts.data.R_list);
+      var ws = JSON.stringify(opts.data.dR_list.map(dy=>1.0/dy));
+      var cs = JSON.stringify(params.c);
+      var ss = JSON.stringify(params.s);
+      
+      var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
+      var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
+      console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
+      var fit_func = opts.fit_func
+      var str_result = Module[opts.fitting.funcname].call(null, xs, ys, ws, cs, ss, lower_bound, upper_bound);
+      var result = JSON.parse(str_result);
+      
+      var new_sld = params_to_sld(result);
+      initial_sld.splice(0, initial_sld.length + 1);
+      $.extend(true, initial_sld, new_sld.sld);
+      table_draw(initial_sld);
+      update_profile_limits(initial_sld);
+      profile_interactor.update();
+      sld_plot.resetzoom();
+      update_plot_live();
+      
+      d3.select("pre.fit.log").text(fit_report(result));    
     }
     
     var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');
