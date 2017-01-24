@@ -17,7 +17,7 @@ var app_options = {
     {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0, roughness: 10},
     {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 0}
   ],
-  to_fit: [],
+  to_fit: [{roughness: true}, {thickness: true, sldm: true}, {}, {}],
   plot_choices: {
     'reflectivity':   {data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
     'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
@@ -52,7 +52,19 @@ var app_options = {
     function(p, d, i) {p.slice(-1)[0].thickness = 0},
     function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)}
   ],
-  east_size: 550
+  east_size: 550,
+  fitting: {
+    funcname: "fit_magrefl",
+    xs_order: {
+      "++": 0, 
+      "+-": 1, 
+      "-+": 2, 
+      "--": 3
+    },
+    columns: ["thickness", "roughness", "sld", "mu", "sldm", "thetaM"],
+    extra_params: ["H", "AGUIDE"],
+    scales: [10, 0.1, 0.1, 0.1, 0.1, 0.05, 0.01, 5]
+  }
 };
 
 var app_init = function(opts) {
@@ -520,6 +532,11 @@ var app_init = function(opts) {
         var xmax = -Infinity,
             xmin = Infinity;
         var sd = refl_plot.source_data() || [];
+        // fill in missing series with empty array:
+        for (var xs in series_lookup) {
+          var series_num = series_lookup[xs];
+          sd[series_num] = [];
+        }
         var sections = raw_data.split(/\r\n\r\n|\r\r|\n\n/g);
         for (var s=0; s<sections.length; s++) {
             var lines = sections[s].split(/\r\n|\r|\n/g);
@@ -533,30 +550,31 @@ var app_init = function(opts) {
                   catch (e) {}
                 }
                 else {
-                    var rowdata = row.split(/[\s,]+/)
-                    //row.split(' ');
-                    if (rowdata.length >= 2) {
-                        x = Number(rowdata[0]);
-                        kz_list.push([x/2.0, s]);
-                        xmax = Math.max(xmax, x);
-                        xmin = Math.min(xmin, x);
-                        y = Number(rowdata[1]);
-                        R_list.push(y);
-                        if (rowdata.length > 2) {
-                          var dy = Number(rowdata[2]);
-                          dR_list.push(dy);
-                          var yerr = {
-                            xupper: x,
-                            xlower: x, 
-                            yupper: y + dy,
-                            ylower: y - dy
-                          } 
-                          output_data.push([x, y, yerr]);
-                        } else {
-                          dR_list.push(1);
-                          output_data.push([x, y]);
-                        }
-                    }
+                  var xs_num = opts.fitting.xs_order[metadata.polarization] || 0;
+                  var rowdata = row.split(/[\s,]+/)
+                  //row.split(' ');
+                  if (rowdata.length >= 2) {
+                      x = Number(rowdata[0]);
+                      kz_list.push([x/2.0, xs_num]);
+                      xmax = Math.max(xmax, x);
+                      xmin = Math.min(xmin, x);
+                      y = Number(rowdata[1]);
+                      R_list.push(y);
+                      if (rowdata.length > 2) {
+                        var dy = Number(rowdata[2]);
+                        dR_list.push(dy);
+                        var yerr = {
+                          xupper: x,
+                          xlower: x, 
+                          yupper: y + dy,
+                          ylower: y - dy
+                        } 
+                        output_data.push([x, y, yerr]);
+                      } else {
+                        dR_list.push(1);
+                        output_data.push([x, y]);
+                      }
+                  }
                 }
             }
             var series_num = series_lookup[metadata.polarization];
@@ -676,8 +694,8 @@ var app_init = function(opts) {
         var bndu = [];
         var bndl = [];
         
-        var columns = ["thickness", "roughness", "sld", "mu"];
-        var scales = [10, 0.1, 0.1, 0.1];
+        var columns = opts.fitting.columns;
+        var scales = opts.fitting.scales;
         
         columns.forEach(function(col, ci) {
             c = c.concat(sld.map(l=>l[col]));
@@ -694,26 +712,29 @@ var app_init = function(opts) {
       var layers = initial_sld.length;
       var c = params.c;
       var sld = initial_sld.slice().reverse();
-      var columns = ["thickness", "roughness", "sld", "mu"];
+      var columns = opts.fitting.columns;
       var ptr = 0;
       columns.forEach(function(col, ci) {
         sld.forEach(function(l, i) {
           l[col] = c[ptr++];
         })
       });
-      return sld.reverse();
+      var extra_params = {};
+      opts.fitting.extra_params.forEach(function(p) { extra_params[p] = c[ptr++]; })
+      return {sld: sld.reverse(), extra_params: extra_params}
     }
     
     function fit_report(params) {
-      var columns = ["thickness", "roughness", "sld", "mu"];
+      var columns = opts.fitting.columns;
       var sld = initial_sld.slice().reverse();
+      var L = sld.length;
       var tf = to_fit.slice().reverse();
       var output = "";
       var ptr = 0;
       columns.forEach(function(col, ci) {
         sld.forEach(function(l, i) {
           if (tf[i] && tf[i][col]) {
-            output += col + "_" + i + " =\t" + params.c[ptr].toPrecision(6) + " +/- " + params.c_err[ptr].toPrecision(6) + "\n";
+            output += col + "_" + (L-i) + " =\t" + params.c[ptr].toPrecision(6) + " +/- " + params.c_err[ptr].toPrecision(6) + "\n";
           }
           ptr++;
         })
@@ -736,12 +757,13 @@ var app_init = function(opts) {
         var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
         var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
         console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
-        var str_result = Module.fit_refl(xs, ys, ws, cs, ss, lower_bound, upper_bound);
+        var fit_func = opts.fit_func
+        var str_result = Module[opts.fitting.funcname].call(null, xs, ys, ws, cs, ss, lower_bound, upper_bound);
         var result = JSON.parse(str_result);
         
         var new_sld = params_to_sld(result);
         initial_sld.splice(0, initial_sld.length + 1);
-        $.extend(true, initial_sld, new_sld);
+        $.extend(true, initial_sld, new_sld.sld);
         table_draw(initial_sld);
         update_profile_limits(initial_sld);
         profile_interactor.update();

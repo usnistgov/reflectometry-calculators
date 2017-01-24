@@ -66,7 +66,13 @@
         function(p, d, i) {p.slice(-1)[0].thickness = 0},
         function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)}
       ],
-      east_size: 450
+      east_size: 450,
+      fitting: {
+        funcname: "fit_refl",
+        columns: ["thickness", "roughness", "sld", "mu"],
+        extra_params: [],
+        scales: [10, 0.1, 0.1, 0.1, 0.1]
+      }
     };
     window.onload = function() {        
         $("#AGUIDE_label").css("display", "none");
@@ -75,51 +81,7 @@
     Module['memoryInitializerPrefixURL'] = 'js/refl/';
     Module.postRun = Module.postRun || [];
     Module.postRun.push(function() { app_init(app_options); $("#AGUIDE_label").css("display", "none"); });
-    
-    /*
-    var sld_to_params = function() {
-        var sld = app_options.initial_sld.slice().reverse();
-        var to_fit = app_options.to_fit.reverse();
-        var layers = sld.length;
-        var c = [];
-        var s = [];
-        var bndu = [];
-        var bndl = [];
-        
-        var columns = ["thickness", "roughness", "sld", "mu"];
-        var scales = [10, 0.1, 0.1, 0.1];
-        
-        columns.forEach(function(col, ci) {
-            c = c.concat(sld.map(l=>l[col]));
-            s = s.concat(sld.map(l=>scales[ci]));
-            bndl = bndl.concat(sld.map((l,i)=> (to_fit[i] && to_fit[i][col]) ? -Infinity : l[col]));
-            bndu = bndu.concat(sld.map((l,i)=> (to_fit[i] && to_fit[i][col]) ? +Infinity : l[col]));
-        })
-        
-        console.log({c: c, s: s, bndl: bndl, bndu: bndu});
-        return {c: c, s: s, bndl: bndl, bndu: bndu}
-    }
-    
-    var params_to_sld = function(params) {}
-        
-    
-    var fit = function() {
-        var params = sld_to_params();
-        var xs = JSON.stringify(app_options.data.kz_list); // qz to kz
-        var ys = JSON.stringify(app_options.data.R_list);
-        var ws = JSON.stringify(app_options.data.dR_list.map(dy=>1.0/dy));
-        var cs = JSON.stringify(params.c);
-        var ss = JSON.stringify(params.s);
-        
-        var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
-        var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
-        console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
-        var str_result = Module.fit_refl(xs, ys, ws, cs, ss, lower_bound, upper_bound);
-        var result = JSON.parse(str_result);
-                
-        console.log(result);
-    }
-    */
+
         
 </script>   
 <script src="js/refl/refl_fit.js"></script> 
@@ -142,9 +104,7 @@
       <div id='sld_table' align='center'></div>
       <div id='file_controls' align='center'></div>
       <hr>
-      <div id='fit_controls' align='center'>
-        <span id='fit_log'></span>
-      </div>
+      <div id='fit_controls' align='center'></div>
     </div>
     
     
