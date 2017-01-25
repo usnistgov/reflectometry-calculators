@@ -24,10 +24,14 @@ var app_options = {
     'spin asymmetry': {data: 'sa', xlabel: 'Q (Å⁻¹)', ylabel: '(R++ - R--)/(R++ + R--)', title: 'Asymmetry'}
   },
   sldplot_series_opts: [
-    {label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
-    {label: "SLDₘ x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
+    //{label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+    //{label: "SLDₘ x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
+    //{label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
+    //{label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+    {label: "SLDn x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+    {label: "SLDm x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
     {label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
-    {label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+    {label: "iSLDn x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
   ],
   worker_script: "js/calc_r_mag.js",
   series_lookup: {
@@ -334,10 +338,12 @@ var app_init = function(opts) {
               .attr("data-id", c)
               .attr("type", "text")
               .attr("size", "6")
+              .style("background-color", "inherit")
               .style("font-family", "inherit")
               .property("value", d[c].toPrecision(5))
               .on("change", function() {
                 d[c] = parseFloat(this.value);
+                this.value = parseFloat(this.value).toPrecision(5);
                 profile_interactor.update();
                 update_profile_limits(data);
                 update_roughnesses();
@@ -462,7 +468,9 @@ var app_init = function(opts) {
                 var new_data = r[series][plot_select];
                 Array.prototype.splice.apply(sd, [0, new_data.length].concat(new_data));
                 refl_plot.source_data(sd);
+                if (series == 0) { refl_plot.min_y(Math.max(refl_plot.min_y(), 1e-10)) }
                 refl_plot.update();
+                refl_plot.resetzoom();
                 webworker_busy = false;
             }
         //var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
@@ -545,13 +553,37 @@ var app_init = function(opts) {
     makeFileControls('file_controls');
     $("#file_controls").controlgroup();
     
-    function makeFitControls(target_id) {
-      var fitControls = d3.select("#" + target_id).append('div')
-          .classed("fit controls", true)
+    function makeModeControls(target_id) {
+      var modeControls = d3.select("#" + target_id).append('div')
+          .classed("mode controls", true)
       
+      
+      modeControls
+        .append("label")
+        .text("edit mode")
+        .append("input")
+          .attr("type", "radio")
+          .property("checked", true)
+          .attr("name", "mode")
+          .attr("value", "edit")
+          .on("change", update_mode)
+      modeControls
+        .append("label")
+        .text("fit mode")
+        .append("input")
+          .attr("type", "radio")
+          .property("checked", false)
+          .attr("name", "mode")
+          .attr("value", "fit")
+          .on("change", update_mode)
+      
+      var fitControls = d3.select("#" + target_id).append('div')
+        .classed("fit controls", true)
+        .style("padding-top", "5px")
+        
       fitControls.append("button")
-        .text("FIT")
-        .classed("ui-button ui-corner-all", true)
+        .text("start fit")
+        .classed("ui-button ui-corner-all ui-widget", true)
         .on("click", fit)
         
       fitControls.append("label")
@@ -560,9 +592,33 @@ var app_init = function(opts) {
       fitControls.append("div")
         .append("pre")
         .classed("fit log", true)
+      
+      function update_mode() {
+        fitControls.style("visibility", (this.value == "edit") ? "hidden" : "visible");
+        var data_table = d3.select("div#sld_table");
+        data_table.selectAll("td.data-cell")
+          .classed("edit-mode", (this.value == "edit"))
+          .classed("fit-mode",  (this.value == "fit"));
+        data_table.selectAll("div#sld_table input.data-value")
+          .property("disabled", (this.value == "fit"));
+          
+        if (this.value == "fit") {
+          data_table.selectAll("td.data-cell").on("click.select", function() {
+            var target = d3.select(this);
+            target.classed("selected", (!target.classed("selected")));
+          })
+        }
+        else { // "edit mode"
+          data_table.selectAll("td.data-cell").on("click.select", null);
+        }
+      }
+      
+      update_mode.call({value: "edit"});
+      
+      $(modeControls.node()).controlgroup();
     }
     
-    makeFitControls('fit_controls');
+    makeModeControls('fit_controls');
     //update_plot_live();
     
     //update_plot(0, initial_sld, 'xy');
@@ -729,10 +785,25 @@ var app_init = function(opts) {
       reader.readAsText(file);
     }
     
-    function sld_to_params(extra_param_values) {
+    function get_to_fit() {
+      var to_fit = [];
+      var data_table = d3.select("div#sld_table table tbody");
+      data_table.selectAll("tr").each(function(layer, l) {
+        var layer_fit = {};
+        d3.select(this).selectAll("td.selected input").each(function(cell) {
+          var data_id = d3.select(this).attr("data-id");
+          layer_fit[data_id] = true;
+        })
+        to_fit.push(layer_fit);
+      })
+      return to_fit;
+    }
+    
+    function sld_to_params(extra_param_values, to_fit) {
       var extra_param_values = extra_param_values || [];
         var sld = initial_sld.slice().reverse();
-        var tf = to_fit.slice().reverse();
+        //var tf = get_to_fit().reverse();
+        //var tf = to_fit.slice().reverse();
         var layers = sld.length;
         var c = [];
         var s = [];
@@ -746,8 +817,8 @@ var app_init = function(opts) {
         columns.forEach(function(col, ci) {
             c = c.concat(sld.map(l=>l[col]));
             s = s.concat(sld.map(l=>scales[ci]));
-            bndl = bndl.concat(sld.map((l,i)=> (tf[i] && tf[i][col]) ? -Infinity : l[col]));
-            bndu = bndu.concat(sld.map((l,i)=> (tf[i] && tf[i][col]) ? +Infinity : l[col]));
+            bndl = bndl.concat(sld.map((l,i)=> (to_fit[i] && to_fit[i][col]) ? -Infinity : l[col]));
+            bndu = bndu.concat(sld.map((l,i)=> (to_fit[i] && to_fit[i][col]) ? +Infinity : l[col]));
         })
         
         c = c.concat(extra_param_values);
@@ -775,16 +846,16 @@ var app_init = function(opts) {
       return {sld: sld.reverse(), extra_params: extra_params}
     }
     
-    function fit_report(params) {
+    function fit_report(params, to_fit) {
       var columns = opts.fitting.columns;
       var sld = initial_sld.slice().reverse();
       var L = sld.length;
-      var tf = to_fit.slice().reverse();
+      //var tf = to_fit.slice().reverse();
       var output = "";
       var ptr = 0;
       columns.forEach(function(col, ci) {
         sld.forEach(function(l, i) {
-          if (tf[i] && tf[i][col]) {
+          if (to_fit[i] && to_fit[i][col]) {
             output += col + "_" + (L-i) + " =\t" + params.c[ptr].toPrecision(6) + " +/- " + params.c_err[ptr].toPrecision(6) + "\n";
           }
           ptr++;
@@ -804,7 +875,8 @@ var app_init = function(opts) {
       });
       //var H = 0; // for now
       //var AGUIDE = +d3.select("input#AGUIDE").node().value;
-      var params = sld_to_params(extra_params);
+      var to_fit = get_to_fit().reverse();
+      var params = sld_to_params(extra_params, to_fit);
       var xs = JSON.stringify(opts.data.kz_list); // qz to kz
       var ys = JSON.stringify(opts.data.R_list);
       var ws = JSON.stringify(opts.data.dR_list.map(dy=>1.0/dy));
@@ -819,15 +891,16 @@ var app_init = function(opts) {
       var result = JSON.parse(str_result);
       
       var new_sld = params_to_sld(result);
-      initial_sld.splice(0, initial_sld.length + 1);
+      //initial_sld.splice(0, initial_sld.length + 1);
       $.extend(true, initial_sld, new_sld.sld);
-      table_draw(initial_sld);
+      //d3.selectAll("div#sld_table table tbody tr").data(initial_sld);
+      table_update(initial_sld);
       update_profile_limits(initial_sld);
       profile_interactor.update();
       sld_plot.resetzoom();
       update_plot_live();
       
-      d3.select("pre.fit.log").text(fit_report(result));    
+      d3.select("pre.fit.log").text(fit_report(result, to_fit));    
     }
     
     var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');

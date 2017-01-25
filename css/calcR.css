@@ -1,7 +1,8 @@
 html, body {
   position: relative;
   height: 100%;
-  font-family: sans !important;
+  /*font-family: Arial, Helvetica, sans-serif !important; */
+  font-family: 'Open Sans' !important;
 }
 
 .ui-layout-pane {
@@ -125,13 +126,27 @@ table, th, td {
     border: 2px solid green;
 }
 
-table td.data-cell {
+table td.data-cell.edit-mode {
     background-color: white;
+    color: DarkBlue;
+}
+
+table td.data-cell.fit-mode {
+    background-color: DimGray;
+    color: white;
+    user-select: none;
+}
+
+table td.data-cell.fit-mode.selected {
+    background-color: LightGreen;
+    color: DarkGreen;
 }
 
 table input {
   padding: 2px;
   border: 1px;
+  color: inherit;
+  user-select: inherit;
 }
 
 text.position-cursor {
@@ -143,9 +158,14 @@ text.position-cursor {
   padding-bottom: 1em;
 }
 
-.q-range-controls {
+.q-range.controls {
     vertical-align: top;
     display: inline-block;
+    margin-right: 0px;
+}
+
+.q-range.controls input {
+    margin-right: 0;
 }
 
 #centerpane, #right {

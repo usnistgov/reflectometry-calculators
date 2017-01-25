@@ -3,6 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Reflectivity and wavefunction for a slab profile</title>
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
     <link rel="stylesheet" href="css/layout-default-latest.css" />
     <link rel="stylesheet" type="text/css" href="css/calcR.css" />
     <!-- Reference the theme's stylesheet on the Google CDN -->
@@ -26,7 +27,7 @@
     
     
     
-    <script src="js/calcR_d3_app.js"></script>
+    <script src="js/calcR_d3_app.js" charset="utf-8"></script>
    
 <script type="text/javascript">
     var THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
@@ -50,8 +51,10 @@
         'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
       },
       sldplot_series_opts: [
-        {label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
-        {label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+        //{label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+        //{label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+        {label: "SLDn x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+        {label: "iSLDn x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
       ],
       worker_script: "js/calc_r.js",
       series_lookup: {"unpolarized": 1},
@@ -101,10 +104,10 @@
     <div id="right" class="ui-layout-east">
       <div id='plots_switcher'></div>
       <div id='q_controls'></div>
-      <div id='sld_table' align='center'></div>
-      <div id='file_controls' align='center'></div>
+      <div id='sld_table'></div>
+      <div id='file_controls'></div>
       <hr>
-      <div id='fit_controls' align='center'></div>
+      <div id='fit_controls'></div>
     </div>
     
     
