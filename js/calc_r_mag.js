@@ -171,6 +171,10 @@ function magsq(a) {
   return Math.pow(a[0], 2) + Math.pow(a[1], 2);
 }
 
+function get_phase(a) {
+  return Math.atan2.apply(Math, a);
+}
+
 var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     var qmin = (qmin == null) ? 0.0001 : qmin;
     var qmax = (qmax == null) ? 0.1 : qmax;
@@ -271,12 +275,23 @@ var calc_r_new_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     
     
     R.Ra.forEach(function(_,i) {
-      xy[0][i] = [2*kz[i], magsq(R.Ra[i])];
-      xy[1][i] = [2*kz[i], magsq(R.Rb[i])];
-      xy[2][i] = [2*kz[i], magsq(R.Rc[i])];
-      xy[3][i] = [2*kz[i], magsq(R.Rd[i])];
+      var q = 2*kz[i];
+      xy[0][i] = [q, magsq(R.Ra[i])];
+      xy[1][i] = [q, magsq(R.Rb[i])];
+      xy[2][i] = [q, magsq(R.Rc[i])];
+      xy[3][i] = [q, magsq(R.Rd[i])];
+      
+      var rmm = xy[0][i][1],
+          rpp = xy[3][i][1];
+      sa[0][i] = [q, (rpp - rmm)/(rpp + rmm)];
+      sa[1][i] = sa[2][i] = sa[3][i] = [q, null];
+      
+      phase[0][i] = [q, get_phase(R.Ra[i])];
+      phase[1][i] = [q, get_phase(R.Rb[i])];
+      phase[2][i] = [q, get_phase(R.Rc[i])];
+      phase[3][i] = [q, get_phase(R.Rd[i])];
     });
-    return {xy: xy};
+    return {xy: xy, phase: phase, sa: sa};
 }
 
 onmessage = function(event) {

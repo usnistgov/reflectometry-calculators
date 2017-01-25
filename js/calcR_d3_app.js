@@ -147,6 +147,7 @@ var app_init = function(opts) {
   
       d3.select("#sldplot").append("button")
         .text("export svg")
+        .classed("ui-button ui-corner-all", true)
         .style("right", "0px")
         .style("bottom", "0px")
         .style("position", "absolute")
@@ -233,6 +234,7 @@ var app_init = function(opts) {
             
       d3.select("#rplot").append("button")
         .text("export svg")
+        .classed("ui-button ui-corner-all", true)
         .style("right", "0px")
         .style("bottom", "0px")
         .style("position", "absolute")
@@ -381,14 +383,21 @@ var app_init = function(opts) {
     function make_plots_switcher(target_id) {
       var choices = Object.keys(opts.plot_choices);
       var switchControls = d3.select("#" + target_id)
-        .selectAll("label.plot_choices").data(choices)
-      switchControls.enter().append("label")
-        .text(function(d) { return d })
-        .append("input")
+        .classed("widget", true).append("div").classed("controlgroup", true);// .append("fieldset");
+      //switchControls.append("legend").text("plot choices");
+      choices.forEach(function(d, i) {
+      //var sel = switchControls.selectAll("label.plot_choices").data(choices);
+      //sel.enter().append("label")
+        switchControls.append("label")
+          .attr("for", "plot_choice_" + d)
+          .text(d)
+        switchControls.append("input")
           .attr("type", "radio")
           .attr("class", "plot-choice")
           .attr("name", "plot_choice_switcher")
-          .attr("value", function(d) { return d })
+          .attr("id", "plot_choice_" + d )
+          .attr("value", d)
+          .property("checked", (i==0))
           .on("change", function() {
             if (this.checked) {
               current_choice = this.value;
@@ -397,12 +406,14 @@ var app_init = function(opts) {
               update_plot_live();
             }
           })
+        });
       //d3.selectAll('input.plot-choice[value="' + current_choice + '"]').property("checked", true);
       
       //update_plot_live();
     }
     
-    make_plots_switcher("plots_switcher");    
+    make_plots_switcher("plots_switcher");
+    $(".controlgroup").controlgroup();
     
     function update_plot_live() {
         //var plot_select = $('#choices input:checked').prop('value');
@@ -447,16 +458,19 @@ var app_init = function(opts) {
         ]).enter()
           .append("label")
           .classed("qcontrols", true)
+          .classed("ui-controlgroup-label", true)
           .attr("id", function(d) {return d.label + "_label"})
           .text(function(d) {return d.label})
           .append("input")
             .attr("type", "number")
+            .classed("ui-spinner-input", true)
             .style("width", "5em")
             .attr("id", function(d) {return d.label})
             .attr("value", function(d) {return d.default})
             .on("change", update_plot_live);
         
-        var loglin = qRangeControls.append('div');
+        var loglin = qRangeControls.append('div')
+          .classed("log-lin-chooser", true);
         loglin
           .append("label")
           .text("y-scale: linear")
@@ -475,13 +489,14 @@ var app_init = function(opts) {
             .attr("name", "loglin")
             .attr("value", "log")
             .on("change", update_loglin)
-            
+          
         function update_loglin() {
           refl_plot.ytransform(this.value);
         }
     }
     
     makeQRangeControls('q_controls');
+    $("div.log-lin-chooser").controlgroup();
           
     function makeFileControls(target_id) {
       var fileControls = d3.select("#" + target_id).append('div')
@@ -491,27 +506,32 @@ var app_init = function(opts) {
         .text("export table")
         .on("click", export_table)
       
-      fileControls.append("label")
-        .text("import:")
-        .append("input")
+      fileControls.append("button")
+        .append("label")
+        .text("import table")
+        .attr("for", "table_import_file")
+      fileControls.append("input")
           .attr("id", "table_import_file")
           .attr("multiple", false)
           .attr("type", "file")
+          .style("display", "none")
           .on("change", import_table)
     }
     
     makeFileControls('file_controls');
+    $("#file_controls").controlgroup();
     
     function makeFitControls(target_id) {
       var fitControls = d3.select("#" + target_id).append('div')
           .classed("fit controls", true)
       
       fitControls.append("button")
-        .text("fit")
+        .text("FIT")
+        .classed("ui-button ui-corner-all", true)
         .on("click", fit)
         
       fitControls.append("label")
-        .text("fit log:")
+        .text(" log:")
       
       fitControls.append("div")
         .append("pre")
@@ -754,9 +774,13 @@ var app_init = function(opts) {
             
     
     function fit() {
-      var H = 0; // for now
-      var AGUIDE = +d3.select("input#AGUIDE").node().value;
-      var params = sld_to_params([H, AGUIDE]);
+      var extra_params = opts.fitting.extra_params.map(function(pname) { 
+        var input = d3.select("input#" + pname);
+        return (input.empty()) ? 0 : +(input.node().value);
+      });
+      //var H = 0; // for now
+      //var AGUIDE = +d3.select("input#AGUIDE").node().value;
+      var params = sld_to_params(extra_params);
       var xs = JSON.stringify(opts.data.kz_list); // qz to kz
       var ys = JSON.stringify(opts.data.R_list);
       var ws = JSON.stringify(opts.data.dR_list.map(dy=>1.0/dy));

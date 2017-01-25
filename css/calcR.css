@@ -1,7 +1,7 @@
 html, body {
   position: relative;
   height: 100%;
-    font-family: 'Open Sans' !important;
+  font-family: sans !important;
 }
 
 .ui-layout-pane {
@@ -142,10 +142,6 @@ text.position-cursor {
 .q-range-controls {
     vertical-align: top;
     display: inline-block;
-}
-
-.controls label, .controls button {
-    margin-right: 1em;
 }
 
 #centerpane, #right {
