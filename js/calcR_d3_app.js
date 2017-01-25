@@ -380,10 +380,9 @@ var app_init = function(opts) {
               update_plot_live();
             });
         });
+      update_mode();
     }      
-    
-    var update_count = 0;
-    
+        
     function table_update(data) {
       var target_id = "sld_table";
       var target = d3.select("#" + target_id)
@@ -592,30 +591,36 @@ var app_init = function(opts) {
       fitControls.append("div")
         .append("pre")
         .classed("fit log", true)
-      
-      function update_mode() {
-        fitControls.style("visibility", (this.value == "edit") ? "hidden" : "visible");
-        var data_table = d3.select("div#sld_table");
-        data_table.selectAll("td.data-cell")
-          .classed("edit-mode", (this.value == "edit"))
-          .classed("fit-mode",  (this.value == "fit"));
-        data_table.selectAll("div#sld_table input.data-value")
-          .property("disabled", (this.value == "fit"));
-          
-        if (this.value == "fit") {
-          data_table.selectAll("td.data-cell").on("click.select", function() {
-            var target = d3.select(this);
-            target.classed("selected", (!target.classed("selected")));
-          })
-        }
-        else { // "edit mode"
-          data_table.selectAll("td.data-cell").on("click.select", null);
-        }
-      }
-      
+
       update_mode.call({value: "edit"});
       
       $(modeControls.node()).controlgroup();
+    }
+    
+    function update_mode() {
+      var modechoice = d3.select("div.mode.controls input:checked");
+      if (modechoice.empty()) {
+        // probably no mode controls built yet;
+        return;
+      } 
+      var mode = modechoice.attr("value");
+      d3.select("div.fit.controls").style("visibility", (mode == "edit") ? "hidden" : "visible");
+      var data_table = d3.select("div#sld_table");
+      data_table.selectAll("td.data-cell")
+        .classed("edit-mode", (mode == "edit"))
+        .classed("fit-mode",  (mode == "fit"));
+      data_table.selectAll("div#sld_table input.data-value")
+        .property("disabled", (mode == "fit"));
+        
+      if (mode == "fit") {
+        data_table.selectAll("td.data-cell").on("click.select", function() {
+          var target = d3.select(this);
+          target.classed("selected", (!target.classed("selected")));
+        })
+      }
+      else { // "edit mode"
+        data_table.selectAll("td.data-cell").on("click.select", null);
+      }
     }
     
     makeModeControls('fit_controls');
