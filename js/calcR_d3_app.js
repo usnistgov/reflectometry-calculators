@@ -298,8 +298,8 @@ var app_init = function(opts) {
       var limits = get_limits(sld_array, col_ids);
       sld_plot.min_x(limits.min_x).max_x(limits.max_x).min_y(limits.min_y).max_y(limits.max_y);
     }
-
-    var table_draw = function(data) {
+    
+    function table_draw(data) {
       var target_id = "sld_table";
       var series = opts.sldplot_series_opts;
       var colnames = series.map(function(s) {return s.label});
@@ -328,7 +328,10 @@ var app_init = function(opts) {
           var tr = d3.select(this);
           colids.forEach(function(c) {
             var entry = tr.append("td")
+              .classed("data-cell", true)
               .append("input")
+              .classed("data-value", true)
+              .attr("data-id", c)
               .attr("type", "text")
               .attr("size", "6")
               .style("font-family", "inherit")
@@ -373,11 +376,32 @@ var app_init = function(opts) {
         });
     }      
     
-    profile_interactor.dispatch.on("changed.table_update", table_draw);
+    var update_count = 0;
+    
+    function table_update(data) {
+      var target_id = "sld_table";
+      var target = d3.select("#" + target_id)
+      if (target.select("table tbody").selectAll("tr").size() != data.length) {
+        // console.log("need to update table.");
+        table_draw(data);
+        return
+      }
+      else {
+        target.select("table tbody").selectAll("tr td input.data-value")
+          .property("value", function(d) { 
+            var data_id = d3.select(this).attr("data-id"); 
+            return d[data_id].toPrecision(5); 
+          })
+      }
+    }
+    
+    
+    profile_interactor.dispatch.on("changed.table_update", table_update);
     profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
     profile_interactor.dispatch.on("changed.sld_update", update_profile_limits);
     profile_interactor.dispatch.on("changed.line_update", update_roughnesses);
     table_draw(initial_sld);
+    
     layout.sizePane('east', $("div#sld_table table").outerWidth() + 20); // padding is 10 on each side.
     
     function make_plots_switcher(target_id) {
