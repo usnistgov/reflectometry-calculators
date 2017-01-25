@@ -19,12 +19,16 @@ function calculate_U1_U3(H, rhoM, thetaM, Aguide) {
   var EPS = Number.EPSILON;
   var B2SLD = 2.31604654;  // Scattering factor for B field 1e-6
   var phiH = radians(Aguide - 270.0);
-  var thetaH = Math.PI/2.0 // by convention, H is in y-z plane so theta = pi/2
+  var thetaH = Math.PI/2.0; // by convention, H is in y-z plane so theta = pi/2
   
-  var sld_h = B2SLD * H;
-  var sld_m_x = rhoM * Math.cos(thetaM);
-  var sld_m_y = rhoM * Math.sin(thetaM);
-  var sld_m_z = 0.0 // by Maxwell's equations, H_demag = mz so we'll just cancel it here
+  var sld_h, sld_h_x, sld_h_y, sld_h_z;
+  var sld_b, sld_b_x, sld_b_y, sld_b_z;
+  var sld_m_x, sld_m_y, sld_m_z;
+  
+  sld_h = B2SLD * H;
+  sld_m_x = rhoM * Math.cos(thetaM);
+  sld_m_y = rhoM * Math.sin(thetaM);
+  sld_m_z = 0.0 // by Maxwell's equations, H_demag = mz so we'll just cancel it here
   // The purpose of AGUIDE is to rotate the z-axis of the sample coordinate
   // system so that it is aligned with the quantization axis z, defined to be
   // the direction of the magnetic field outside the sample.
@@ -33,26 +37,30 @@ function calculate_U1_U3(H, rhoM, thetaM, Aguide) {
   var new_mz = sld_m_z * Math.cos(radians(Aguide)) - sld_m_y * Math.sin(radians(Aguide));
   sld_m_y = new_my;
   sld_m_z = new_mz;
-  var sld_h_x = 0.0;
-  var sld_h_y = 0.0;
-  var sld_h_z = sld_h;
+  sld_h_x = 0.0;
+  sld_h_y = 0.0;
+  sld_h_z = sld_h;
   // Then, don't rotate the transfer matrix
-  var Aguide = 0.0
+  // var Aguide = 0.0
   
-  var sld_b_x = sld_h_x + sld_m_x;
-  var sld_b_y = sld_h_y + sld_m_y;
-  var sld_b_z = sld_h_z + sld_m_z;
+  sld_b_x = sld_h_x + sld_m_x;
+  sld_b_y = sld_h_y + sld_m_y;
+  sld_b_z = sld_h_z + sld_m_z;
 
   // avoid divide-by-zero:
+  console.log(sld_b_x == 0, sld_b_y == 0);
   sld_b_x += EPS*(sld_b_x==0);
   sld_b_y += EPS*(sld_b_y==0);
 
   // add epsilon to y, to avoid divide by zero errors?
-  var sld_b = Math.sqrt(Math.pow(sld_b_x,2) + Math.pow(sld_b_y,2) + Math.pow(sld_b_z,2));
+  //console.log(sld_b_x, sld_b_y, sld_b_z);
+  sld_b = Math.sqrt(Math.pow(sld_b_x,2) + Math.pow(sld_b_y,2) + Math.pow(sld_b_z,2));
   var u1_num = new Complex( sld_b + sld_b_x - sld_b_z,  sld_b_y );
   var u1_den = new Complex( sld_b + sld_b_x + sld_b_z, -sld_b_y );
   var u3_num = new Complex(-sld_b + sld_b_x - sld_b_z,  sld_b_y );
   var u3_den = new Complex(-sld_b + sld_b_x + sld_b_z, -sld_b_y );
+  
+  //console.log(u1_num.x, u1_num.y, u1_den.x, u1_den.y);
   
   var u1 = Complex.multiply(u1_num, u1_den.inverse());
   var u3 = Complex.multiply(u3_num, u3_den.inverse());
@@ -173,7 +181,7 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     var phase = [[], [], [], []];
     var sa = [[], [], [], []];
     var dp, r;
-    var H=0.05;
+    var H=0.0;
     
     var depth = [],
         sigma = [],
@@ -190,7 +198,7 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
       depth[l] = layer.thickness;
       sigma[l] = layer.roughness;
       rho[l] = layer.sld;
-      rhoM[l] = layer.sldm;
+      rhoM[l] = Math.abs(layer.sldm);
       irho[l] = layer.mu;
       
       var u = calculate_U1_U3(H, layer.sldm, layer.thetaM, AGUIDE);
@@ -199,6 +207,8 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
       u3Real[l] = u.u3.x;
       u3Imag[l] = u.u3.y;
     });
+    
+    //console.log(JSON.stringify(u1Real), JSON.stringify(u1Imag));
     
     // cut off first element of sigma:
     sigma.splice(0, 1);
@@ -277,7 +287,7 @@ onmessage = function(event) {
     var qstep = data.qstep;
     var AGUIDE = data.AGUIDE;
     //var r = calc_r(sld, qmin, qmax, qstep, AGUIDE);
-    var r = calc_r_new(sld, qmin, qmax, qstep, AGUIDE);
+    var r = calc_r_new_new(sld, qmin, qmax, qstep, AGUIDE);
     postMessage(JSON.stringify(r));
     return;
 }
