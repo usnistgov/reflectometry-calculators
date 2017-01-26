@@ -67,53 +67,7 @@ function calculate_U1_U3(H, rhoM, thetaM, Aguide) {
   return {u1: u1, u3: u3}
 }
 
-/*
-    thetaM = radians(thetaM)
-    phiH = radians(Aguide - 270.0)
-    thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2
-    
-    sld_h = B2SLD * H
-    sld_m_x = rhoM * np.cos(thetaM)
-    sld_m_y = rhoM * np.sin(thetaM)
-    sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
-    # The purpose of AGUIDE is to rotate the z-axis of the sample coordinate
-    # system so that it is aligned with the quantization axis z, defined to be
-    # the direction of the magnetic field outside the sample.
-    if rotate_M:
-        # rotate the M vector instead of the transfer matrix!
-        # First, rotate the M vector about the x axis:
-        new_my = sld_m_z * sin(radians(Aguide)) + sld_m_y * cos(radians(Aguide))
-        new_mz = sld_m_z * cos(radians(Aguide)) - sld_m_y * sin(radians(Aguide))
-        sld_m_y, sld_m_z = new_my, new_mz
-        sld_h_x = sld_h_y = 0.0
-        sld_h_z = sld_h
-        # Then, don't rotate the transfer matrix
-        Aguide = 0.0
-    else:        
-        sld_h_x = sld_h * np.cos(thetaH) # zero
-        sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
-        sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
-    
-    sld_b_x = sld_h_x + sld_m_x
-    sld_b_y = sld_h_y + sld_m_y
-    sld_b_z = sld_h_z + sld_m_z
-
-    # avoid divide-by-zero:
-    sld_b_x += EPS*(sld_b_x==0)
-    sld_b_y += EPS*(sld_b_y==0)
-
-    # add epsilon to y, to avoid divide by zero errors?
-    sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-    u1_num = ( sld_b + sld_b_x + 1j*sld_b_y - sld_b_z )
-    u1_den = ( sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
-    u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
-    u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
-    
-    u1 = u1_num/u1_den
-    u3 = u3_num/u3_den
-*/
-
-var calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
+var calc_r_js = function(sld, qmin, qmax, qstep, AGUIDE) {
     var qmin = (qmin == null) ? 0.0001 : qmin;
     var qmax = (qmax == null) ? 0.1 : qmax;
     var qstep = (qstep == null) ? 0.0003 : qstep;
@@ -154,19 +108,7 @@ var calc_r = function(sld, qmin, qmax, qstep, AGUIDE) {
     
     return {xy: xy, rlist: rlist, phase: phase, qlist: qlist, profile: wf.getProfile(), wf: wf, sa: sa };
 }
-/*
- * val depth,
-    val sigma,
-    val rho,
-    val irho,
-    val rhoM,
-    val u1Real,
-    val u1Imag,
-    val u3Real,
-    val u3Imag,
-    double Aguide,
-    val kz
-*/
+
 function magsq(a) {
   return Math.pow(a[0], 2) + Math.pow(a[1], 2);
 }
@@ -175,7 +117,10 @@ function get_phase(a) {
   return Math.atan2.apply(Math, a);
 }
 
-var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
+var calc_r_cpplib_localU1U3 = function(sld, qmin, qmax, qstep, AGUIDE) {
+    // Reflectivity is calculated by C++ library magnetic.cc from Refl1d:
+    //   the layer-by-layer U1 and U3 (which are derived from rhoM and thetaM and H and AGUIDE)
+    //   are calculated in plain javascript (the function above in this file)
     var qmin = (qmin == null) ? 0.0001 : qmin;
     var qmax = (qmax == null) ? 0.1 : qmax;
     var qstep = (qstep == null) ? 0.0003 : qstep;
@@ -212,8 +157,6 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
       u3Imag[l] = u.u3.y;
     });
     
-    //console.log(JSON.stringify(u1Real), JSON.stringify(u1Imag));
-    
     // cut off first element of sigma:
     sigma.splice(0, 1);
     
@@ -234,7 +177,8 @@ var calc_r_new = function(sld, qmin, qmax, qstep, AGUIDE) {
     return {xy: xy};
 }
 
-var calc_r_new_new = function(sld, qmin, qmax, qstep, AGUIDE) {
+var calc_r_cpplib = function(sld, qmin, qmax, qstep, AGUIDE) {
+    // U1 and U3 are calculated by the imported C++ library as well
     var qmin = (qmin == null) ? 0.0001 : qmin;
     var qmax = (qmax == null) ? 0.1 : qmax;
     var qstep = (qstep == null) ? 0.0003 : qstep;
