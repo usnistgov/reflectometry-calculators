@@ -610,7 +610,7 @@ var app_init = function(opts) {
         .classed("edit-mode", (mode == "edit"))
         .classed("fit-mode",  (mode == "fit"));
       data_table.selectAll("div#sld_table input.data-value")
-        .attr("readonly", (mode == "fit") ? "readonly" : "");
+        .attr("readonly", (mode == "fit") ? "readonly" : null);
         
       if (mode == "fit") {
         data_table.selectAll("td.data-cell").on("click.select", function() {
