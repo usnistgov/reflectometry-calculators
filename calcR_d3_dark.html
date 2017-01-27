@@ -103,7 +103,9 @@
       <div id='file_controls'></div>
       <hr>
       <div id='fit_controls'></div>
-      <div id='footer'><p><?php lastmod(); ?></p></div>
+      <div id='footer'>
+          <?php include("/var/www/include/utility.inc"); lastmod(); ?>
+      </div>
     </div>
     <div id="bottom_controls" align='center'></div>
 </body>
