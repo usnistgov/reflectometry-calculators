@@ -245,8 +245,7 @@ onmessage = function(event) {
     var qmax = data.qmax;
     var qstep = data.qstep;
     var AGUIDE = data.AGUIDE;
-    //var r = calc_r(sld, qmin, qmax, qstep, AGUIDE);
-    var r = calc_r_new_new(sld, qmin, qmax, qstep, AGUIDE);
+    var r = calc_r_cpplib(sld, qmin, qmax, qstep, AGUIDE);
     postMessage(JSON.stringify(r));
     return;
 }

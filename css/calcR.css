@@ -1,8 +1,14 @@
 html, body {
   position: relative;
   height: 100%;
-  /*font-family: Arial, Helvetica, sans-serif !important; */
-  font-family: 'Open Sans' !important;
+  font-family: Arial, Helvetica, sans-serif !important; 
+  /*font-family: 'Open Sans' !important;*/
+}
+
+#footer {
+    position: absolute;
+    bottom: 0px;
+    text-align: center;
 }
 
 .ui-layout-pane {

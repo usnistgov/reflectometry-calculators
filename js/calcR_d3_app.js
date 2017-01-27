@@ -482,10 +482,10 @@ var app_init = function(opts) {
           .classed("q-range controls", true)
           
         qRangeControls.selectAll("label.qcontrols").data([
-          {"label": "qmin", "default": "0.0001"},
-          {"label": "qmax", "default": "0.1"},
-          {"label": "nPts", "default": "251"}, 
-          {"label": "AGUIDE", "default": "270"}
+          {"label": "qmin", "default": "0.0001", "step": "0.001"},
+          {"label": "qmax", "default": "0.1", "step": "0.001"},
+          {"label": "nPts", "default": "251", "step": "10"}, 
+          {"label": "AGUIDE", "default": "270", "step": "30"}
         ]).enter()
           .append("label")
           .classed("qcontrols", true)
@@ -494,7 +494,8 @@ var app_init = function(opts) {
           .text(function(d) {return d.label})
           .append("input")
             .attr("type", "number")
-            .classed("ui-spinner-input", true)
+            .attr("step", function(d) {return d.step})
+            //.classed("ui-spinner-input", true)
             .style("width", "5em")
             .attr("id", function(d) {return d.label})
             .attr("value", function(d) {return d.default})
@@ -722,19 +723,21 @@ var app_init = function(opts) {
     }    
     
     var saveData = (function () {
-        var a = document.createElement("a");
-        document.body.appendChild(a);
-        a.style = "display: none";
-        a.id = "savedata";
+        var a = d3.select("body").append("a")
+          .style("display", "none")
+          .attr("id", "savedata")
         return function (data, fileName, type) {
             var type = type || "application/python";
             var blob = new Blob([data], {type: type}),
                 url = window.URL.createObjectURL(blob);
-            a.href = url;
-            a.download = fileName;
-            //window.open(url, '_blank', fileName);
-            a.click();
-            setTimeout(function() { window.URL.revokeObjectURL(url) }, 1000);
+            if (window.navigator.msSaveOrOpenBlob) { 
+              window.navigator.msSaveOrOpenBlob(blob, fileName); 
+            } else {
+              a.attr("href", url)
+               .attr("download", fileName)
+               .node().click();
+              setTimeout(function() { window.URL.revokeObjectURL(url) }, 1000);
+            }
         };
     }());
     
@@ -820,10 +823,10 @@ var app_init = function(opts) {
         var scales = opts.fitting.scales;
         
         columns.forEach(function(col, ci) {
-            c = c.concat(sld.map(l=>l[col]));
-            s = s.concat(sld.map(l=>scales[ci]));
-            bndl = bndl.concat(sld.map((l,i)=> (to_fit[i] && to_fit[i][col]) ? -Infinity : l[col]));
-            bndu = bndu.concat(sld.map((l,i)=> (to_fit[i] && to_fit[i][col]) ? +Infinity : l[col]));
+            c = c.concat(sld.map(function(l) {return l[col]}));
+            s = s.concat(sld.map(function(l) {return scales[ci]}));
+            bndl = bndl.concat(sld.map(function(l,i) {return (to_fit[i] && to_fit[i][col]) ? -Infinity : l[col]}));
+            bndu = bndu.concat(sld.map(function(l,i) {return (to_fit[i] && to_fit[i][col]) ? +Infinity : l[col]}));
         })
         
         c = c.concat(extra_param_values);
@@ -884,7 +887,7 @@ var app_init = function(opts) {
       var params = sld_to_params(extra_params, to_fit);
       var xs = JSON.stringify(opts.data.kz_list); // qz to kz
       var ys = JSON.stringify(opts.data.R_list);
-      var ws = JSON.stringify(opts.data.dR_list.map(dy=>1.0/dy));
+      var ws = JSON.stringify(opts.data.dR_list.map(function(dy) {return 1.0/dy}));
       var cs = JSON.stringify(params.c);
       var ss = JSON.stringify(params.s);
       

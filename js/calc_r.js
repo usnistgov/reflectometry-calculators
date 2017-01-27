@@ -78,7 +78,7 @@ calc_r_new = function(sld, qmin, qmax, qstep) {
     }
     else {
       // not ready yet: return junk
-      return {xy: [kz.map(k=>[2*k, 1])], phase: [kz.map(k=>[2*k, 0.5])]};
+      return {xy: [kz.map(function(k) {return [2*k, 1]})], phase: [kz.map(function(k) {return [2*k, 0.5]})]};
     }
 }
 

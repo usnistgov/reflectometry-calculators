@@ -3,23 +3,20 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Reflectivity and wavefunction for a slab profile</title>
+<!--
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+-->
     <link rel="stylesheet" href="css/layout-default-latest.css" />
     <link rel="stylesheet" type="text/css" href="css/calcR.css" />
-    <!-- Reference the theme's stylesheet on the Google CDN -->
-        <link href="//code.jquery.com/ui/1.12.0/themes/ui-darkness/jquery-ui.css"
-            type="text/css" rel="Stylesheet" />
-<!-- Reference jQuery and jQuery UI from the CDN. Remember
-           that the order of these two elements is important -->
+    <link href="//code.jquery.com/ui/1.12.0/themes/ui-darkness/jquery-ui.css" type="text/css" rel="stylesheet" />
+<!-- Reference jQuery and jQuery UI from the CDN. Remember that the order of these two elements is important -->
     <script src="//code.jquery.com/jquery-1.12.4.min.js" type="text/javascript"></script>
     <script src="//code.jquery.com/ui/1.12.0/jquery-ui.min.js" type="text/javascript"></script>
     <script type="text/javascript" src="js/jquery.layout-latest.js"></script>
     
-    <script type="text/javascript" src="js/complex.js"></script>
-    <script type="text/javascript" src="js/wavefunction.js"></script>
     <script type="text/javascript" src="js/generate_slab_script.js"></script>
     
-    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/jquery-extend.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/xy-chart.js" charset="utf-8"></script>
     <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/profile-interactor.js"></script>
@@ -32,8 +29,6 @@
 <script type="text/javascript">
     var THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
     var AGUIDE = 270;
-    
-    
 
     var app_options = {
       initial_sld: [
@@ -108,15 +103,9 @@
       <div id='file_controls'></div>
       <hr>
       <div id='fit_controls'></div>
+      <div id='footer'><?php lastmod(); ?></p>
     </div>
-    
-    
-    <div id="bottom_controls" align='center'>
-        
-    </div>
-    <div id='footer'>
-        <p><font size=2> <?php lastmod(); ?> </font></p>
-    </div>
+    <div id="bottom_controls" align='center'></div>
 </body>
 </html>
 
