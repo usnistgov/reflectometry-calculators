@@ -1,6 +1,6 @@
 var prec = 5; // precision
 
-generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, Aguide) {
+generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, H, Aguide) {
     py = "";
     //var filename = filename || "myfile.refl";
     
@@ -28,7 +28,9 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, Aguide)
     py += "L=";
     py += ((L == null) ? 5.0 : L).toPrecision(prec) + ") for xs in range(4)]\n";
     if (filename != "") { py += "#" };
-    py += "probe = PolarizedNeutronProbe(xs_probes, Aguide=" + Aguide.toPrecision(prec) + ")\n";
+    py += "probe = PolarizedNeutronProbe(xs_probes, ";
+    py += "Aguide=" + Aguide.toPrecision(prec) + ", ";
+    py += "H=" + H.toPrecision(prec) + ")\n";
     
     py += "\n";
     py += "# === Stack ===\n";

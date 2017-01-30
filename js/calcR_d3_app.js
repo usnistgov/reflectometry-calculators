@@ -67,6 +67,7 @@ var app_options = {
     },
     columns: ["thickness", "roughness", "sld", "mu", "sldm", "thetaM"],
     extra_params: ["H", "AGUIDE"],
+    extra_params_defaults: [0, 270],
     scales: [10, 0.1, 0.1, 0.1, 0.1, 0.05, 0.01, 5]
   }
 };
@@ -457,7 +458,10 @@ var app_init = function(opts) {
         var qmin = parseFloat(document.getElementById('qmin').value);
         var qmax = parseFloat(document.getElementById('qmax').value);
         var numpoints = parseFloat(document.getElementById('nPts').value);
-        var AGUIDE = parseFloat(document.getElementById('AGUIDE').value);
+        var extra_params = {};
+        opts.fitting.extra_params.forEach(function(e,i) {
+          extra_params[e] = parseFloat(document.getElementById(e).value);
+        });
         var qstep = (qmax - qmin)/numpoints;
         
         webworker.onmessage = function(event) {
@@ -473,30 +477,35 @@ var app_init = function(opts) {
                 webworker_busy = false;
             }
         //var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
-        var message = JSON.stringify({sld: sld.slice().reverse(), qmin: qmin, qmax: qmax, qstep: qstep, AGUIDE: AGUIDE})
-        webworker_queue[0] = message;        
+        var message = {sld: sld.slice().reverse(), qmin: qmin, qmax: qmax, qstep: qstep};
+        $.extend(message, extra_params);
+        webworker_queue[0] = JSON.stringify(message);        
     }
   
     function makeQRangeControls(target_id) {
         var qRangeControls = d3.select("#" + target_id).append('div')
           .classed("q-range controls", true)
-          
-        qRangeControls.selectAll("label.qcontrols").data([
+        
+        var control_data = [
           {"label": "qmin", "default": "0.0001", "step": "0.001"},
           {"label": "qmax", "default": "0.1", "step": "0.001"},
-          {"label": "nPts", "default": "251", "step": "10"}, 
-          {"label": "AGUIDE", "default": "270", "step": "30"}
-        ]).enter()
+          {"label": "nPts", "default": "251", "step": "10"}
+        ];
+        control_data = control_data.concat(opts.fitting.extra_params.map(function(e,i) {
+          return {"label": e, "default": opts.fitting.extra_params_defaults[i], "step": "1"}
+        }));
+        qRangeControls.selectAll("label.qcontrols").data(control_data)
+          .enter()
           .append("label")
           .classed("qcontrols", true)
           .classed("ui-controlgroup-label", true)
           .attr("id", function(d) {return d.label + "_label"})
           .text(function(d) {return d.label})
           .append("input")
-            .attr("type", "number")
+            .attr("type", "text")
             .attr("step", function(d) {return d.step})
             //.classed("ui-spinner-input", true)
-            .style("width", "5em")
+            .style("width", "4em")
             .attr("id", function(d) {return d.label})
             .attr("value", function(d) {return d.default})
             .on("change", update_plot_live);
@@ -746,6 +755,10 @@ var app_init = function(opts) {
         var qmin = parseFloat($("input#qmin").val()),
             qmax = parseFloat($("input#qmax").val()),
             nPts = parseInt($("input#nPts").val());
+        var extra_params = opts.fitting.extra_params.map(function(pname) { 
+          var input = d3.select("input#" + pname);
+          return (input.empty()) ? 0 : +(input.node().value);
+        });
         // have to specify the probe in terms of theta rather than Q for refl1d...
         // we'll use a fake wavelength of 5.0 Angstroms.
         var L = 5.0,
@@ -754,7 +767,8 @@ var app_init = function(opts) {
             tmax = (180.0/Math.PI) * Math.asin(qmax/(2.0 * k0z));
         // sldarray order is based on the old reflpak ordering (beam source side first)
         // while refl1d builds the slab model from the "bottom", with the substrate slab first
-        var pyscript = generate_slab_script(sldarray, datafilename, tmin, tmax, nPts, L, AGUIDE);
+        var script_params = [sldarray, datafilename, tmin, tmax, nPts, L].concat(extra_params);
+        var pyscript = generate_slab_script.apply(null, script_params);
         var filename = document.getElementById("scriptname").value;
         saveData(pyscript, filename);
     }

@@ -117,7 +117,7 @@ function get_phase(a) {
   return Math.atan2.apply(Math, a);
 }
 
-var calc_r_cpplib_localU1U3 = function(sld, qmin, qmax, qstep, AGUIDE) {
+var calc_r_cpplib_localU1U3 = function(sld, qmin, qmax, qstep, H, AGUIDE) {
     // Reflectivity is calculated by C++ library magnetic.cc from Refl1d:
     //   the layer-by-layer U1 and U3 (which are derived from rhoM and thetaM and H and AGUIDE)
     //   are calculated in plain javascript (the function above in this file)
@@ -130,7 +130,7 @@ var calc_r_cpplib_localU1U3 = function(sld, qmin, qmax, qstep, AGUIDE) {
     var phase = [[], [], [], []];
     var sa = [[], [], [], []];
     var dp, r;
-    var H=0.0;
+    var H = H || 0.0;
     
     var depth = [],
         sigma = [],
@@ -177,7 +177,7 @@ var calc_r_cpplib_localU1U3 = function(sld, qmin, qmax, qstep, AGUIDE) {
     return {xy: xy};
 }
 
-var calc_r_cpplib = function(sld, qmin, qmax, qstep, AGUIDE) {
+var calc_r_cpplib = function(sld, qmin, qmax, qstep, H, AGUIDE) {
     // U1 and U3 are calculated by the imported C++ library as well
     var qmin = (qmin == null) ? 0.0001 : qmin;
     var qmax = (qmax == null) ? 0.1 : qmax;
@@ -188,7 +188,7 @@ var calc_r_cpplib = function(sld, qmin, qmax, qstep, AGUIDE) {
     var phase = [[], [], [], []];
     var sa = [[], [], [], []];
     var dp, r;
-    var H=0.0;
+    var H = H || 0.0;
     
     var depth = [],
         sigma = [],
@@ -215,7 +215,7 @@ var calc_r_cpplib = function(sld, qmin, qmax, qstep, AGUIDE) {
       kz[i++] = q/2.0;
     }
     // run calculation with AGUIDE set to zero, as we are rotating M in u1, u3 calculation.
-    var R = Module.magrefl_less(depth, sigma, rho, irho, rhoM, thetaM, 0, AGUIDE, kz);
+    var R = Module.magrefl_less(depth, sigma, rho, irho, rhoM, thetaM, H, AGUIDE, kz);
     
     
     R.Ra.forEach(function(_,i) {
@@ -244,8 +244,9 @@ onmessage = function(event) {
     var qmin = data.qmin;
     var qmax = data.qmax;
     var qstep = data.qstep;
+    var H = data.H;
     var AGUIDE = data.AGUIDE;
-    var r = calc_r_cpplib(sld, qmin, qmax, qstep, AGUIDE);
+    var r = calc_r_cpplib(sld, qmin, qmax, qstep, H, AGUIDE);
     postMessage(JSON.stringify(r));
     return;
 }
