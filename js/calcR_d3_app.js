@@ -19,7 +19,7 @@ var app_options = {
   ],
   to_fit: [{roughness: true}, {thickness: true, sldm: true}, {}, {}],
   plot_choices: {
-    'reflectivity':   {data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
+    'reflectivity':   {data: 'xy', xlabel: '2*k_in (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
     'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
     'spin asymmetry': {data: 'sa', xlabel: 'Q (Å⁻¹)', ylabel: '(R++ - R--)/(R++ + R--)', title: 'Asymmetry'}
   },
@@ -65,10 +65,18 @@ var app_options = {
       "-+": 2, 
       "--": 3
     },
-    columns: ["thickness", "roughness", "sld", "mu", "sldm", "thetaM"],
-    extra_params: ["H", "AGUIDE"],
-    extra_params_defaults: [0, 270],
-    scales: [10, 0.1, 0.1, 0.1, 0.1, 0.05, 0.01, 5]
+    columns: [
+      {"label": "thickness", "scale": 10, "minimum": 0},
+      {"label": "roughness", "scale": 0.1, "miniumum": 0},
+      {"label": "sld", "scale": 0.1},
+      {"label": "mu", "scale": 0.1, "minimum": 0}, // no radiation sources allowed in sample!
+      {"label": "sldm", "scale": 0.1},
+      {"label": "thetaM", "scale": 0.05}
+    ],
+    extra_params: [
+      {"label": "H", "default": 0.0, "step": 0.001, "minimum": null, "scale": 0.01},
+      {"label": "AGUIDE", "default": 270, "step": 30, "minimum": null, "scale": 5.0}
+    ]
   }
 };
 
@@ -460,7 +468,7 @@ var app_init = function(opts) {
         var numpoints = parseFloat(document.getElementById('nPts').value);
         var extra_params = {};
         opts.fitting.extra_params.forEach(function(e,i) {
-          extra_params[e] = parseFloat(document.getElementById(e).value);
+          extra_params[e.label] = parseFloat(document.getElementById(e.label).value);
         });
         var qstep = (qmax - qmin)/numpoints;
         
@@ -491,9 +499,7 @@ var app_init = function(opts) {
           {"label": "qmax", "default": "0.1", "step": "0.001"},
           {"label": "nPts", "default": "251", "step": "10"}
         ];
-        control_data = control_data.concat(opts.fitting.extra_params.map(function(e,i) {
-          return {"label": e, "default": opts.fitting.extra_params_defaults[i], "step": "1"}
-        }));
+        control_data = control_data.concat(opts.fitting.extra_params);
         qRangeControls.selectAll("label.qcontrols").data(control_data)
           .enter()
           .append("label")
@@ -755,8 +761,8 @@ var app_init = function(opts) {
         var qmin = parseFloat($("input#qmin").val()),
             qmax = parseFloat($("input#qmax").val()),
             nPts = parseInt($("input#nPts").val());
-        var extra_params = opts.fitting.extra_params.map(function(pname) { 
-          var input = d3.select("input#" + pname);
+        var extra_params = opts.fitting.extra_params.map(function(e,i) { 
+          var input = d3.select("input#" + e.label);
           return (input.empty()) ? 0 : +(input.node().value);
         });
         // have to specify the probe in terms of theta rather than Q for refl1d...
@@ -823,33 +829,45 @@ var app_init = function(opts) {
     
     function sld_to_params(extra_param_values, to_fit) {
       var extra_param_values = extra_param_values || [];
-        var sld = initial_sld.slice().reverse();
-        //var tf = get_to_fit().reverse();
-        //var tf = to_fit.slice().reverse();
-        var layers = sld.length;
-        var c = [];
-        var s = [];
-        var bndu = [];
-        var bndl = [];
-        
-        var columns = opts.fitting.columns;
-        var extra_params = opts.fitting.extra_params;
-        var scales = opts.fitting.scales;
-        
-        columns.forEach(function(col, ci) {
-            c = c.concat(sld.map(function(l) {return l[col]}));
-            s = s.concat(sld.map(function(l) {return scales[ci]}));
-            bndl = bndl.concat(sld.map(function(l,i) {return (to_fit[i] && to_fit[i][col]) ? -Infinity : l[col]}));
-            bndu = bndu.concat(sld.map(function(l,i) {return (to_fit[i] && to_fit[i][col]) ? +Infinity : l[col]}));
-        })
-        
-        c = c.concat(extra_param_values);
-        s = s.concat(scales.slice(columns.length));
-        bndl = bndl.concat(extra_param_values); // don't fit for now
-        bndu = bndu.concat(extra_param_values);
-        
-        console.log({c: c, s: s, bndl: bndl, bndu: bndu});
-        return {c: c, s: s, bndl: bndl, bndu: bndu, layers: layers}
+      var sld = initial_sld.slice().reverse();
+      //var tf = get_to_fit().reverse();
+      //var tf = to_fit.slice().reverse();
+      var layers = sld.length;
+      var c = [];
+      var s = [];
+      var bndu = [];
+      var bndl = [];
+      
+      var columns = opts.fitting.columns;
+      var extra_params = opts.fitting.extra_params;
+      //var scales = opts.fitting.scales.concat(extra_params.map(function(e,i) {return e.scale}));
+      
+      columns.forEach(function(col, ci) {
+          c = c.concat(sld.map(function(l) {return l[col.label]}));
+          s = s.concat(sld.map(function(l) {return col.scale}));
+          bndl = bndl.concat(sld.map(function(l,i) {
+            var limit = l[col.label];
+            if (to_fit[i] && to_fit[i][col.label]) {
+              limit = (col.minimum == null) ? -Infinity : col.minimum;
+            }
+            return limit;
+          }));
+          bndu = bndu.concat(sld.map(function(l,i) {
+            var limit = l[col.label];
+            if (to_fit[i] && to_fit[i][col.label]) {
+              limit = (col.maximum == null) ? +Infinity : col.minimum;
+            }
+            return limit;
+          }));
+      })
+      
+      c = c.concat(extra_param_values);
+      s = s.concat(extra_params.map(function(e,i) {return e.scale}));
+      bndl = bndl.concat(extra_param_values); // don't fit for now
+      bndu = bndu.concat(extra_param_values);
+      
+      console.log({c: c, s: s, bndl: bndl, bndu: bndu});
+      return {c: c, s: s, bndl: bndl, bndu: bndu, layers: layers}
     }
     
     function params_to_sld(params) {
@@ -860,11 +878,11 @@ var app_init = function(opts) {
       var ptr = 0;
       columns.forEach(function(col, ci) {
         sld.forEach(function(l, i) {
-          l[col] = c[ptr++];
+          l[col.label] = c[ptr++];
         })
       });
       var extra_params = {};
-      opts.fitting.extra_params.forEach(function(p) { extra_params[p] = c[ptr++]; })
+      opts.fitting.extra_params.forEach(function(p) { extra_params[p.label] = c[ptr++]; })
       return {sld: sld.reverse(), extra_params: extra_params}
     }
     
@@ -877,8 +895,8 @@ var app_init = function(opts) {
       var ptr = 0;
       columns.forEach(function(col, ci) {
         sld.forEach(function(l, i) {
-          if (to_fit[i] && to_fit[i][col]) {
-            output += col + "_" + (L-i) + " =\t" + params.c[ptr].toPrecision(6) + " +/- " + params.c_err[ptr].toPrecision(6) + "\n";
+          if (to_fit[i] && to_fit[i][col.label]) {
+            output += col.label + "_" + (L-i) + " =\t" + params.c[ptr].toPrecision(6) + " +/- " + params.c_err[ptr].toPrecision(6) + "\n";
           }
           ptr++;
         })
@@ -891,8 +909,8 @@ var app_init = function(opts) {
             
     
     function fit() {
-      var extra_params = opts.fitting.extra_params.map(function(pname) { 
-        var input = d3.select("input#" + pname);
+      var extra_params = opts.fitting.extra_params.map(function(e,i) { 
+        var input = d3.select("input#" + e.label);
         return (input.empty()) ? 0 : +(input.node().value);
       });
       //var H = 0; // for now

@@ -66,9 +66,13 @@
       east_size: 450,
       fitting: {
         funcname: "fit_refl",
-        columns: ["thickness", "roughness", "sld", "mu"],
+        columns: [
+          {"label": "thickness", "scale": 10, "minimum": 0},
+          {"label": "roughness", "scale": 0.1, "miniumum": 0},
+          {"label": "sld", "scale": 0.1},
+          {"label": "mu", "scale": 0.1, "minimum": 0} // no radiation sources allowed in sample!
+        ],
         extra_params: [],
-        scales: [10, 0.1, 0.1, 0.1, 0.1],
         xs_order: {'unpolarized': 0}
       }
     };
