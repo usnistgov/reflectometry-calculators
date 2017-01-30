@@ -73,13 +73,7 @@ html, body {
     -moz-user-select: none;
 }
 
-.axis-label tspan.sub {
-    baseline-shift: -50%;
-    font-size: 50%;
-}
-
-.axis-label tspan.sup {
-    baseline-shift: 75%;
+text.axis-label tspan.sup, text.axis-label tspan.sub {
     font-size: 50%;
 }
 
