@@ -1,0 +1,43 @@
+<div id="documentation">
+  <h3 class="ui-widget-header">Loading data:</h3>
+    The loader is expecting tab or space-delimited columnar data files, with the columns in the order
+    <b>Q</b>, <b>R</b>, <b>dR</b> ... (more columns are permitted but ignored).  The <b>dR</b> should be 
+    a 1-sigma error bar on the reflectivity.  Header lines prepended with # will be ignored.  For polarized
+    data, a single file with the desired cross-sections concatenated with two carriage returns between them (\n\n)
+    is expected, where the polarization is indicated in a header line before the data in each section as e.g.
+    (this is the format exported by the NCNR online reduction system)
+    <pre># "polarization": "++"
+0.01 0.99 0.01
+...</pre>
+   
+  <h3 class="ui-widget-header">Calculations</h3>
+    The reflectivity is calculated using a slab model with Nevot-Croce roughness as in ref. [1]<br>
+    The magnetic calculations including Zeeman effects are described in [2].
+    
+  
+  
+  <h3 class="ui-widget-header">Export to Refl1d</h3>
+    In order to get a full fit including instrumental resolution, parameter correlation estimates and true statistial
+    error bars on the model, the model prepared here can be exported to the powerful 
+    <a href="https://www.ncnr.nist.gov/reflpak/">Refl1D</a> program by simply pushing the "generate script..." button.
+    This script can be directly imported to Refl1D, and includes a reference to any data files loaded.
+  
+  <hr>  
+  <p><b class="ui-widget-header">Acknowledgement:</b> This software is in the public domain, as the work of a US federal government employee;
+  It is built using open-source tools and components [3][4][5]
+    If you use it in your work please consider acknowledging 
+    <em style="color:yellow;">the online reflectivity calculator by Brian Maranville at 
+        the National Institute of Standards and Technology, Gaithersburg MD, USA
+    </em>
+    in your publications.
+  </p>
+
+  <div class="footer">
+    [1]<a href="https://journals.aps.org/prb/abstract/10.1103/PhysRevB.45.602">R. Pynn, Phys. Rev. B <b>45</b>, 602 (1992)</a><br>
+    [2]<a href="http://scripts.iucr.org/cgi-bin/paper?ge5021">B. B. Maranville et al., J. Appl. Cryst. (2016). <b>49</b>, 1121-1129 (2016)</a><br>
+    [3]<a href="https://d3js.org/">D3.js - Data-Driven Documents</a><br>
+    [4]<a href="http://emscripten.org/">Emscripten LLVM-to-JavaScript compiler</a><br>
+    [5]<a href="http://www.alglib.net/">ALGLIB cross-platform numerical analysis and data processing library</a>(LM fitter and misc. functions)<br>
+  </div>
+</div>
+  

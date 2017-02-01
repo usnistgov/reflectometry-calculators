@@ -946,4 +946,17 @@ var app_init = function(opts) {
     var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');
     current_item.property("checked", true);
     //current_item.on("change").call(current_item.node());
+    
+    $.get("doc/calcR.html", function(data) { $("div#documentation_popup").html(data); });
+    $("button#show_doc").on("click", function() { $("div#documentation_popup").dialog({
+        modal: true,
+        autoOpen: true,
+        title: "NCNR online reflectivity calculators",
+        buttons: {
+          Ok: function() {
+            $( this ).dialog( "close" );
+          }
+        }
+      });
+    });
 }

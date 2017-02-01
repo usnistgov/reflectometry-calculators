@@ -192,3 +192,15 @@ hr.betweenplots {
     width: 100%;
     text-align: left;
 }
+
+.ui-dialog {
+    width: 75% !important;
+}
+
+.ui-dialog h3 {
+    margin-bottom: 4px !important;
+}
+
+.ui-dialog .footer {
+    font-size: 80%;
+}
