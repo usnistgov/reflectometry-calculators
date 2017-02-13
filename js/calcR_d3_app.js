@@ -112,6 +112,7 @@ var app_init = function(opts) {
     var profile_interactor = null;
     var roughness_interactors = null;
     var update_roughnesses = null;
+    var export_sld_resolution = 1.0; // Angstroms
     var r = [];
     var sld = [];
     var initial_sld = opts.initial_sld;
@@ -140,7 +141,7 @@ var app_init = function(opts) {
         return Math.max(pre, Math.max.apply(Math, get_column_vals(cur))) }, -Infinity);
       return limits;
     }
-        
+    
     function make_plots( xy1, xy2 ) {
       var sld_plot_opts = {
         show_line: true,
@@ -158,12 +159,19 @@ var app_init = function(opts) {
       jQuery.extend(true, sld_plot_opts, get_limits(initial_sld, col_ids));
       sld_plot = new xyChart.default(sld_plot_opts);
   
-      d3.select("#sldplot").append("button")
-        .text("export svg")
-        .classed("ui-button ui-corner-all", true)
+      var sld_buttons_div = d3.select("#sldplot").append("div")
         .style("right", "0px")
         .style("bottom", "0px")
-        .style("position", "absolute")
+        .style("position", "absolute");
+        
+      sld_buttons_div.append("button")
+        .text("export profile")
+        .classed("ui-button ui-corner-all", true)
+        .on("click", profile_exporter);
+        
+      sld_buttons_div.append("button")
+        .text("export svg")
+        .classed("ui-button ui-corner-all", true)
         .on("click", svg_exporter(sld_plot));
         
       var dummy_data = [[]];
@@ -185,7 +193,7 @@ var app_init = function(opts) {
       var roughness_opts = opts.sldplot_series_opts.map(function(s,i) {
         return {
           type: "functional",
-          name: "smoothed",
+          name: s.id,
           dx: 2,
           color1: s.color1,
           functional: function(x) { 
@@ -244,14 +252,21 @@ var app_init = function(opts) {
         },
         series: opts.reflplot_series_opts
       })
-            
-      d3.select("#rplot").append("button")
-        .text("export svg")
-        .classed("ui-button ui-corner-all", true)
+              
+      var r_buttons_div = d3.select("#rplot").append("div")
         .style("right", "0px")
         .style("bottom", "0px")
-        .style("position", "absolute")
-        .on("click", svg_exporter(refl_plot))
+        .style("position", "absolute");
+        
+      r_buttons_div.append("button")
+        .text("export calc")
+        .classed("ui-button ui-corner-all", true)
+        .on("click", calc_exporter);
+        
+      r_buttons_div.append("button")
+        .text("export svg")
+        .classed("ui-button ui-corner-all", true)
+        .on("click", svg_exporter(refl_plot));
       
       d3.select("#rplot")
         .data([[[[0, 1], [0.2, 1]]]])
@@ -306,6 +321,48 @@ var app_init = function(opts) {
       }
     }
     
+    function profile_exporter() {
+      var sopts = sld_plot.options();
+      var sld_array = initial_sld;
+      var col_ids = sopts.series.map(function(s) {return s.id});
+      var limits = get_limits(sld_array, col_ids);
+      var x = d3.range(limits.min_x, limits.max_x, export_sld_resolution);
+      
+      var output = x.map(function(xx, i) {
+        var row = {"z": xx};
+        roughness_interactors.forEach(function(r) {
+          row[r.state.name] = r.state.functional(xx);
+        });
+        return row;
+      });
+      //data, fileName, type
+      saveData("#" + d3.tsv.format(output), "profile.tsv", "text/tab-separated-values");
+    }
+    
+    function calc_exporter() {
+      var calc = refl_plot.source_data(),
+          sopts = refl_plot.options().series,
+          rows = [];
+      var numcols = Object.keys(opts.series_lookup).length;
+      var colnames = [];
+      for (var i=0; i<numcols; i++) {
+        colnames[i] = sopts[i].label;
+      }
+      var header = (["2k_in"].concat(colnames)).join("\t");
+      rows[0] = header;
+      var datalength = calc[0].length;
+      for (var i=0; i<datalength; i++) {
+        var yvals = [];
+        for (var c=0; c<numcols; c++) {
+          yvals[c] = calc[c][i][1];
+        }
+        rows[i+1] = ([calc[0][i][0]].concat(yvals)).join("\t");
+      }
+      var output = "#" + rows.join("\n");      
+      saveData(output, "reflectivity.tsv", "text/tab-separated-values");
+      
+    }
+  
     function update_profile_limits(sld_array) {
       var col_ids = sld_plot.options().series.map(function(s) {return s.id});
       var limits = get_limits(sld_array, col_ids);
