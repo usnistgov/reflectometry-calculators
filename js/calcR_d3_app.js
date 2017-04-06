@@ -438,9 +438,9 @@ var app_init = function(opts) {
             .style("color", "red")
             .text("x")
             .on("click", function() {
-              tr.remove();
               data.splice(i, 1);
-              profile_interactor.update()
+              table_draw(data);
+              profile_interactor.update();
               update_profile_limits(data);
               update_roughnesses();
               update_plot_live();
