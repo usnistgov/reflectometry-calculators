@@ -113,11 +113,10 @@
     </div>
     <div id="bottom_controls" align='center'></div>
     <div id="documentation_popup" ></div>
+  <script>
+    var author = document.querySelector("meta[name='author']").getAttribute("content");
+    document.querySelector("footer").innerHTML = "Last modified " + document.lastModified + " by website owner: NCNR (attn: " + author + ")";
+  </script>
 </body>
-<script>
-  var author = document.querySelector("meta[name='"+name+"']").getAttribute("content");
-  var lastmod = document.lastModified;
-  document.querySelector("footer").innerHTML = "Last modified " + lastmod + " by website owner: NCNR (attn: " + author + ")";
-</script>
 </html>
 
