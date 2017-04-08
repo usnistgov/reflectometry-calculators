@@ -438,9 +438,9 @@ var app_init = function(opts) {
             .style("color", "red")
             .text("x")
             .on("click", function() {
-              tr.remove();
               data.splice(i, 1);
-              profile_interactor.update()
+              table_draw(data);
+              profile_interactor.update();
               update_profile_limits(data);
               update_roughnesses();
               update_plot_live();
@@ -605,21 +605,29 @@ var app_init = function(opts) {
     function makeFileControls(target_id) {
       var fileControls = d3.select("#" + target_id).append('div')
           .classed("file-range controls", true)
+          .style("position", "relative")
       
       fileControls.append("button")
         .text("export table")
         .on("click", export_table)
       
-      fileControls.append("button")
-        .append("label")
+      var import_button = fileControls.append("button")
         .text("import table")
-        .attr("for", "table_import_file")
-      fileControls.append("input")
-          .attr("id", "table_import_file")
-          .attr("multiple", false)
-          .attr("type", "file")
-          .style("display", "none")
-          .on("change", import_table)
+
+      var import_fileinput = d3.select("#" + target_id)
+        .append("div")
+          .style("height", "0px")
+          .style("width", "0px")
+          .style("overflow", "hidden")
+          .append("input")
+            .attr("id", "table_import_file")
+            .attr("multiple", false)
+            .attr("type", "file")
+            .on("change", import_table)
+      
+      // use jQuery event magic:
+      import_button.on("click", function() {$(import_fileinput.node()).trigger("click")});
+          
     }
     
     makeFileControls('file_controls');
