@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="author" content="Brian B. Maranville">
 <title>Reflectivity and wavefunction for a slab profile</title>
 <!--
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
@@ -108,12 +109,15 @@
       <div id='file_controls'></div>
       <hr>
       <div id='fit_controls'></div>
-      <div id='footer'>
-          <?php include("/var/www/include/utility.inc"); lastmod(); ?>
-      </div>
+      <footer></footer>
     </div>
     <div id="bottom_controls" align='center'></div>
     <div id="documentation_popup" ></div>
 </body>
+<script>
+  var author = document.querySelector("meta[name='"+name+"']").getAttribute("content");
+  var lastmod = document.lastModified;
+  document.querySelector("footer").innerHTML = "Last modified " + lastmod + " by website owner: NCNR (attn: " + author + ")";
+</script>
 </html>
 

@@ -5,12 +5,6 @@ html, body {
   /*font-family: 'Open Sans' !important;*/
 }
 
-#footer {
-    position: absolute;
-    bottom: 0px;
-    text-align: center;
-}
-
 .ui-layout-pane {
     background: #FFFFCC;
 }
@@ -181,6 +175,22 @@ text.position-cursor {
 #centerpane, #right {
     background-color: black;
     color: yellow;
+}
+
+#right {
+   display: -webkit-flex !important;
+   display: flex !important;
+   -webkit-flex-direction: column;
+   flex-direction: column;
+}
+
+footer {
+  text-align: center;
+  margin-top: auto;
+}
+
+hr {
+  width: 100%;
 }
 
 hr.betweenplots {
