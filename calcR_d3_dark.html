@@ -18,10 +18,10 @@
     <script type="text/javascript" src="js/generate_slab_script.js"></script>
     
     <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
-    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/jquery-extend.js" charset="utf-8"></script>
-    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/xy-chart.js" charset="utf-8"></script>
-    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/profile-interactor.js"></script>
-    <script src="//ncnr.nist.gov/instruments/magik/d3-science/lib/monotonic-function-interactor.js"></script>
+    <script src="../d3-science/lib/jquery-extend.js" charset="utf-8"></script>
+    <script src="../d3-science/lib/xy-chart.js" charset="utf-8"></script>
+    <script src="../d3-science/lib/profile-interactor.js"></script>
+    <script src="../d3-science/lib/monotonic-function-interactor.js"></script>
     
     
     
@@ -81,13 +81,13 @@
         $("#AGUIDE_label").css("display", "none");
     }
     var Module = Module || {};
-    Module['memoryInitializerPrefixURL'] = 'js/refl/';
+    Module['memoryInitializerPrefixURL'] = '../webalglib/lib/';
     Module.postRun = Module.postRun || [];
     Module.postRun.push(function() { app_init(app_options); $("#AGUIDE_label").css("display", "none"); });
 
         
 </script>   
-<script src="js/refl/refl_fit.js"></script> 
+<script src="../webalglib/lib/reflfit.js"></script> 
 </head>
 <body bgcolor="#ffffcc"> 
     <div id="top_panel" class="ui-layout-north">
