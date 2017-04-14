@@ -5,52 +5,78 @@
 <!-- Enable IE9 Standards mode -->
 <meta http-equiv="X-UA-Compatible" content="IE=9" >
 <title>Cold neutrons</title>
-<style type="text/css">
-  label { display: block; font-family: consolas, monospace; text-align: center; }
-  //canvas { border: 1px dotted #888; }
-  .bk { float: left; margin-right: 4px; }
-</style>
 <style>
-    body { 
-        border: 10;
-        margin: 10;
-        padding:10;
+    body {
+        font-family: Arial, Helvetica, sans-serif !important; 
+    }
+    svg,
+    canvas {
+        position: absolute;
+        image-rendering: optimizeSpeed;
+        image-rendering: crisp-edges;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: optimize-contrast;
+        -ms-interpolation-mode: nearest-neighbor;
+    }
+    .line {
+        fill: none;
+        stroke-width: 1.5px;
+    }
+    
+    #plot1, #plot2 {
+        background-color: white;
     }
 
-    div { 
-        background-image: url('./blank.png'); 
+    .highlight {
+        stroke-width: 4.5px;
+    }
+    .axis-label {
+        font-size: 18px;
+    }
+
+    .axis .tick text {
+        font: 14px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .grid .tick {
+        stroke: lightgrey;
+        opacity: 0.7;
+    }
+    .grid path {
+        stroke-width: 0;
+        fill: none;
+    }
+    rect {
+        fill: none;
         user-select: none; 
         -webkit-user-select: none; 
         -moz-user-select: none;
     }
-        .metadata-label {color: red}
-        .slidingDiv {
-            background-color: #99CCFF;
-            padding:20px;
-            margin-top:10px;
-            border-bottom:5px solid #3399FF;
-        }
-         
-        .show_hide {
-            display:none;
-        }
+
+    rect.zoom {
+        stroke: steelblue;
+        fill-opacity: 0.5;
+    }
+    
+    text.axis-label tspan.sub, text.axis-label tspan.sup {
+        font-size: 50%;
+    }
 </style>
-        <script src="//code.jquery.com/jquery-1.12.4.min.js" type="text/javascript"></script>
-        <script src="//code.jquery.com/ui/1.12.0/jquery-ui.min.js" type="text/javascript"></script>
-
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot/jquery.jqplot.min.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.canvasTextRenderer.min.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.canvasAxisLabelRenderer.min.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.canvasAxisTickRenderer.min.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot/plugins/jqplot.cursor.min.js"></script>
-        
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.errorbarRenderer.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.InteractiveLegend.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.FixedAspect.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.GracefulAxisRenderer.js"></script>
-        <script src="//ncnr.nist.gov/instruments/magik/jqplot.science/plugins/jqplot.touchEvents.js"></script>
-
-        
+    <script src="//code.jquery.com/jquery-1.12.4.min.js" type="text/javascript"></script>
+    <script src="//code.jquery.com/ui/1.12.0/jquery-ui.min.js" type="text/javascript"></script>
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="../d3-science/lib/jquery-extend.js" charset="utf-8"></script>
+    <script src="../d3-science/lib/xy-chart.js" charset="utf-8"></script>
+    <script src="../d3-science/lib/profile-interactor.js"></script>
+    <script src="../d3-science/lib/monotonic-function-interactor.js"></script>
 <script type="text/javascript">
 var c = [], interactors;
 //window.onload = function() {
@@ -64,7 +90,8 @@ window.onload = function() {
     m_h = 1.00794 * 2 * 1.660539e-27; // mass of hydrogen molecule
     hbar = 1.054571726e-34; // Planck's reduced constant, J s
     m_n = 1.674927351e-27; //  mass of neutron, kg[3]
-
+    mass = 2.016; //  * m_n; // H2
+    
     /////////////////////////////////
     // END CONSTANTS 
     /////////////////////////////////
@@ -75,34 +102,35 @@ window.onload = function() {
 
     
     
-    outerdiv1 = document.createElement('div');
-    outerdiv1.setAttribute('id', 'outer1');
-    outerdiv1.setAttribute('style', 'float:left');
-    //outerdiv1.style.setProperty('width', total_width/2.0 - 50, null);
+    outerdiv1 = d3.select("body").append("div")
+        .attr('id', 'outer1')
+        .style('float', 'left')
+        .style('position', 'relative')
+        .style('width', String(total_width/2.0 - 90) + 'px')
+        .style('height', String(plot_height + 35) + 'px');
     
-    document.body.appendChild(outerdiv1);
-    outerdiv1.style.position = 'relative';
-    outerdiv1.style.width = String(total_width/2.0 - 90) + 'px';
-    //outerdiv1.style.width = String(Number(plotdiv1.getAttribute('width')) + 85) + 'px';
-    outerdiv1.style.height = String(plot_height + 35) + 'px';
+    outerdiv1.append("div")
+        .attr('id', 'plot1')
+        .style('width', (total_width/2.0 - 90) + 'px')
+        .style('height', plot_height + 'px')
+        .style('float', 'right');
 
-    plotdiv1 = document.createElement('div');
-    plotdiv1.setAttribute('id', 'plot');
-    //plotdiv1.setAttribute('width', (total_width/2.0 - 50 - 85));
-    plotdiv1.setAttribute('width', (total_width/2.0 - 90));
-    plotdiv1.setAttribute('height', plot_height);
-    plotdiv1.setAttribute('style', 'float:right');
-    outerdiv1.appendChild(plotdiv1);
-    //plotdiv1.style.width = String(total_width/2.0 - 50 - 85) + 'px';
-    plotdiv1.style.width = String(total_width/2.0 - 90) + 'px';
-    plotdiv1.style.height = String(plot_height) + 'px';
-    
   
     function getVelocDist(v, temperature, mass) {
+        if (v < 0) { return null }
         var result = Math.sqrt(2.0/Math.PI * Math.pow((mass / (k_b * temperature)), 3));
         result *= Math.pow(v, 2) * Math.exp(-mass * v * v / (2.0*k_b * temperature))
         return result;
     }
+    
+    function getWavelengthDist(l, temperature, mass) {
+        if (l <= 0) { return 0 }
+        var v = hbar * 2 * Math.PI * 1e10 / (m_n * l);
+        var pv = getVelocDist(v, temperature, mass);
+        var pl = pv * hbar * 2.0 * Math.PI / (m_n * Math.pow(l*1e-10, 2));
+        return pl;
+    }
+        
     
     function getVelocDistX(v, temperature, mass) {
         var result = Math.sqrt(mass / (2.0 * Math.PI * k_b * temperature));
@@ -110,264 +138,204 @@ window.onload = function() {
         return result;
     }
     
+    var velocities = d3.range(220, 6000, 50)
     var data = [];
     for (var v=220; v<6000; v+=50) {
         data.push([v, ( getVelocDist(v, temperature, m_h))]);
     }
     
-    plot1 = jQuery.jqplot ('plot', [data], {
-      // Give the plot a title.
-      title: 'Velocity Distribution',
-      seriesDefaults: { shadow: false, color: 'green', markerOptions: {shadow: false}},
-      axes:{
-          xaxis:{
-            renderer: $.jqplot.GracefulAxisRenderer,
-            label: 'Velocity (m/s)', 
-            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
-            tickOptions: {
-                formatString: "%.2g"
-            }
-          },
-          yaxis:{
-            renderer: $.jqplot.GracefulAxisRenderer,
-            label: 'Probability density (integrates to 1)',
-            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
-            tickOptions: {
-                formatString: "%.2g",
-                // fix for ticks drifting to the left in accordionview!
-                _styles: {right: 0}
-            }
-          }
+    var vel_plot_opts = {
+        show_line: true,
+        zoomScroll: true,
+        autoscale: false,
+        point_size: 10, 
+        axes: {
+          xaxis: {label: "Velocity (m/s)"}, 
+          yaxis: {label: "Probability density (integrates to 1)"}
         },
-        grid: {shadow: false},
-        cursor: {
-            show: true,
-            zoom: true,
-            clickReset: true,
-            tooltipLocation:'ne',
-            useAxesFormatters: false
-        }
-    }    
-    );
+        series: [],
+        min_y: 0,
+        max_y: 0.003,
+        min_x: 200, 
+        max_x: 6000
+      }
+    vel_plot = new xyChart.default(vel_plot_opts);
     
-    plot1.replot();
-
+    //vel_plot.min_x(200).max_x(6000).min_y(0).max_y(6e9);
+    d3.select("#plot1").data([[]]).call(vel_plot);
+    
+    var vel_opts = {
+      type: "functional",
+      name: "velocity",
+      dx: 2,
+      color1: "green",
+      functional: function(v) { 
+        return getVelocDist(v, temperature, mass * m_n);
+      },
+      show_lines: true
+    }
+    var vel = new monotonicFunctionInteractor.default(vel_opts);
+    vel_plot.interactors(vel);
+    vel_plot.zoomRect(true);
+    
+    
     
     /////////////
     /// equation
     /////////////
     
-    qconveq = document.createElement('div');
-    eqimg = new Image();
-    eqimg.src = 'eqn_coldsource.png';
-    eqimg.style.width = '160px';
-    eqimg.style.height= 'auto';
-    qconveq.appendChild(eqimg);
+    qconveq = outerdiv1.append('div')
+        .style('position', 'absolute')
+        .style('top', String(plot_height/2.0 - 80) + 'px')
+        .style('left', outerdiv1.style('width'));
+    qconveq.append("img")
+        .attr('src', 'eqn_coldsource.png')
+        .style('width', '160px')
+        .style('height', 'auto');
     
-    outerdiv1.appendChild(qconveq);
-    qconveq.style.position = 'absolute';
-    qconveq.style.top = String(plot_height/2.0 - 80) + 'px';
-    qconveq.style.left = outerdiv1.style.width;
     
     ///////////////////////////////
     // and again
     ///////////////////////////////
     
-    outerdiv2 = document.createElement('div');
-    outerdiv2.setAttribute('id', 'outer2');
-    outerdiv2.setAttribute('style', 'float:right');
-    //outerdiv2.style.setProperty('width', total_width/2.0 - 50, null);
+    outerdiv2 = d3.select("body").append("div")
+        .attr('id', 'outer2')
+        .style('float', 'right')
+        .style('position', 'relative')
+        .style('width', String(total_width/2.0 - 50) + 'px')
+        .style('height', String(plot_height + 35) + 'px');
     
-    document.body.appendChild(outerdiv2);
-    outerdiv2.style.position = "relative";
-    outerdiv2.style.width = (total_width/2.0 - 50).toFixed(0) + 'px';
-    //outerdiv2.style.width = String(Number(plotdiv2.getAttribute('width')) + 85) + 'px';
-    outerdiv2.style.height = String(plot_height + 35) + 'px';
-
-    plotdiv2 = document.createElement('div');
-    plotdiv2.setAttribute('id', 'plot2');
-    //plotdiv2.setAttribute('width', (total_width/2.0 - 50 - 85));
-    plotdiv2.setAttribute('width', (total_width/2.0 - 90));
-    plotdiv2.setAttribute('height', plot_height);
-    plotdiv2.setAttribute('style', 'float:right');
-    outerdiv2.appendChild(plotdiv2);
-    //plotdiv2.style.width = String(total_width/2.0 - 50 - 85) + 'px';
-    plotdiv2.style.width = String(total_width/2.0 - 90) + 'px';
-    plotdiv2.style.height = String(plot_height) + 'px';
+    outerdiv2.append("div")
+        .attr('id', 'plot2')
+        .style('width', (total_width/2.0 - 90) + 'px')
+        .style('height', plot_height + 'px')
+        .style('float', 'right');
     
-    
-    
-
-    var ldata = [];
-    for (var i in data) {
-        var v = data[i][0];
-        var pv = data[i][1];
-        var momentum = v * m_n;
-        var k = momentum / hbar;
-        var wavelength = 2*Math.PI / k; // in meters
-        var pl = pv * hbar * 2.0 * Math.PI / (m_n * Math.pow(wavelength, 2));
-        ldata.push([wavelength * 1e10, pl]); // in Angstroms
-    }
-    plot2 = jQuery.jqplot ('plot2', [ldata], {
-      // Give the plot a title.
-      title: 'Wavelength distribution',
-      seriesDefaults: { shadow: false, color: 'red', markerOptions: {shadow: false}},
-      axes:{
-          xaxis:{
-            renderer: $.jqplot.GracefulAxisRenderer,
-            label: 'Wavelength (Angstrom = 10e-10 m)', 
-            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
-            tickOptions: {
-                formatString: "%.2g"
-            }
-          },
-          yaxis:{
-            renderer: $.jqplot.GracefulAxisRenderer,
-            label: 'Probability density (integrates to 1)',
-            labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
-            tickRenderer: $.jqplot.CanvasAxisTickRenderer,
-            tickOptions: {
-                formatString: "%.2g",
-                // fix for ticks drifting to the left in accordionview!
-                _styles: {right: 0}
-            }
-          }
+    var lambda_plot_opts = {
+        show_line: true,
+        zoomScroll: true,
+        autoscale: false,
+        point_size: 10, 
+        axes: {
+          xaxis: {label: 'Wavelength (Ångström = 10<tspan dy="-10" class="sub">-10</tspan><tspan dy="10">m</tspan>)'}, 
+          yaxis: {label: "Probability density x1e9 (integrates to 1)"}
         },
-        grid: {shadow: false},
-        cursor: {
-            show: true,
-            zoom: true,
-            clickReset: true,
-            tooltipLocation:'ne',
-            useAxesFormatters: false
-        }
-    } );
-    var ldata = [];
-    for (var i in data) {
-        var v = data[i][0];
-        var pv = data[i][1];
-        var momentum = v * m_n;
-        var k = momentum / hbar;
-        var wavelength = 2*Math.PI / k * 1e10; // in Angstrom
-        ldata.push([wavelength, pv]);
+        series: []
+      }
+    lambda_plot = new xyChart.default(lambda_plot_opts);
+    lambda_plot.min_x(0).max_x(20).min_y(0).max_y(2.5);
+    d3.select("#plot2").data([[]]).call(lambda_plot);
+    
+    var lambda_opts = {
+      type: "functional",
+      name: "wavelength",
+      dx: 2,
+      color1: "red",
+      functional: function(l) { 
+        return getWavelengthDist(l, temperature, mass * m_n) * 1e-9;
+      },
+      show_lines: true
     }
-    plot2.series[0].data = ldata;    
+    var lambda = new monotonicFunctionInteractor.default(lambda_opts);
+    lambda_plot.interactors(lambda);
+    lambda_plot.zoomRect(true);
     
     default_temp = 10;
-    var temp_slider = document.createElement('input');
-    temp_slider.id = "temp_slider";
-    temp_slider.setAttribute('type', 'range');
-    temp_slider.setAttribute('min', 1);
-    temp_slider.setAttribute('step', 1);
-    temp_slider.setAttribute('max', 400);
-    temp_slider.value = default_temp;
+
+    var temp_ctl_div = outerdiv1.append('div')
+        //.style('float', 'left')
+    temp_ctl_div.append('label')
+        .text('Source Temperature (K)');
+        
+    var temp_slider, temp_input;
     
-    var temp_ctl = document.createElement('input');
-    temp_ctl.id = "temp_ctl";
-    temp_ctl.setAttribute('type', 'text');
-    temp_ctl.setAttribute('style', 'width:80px');
-    var temp_ctl_div = document.createElement('div');
-    temp_ctl_div.appendChild(document.createTextNode('Source Temperature (K)'));
-    temp_ctl_div.appendChild(temp_slider);
-    temp_ctl_div.appendChild(temp_ctl);
-    temp_ctl_div.setAttribute('style', 'float:left');
-    outerdiv1.appendChild(temp_ctl_div);
-    temp_ctl.value = default_temp; // AND/R and MAGIK, in nm
-    temp_ctl.onchange = function() {
-        temp_slider.value = temp_ctl.value;
-        update_plots();
-    }
-    temp_slider.oninput = function(bounced) {
-        temp_ctl.value = temp_slider.value;
-        temp_ctl.onchange();
-    }
+    temp_slider = temp_ctl_div.append('input')
+        .attr('id', 'temp_slider')
+        .attr('type', 'range')
+        .attr('min', 1)
+        .attr('max', 300)
+        .attr('step', 0.5)
+        .property('value', default_temp)
+        .on('input', function() { 
+            temperature = this.value;
+            temp_input.property('value', this.value);
+            vel_plot.update();
+            lambda_plot.update();
+        });
+    
+    temp_input = temp_ctl_div.append('input')
+        .attr('id', 'temp_ctl')
+        .attr('type', 'number')
+        .style('width', '80px')
+        .property('value', default_temp)
+        .on('change', function() {
+            temperature = this.value;
+            temp_slider.property('value', this.value);
+            vel_plot.update();
+            lambda_plot.update();
+        });
+        
+    
+    default_mass = 2.016; // hydrogen, in amu
+    
+    var mass_ctl_div = outerdiv1.append('div')
+        //.style('float', 'left')
+    mass_ctl_div.append('label')
+        .text('Molecular mass of thermalizing gas (amu)');
+        
+    var mass_slider, mass_input;
+    
+    mass_slider = mass_ctl_div.append('input')
+        .attr('id', 'mass_slider')
+        .attr('type', 'range')
+        .attr('min', 1.0)
+        .attr('max', 20.0)
+        .attr('step', 0.01)
+        .property('value', mass)
+        .on('input', function() { 
+            mass = this.value;
+            mass_input.property('value', this.value);
+            vel_plot.update();
+            lambda_plot.update();
+        });
+    
+    mass_input = mass_ctl_div.append('input')
+        .attr('id', 'mass_ctl')
+        .attr('type', 'number')
+        .style('width', '80px')
+        .property('value', mass)
+        .on('change', function() {
+            mass = this.value;
+            mass_slider.property('value', this.value);
+            vel_plot.update();
+            lambda_plot.update();
+        });
 
-    default_mass = 2.014; // hydrogen, in amu
+    
+    mass_ctl_div.append('button')
+      .attr('id', 'h2_button')
+      .attr('value', '2.016')
+      .html('H<sub>2</sub> (2.016 amu)')
+      .on('click', function() { 
+        mass = parseFloat(this.value);
+        mass_slider.property('value', mass);
+        mass_input.property('value', mass);
+        vel_plot.update();
+        lambda_plot.update();
+      })
+      
+    mass_ctl_div.append('button')
+      .attr('id', 'd2_button')
+      .attr('value', '4.028')
+      .html('D<sub>2</sub> (4.028 amu)')
+      .on('click', function() { 
+        mass = parseFloat(this.value);
+        mass_slider.property('value', mass);
+        mass_input.property('value', mass);
+        vel_plot.update();
+        lambda_plot.update();
+      })
 
-    var mass_slider = document.createElement('input');
-    mass_slider.id = "mass_slider";
-    mass_slider.setAttribute('type', 'range');
-    mass_slider.setAttribute('min', 1.0);
-    mass_slider.setAttribute('step', 0.01);
-    mass_slider.setAttribute('max', 100.0);
-    mass_slider.value = default_mass;
-
-    var mass_ctl = document.createElement('input');
-    mass_ctl.id = "mass_ctl";
-    mass_ctl.setAttribute('type', 'text');
-    mass_ctl.setAttribute('style', 'width:80px');
-    //var mass_ctl_div = document.createElement('div');
-    temp_ctl_div.appendChild(document.createElement('br'));
-    temp_ctl_div.appendChild(document.createTextNode('Molecular mass of thermalizing gas (amu)'));
-    temp_ctl_div.appendChild(mass_slider);
-    temp_ctl_div.appendChild(mass_ctl);
-    //temp_ctl_div.setAttribute('style', 'float:left');
-    //outerdiv1.appendChild(temp_ctl_div);
-
-    var h2_button = document.createElement('button');
-    h2_button.id = "h2_button";
-    h2_button.value = "H2 (2.016 amu)";
-    h2_button.name = "H2 (2.016 amu)";
-    h2_button.innerHTML = "H<sub>2</sub> (2.016 amu)";
-    h2_button.onclick = function() { mass_ctl.value = 2.016; mass_ctl.onchange(); };
-    temp_ctl_div.appendChild(h2_button);
-
-    var d2_button = document.createElement('button');
-    d2_button.id = "d2_button";
-    d2_button.value = "D2 (4.028 amu)";
-    d2_button.name = "D2 (4.028 amu)";
-    d2_button.innerHTML = "D<sub>2</sub> (4.028 amu)";
-    d2_button.onclick =    function() { mass_ctl.value = 4.028; mass_ctl.onchange(); };
-    temp_ctl_div.appendChild(d2_button);
-
-
-
-    mass_ctl.value = default_mass; // AND/R and MAGIK, in nm
-    mass_ctl.onchange = function() { 
-        mass_slider.value = mass_ctl.value;
-           update_plots();
-    }
-    mass_slider.oninput = function(bounced) {
-        mass_ctl.value = mass_slider.value;
-        mass_ctl.onchange();
-    }
-
-    function update_plots() {
-        var temp = temp_ctl.value;
-        var mass = mass_ctl.value *  1.660538921e-27; // into kg
-        var data = [];
-        for (var v=220; v<6000; v+=50) {
-            data.push([v, ( getVelocDist(v, temp, mass))]);
-        }
-        plot1.series[0].data = data;
-        plot1.replot();
-        if (plot1.plugins.cursor._zoom.isZoomed == false) {
-            plot1.resetAxesScale();
-        }
-        plot1.replot();
-        //plot1.drawSeries(0);
-
-        var ldata = [];
-        for (var i in data) {
-            var v = data[i][0];
-            var pv = data[i][1];
-            var momentum = v * m_n;
-            var k = momentum / hbar;
-            var wavelength = 2*Math.PI / k; // in meters
-            var pl = pv * hbar * 2.0 * Math.PI / (m_n * Math.pow(wavelength, 2));
-            ldata.push([wavelength * 1e10, pl]); // in Angstroms
-            //ldata.push([wavelength, pv]);
-        }
-        plot2.series[0].data = ldata;
-        plot2.replot();
-        if (plot2.plugins.cursor._zoom.isZoomed == false) {
-            plot2.resetAxesScale();
-        }
-        plot2.replot();
-    }
     
 };
 
