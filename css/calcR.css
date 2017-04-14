@@ -183,11 +183,12 @@ text.position-cursor {
     color: yellow;
 }
 
-#right {
-   display: -webkit-flex !important;
-   display: flex !important;
+div.flex-column {
+   display: -webkit-flex;
+   display: flex;
    -webkit-flex-direction: column;
    flex-direction: column;
+   height: 100%;
 }
 
 footer {
