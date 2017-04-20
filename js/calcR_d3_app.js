@@ -572,7 +572,7 @@ var app_init = function(opts) {
                 var new_data = r[series][plot_select];
                 Array.prototype.splice.apply(sd, [0, new_data.length].concat(new_data));
                 refl_plot.source_data(sd);
-                if (series == 0) { refl_plot.min_y(Math.max(refl_plot.min_y(), 1e-10)) }
+                if (plot_select == 'xy') { refl_plot.min_y(Math.max(refl_plot.min_y(), 1e-10)) }
                 refl_plot.update();
                 refl_plot.resetzoom();
                 webworker_busy = false;
