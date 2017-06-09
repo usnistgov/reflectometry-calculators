@@ -161,7 +161,8 @@ var app_init = function(opts) {
         show_line: true,
         zoomScroll: true,
         autoscale: false,
-        point_size: 10, 
+        point_size: 10,
+        position_cursor: true,
         axes: {
           xaxis: {label: "z (Ångström, from substrate)"}, 
           yaxis: {label: "SLD (10⁻⁶ Å⁻²), θ (π rad)"}
@@ -350,7 +351,7 @@ var app_init = function(opts) {
         return row;
       });
       //data, fileName, type
-      saveData("#" + d3.tsv.format(output), "profile.tsv", "text/tab-separated-values");
+      saveData("#" + d3.tsvFormat(output), "profile.tsv", "text/tab-separated-values");
     }
     
     function calc_exporter() {
@@ -573,8 +574,10 @@ var app_init = function(opts) {
                 Array.prototype.splice.apply(sd, [0, new_data.length].concat(new_data));
                 refl_plot.source_data(sd);
                 if (plot_select == 'xy') { refl_plot.min_y(Math.max(refl_plot.min_y(), 1e-10)) }
+                if (!refl_plot.is_zoomed()) {
+                  refl_plot.resetzoom();
+                }
                 refl_plot.update();
-                refl_plot.resetzoom();
                 webworker_busy = false;
             }
         //var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
@@ -884,7 +887,7 @@ var app_init = function(opts) {
     function export_table() {
       // skip the header...
       var table_data = d3.selectAll("#sld_table table tr").data().slice(1);
-      saveData(d3.tsv.format(table_data), "sld_table.txt");
+      saveData(d3.tsvFormat(table_data), "sld_table.txt");
     }
     
     function import_table() {
@@ -894,7 +897,7 @@ var app_init = function(opts) {
       file_input.value = "";
       var reader = new FileReader();
       reader.onload = function(e) {
-        var new_sld = d3.tsv.parse(this.result);
+        var new_sld = d3.tsvParse(this.result);
         new_sld.forEach(function(d) {
           for (var key in d) {
             if (d.hasOwnProperty(key)) {
@@ -944,21 +947,21 @@ var app_init = function(opts) {
       //var scales = opts.fitting.scales.concat(extra_params.map(function(e,i) {return e.scale}));
       
       columns.forEach(function(col, ci) {
-          c = c.concat(sld.map(function(l) {return l[col.label]}));
-          s = s.concat(sld.map(function(l) {return col.scale}));
+          c = c.concat(sld.map(function(l) {return +l[col.label]}));
+          s = s.concat(sld.map(function(l) {return +col.scale}));
           bndl = bndl.concat(sld.map(function(l,i) {
             var limit = l[col.label];
             if (to_fit[i] && to_fit[i][col.label]) {
               limit = (col.minimum == null) ? -Infinity : col.minimum;
             }
-            return limit;
+            return +limit;
           }));
           bndu = bndu.concat(sld.map(function(l,i) {
             var limit = l[col.label];
             if (to_fit[i] && to_fit[i][col.label]) {
               limit = (col.maximum == null) ? +Infinity : col.minimum;
             }
-            return limit;
+            return +limit;
           }));
       })
       
