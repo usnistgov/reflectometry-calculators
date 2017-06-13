@@ -887,7 +887,7 @@ var app_init = function(opts) {
     function export_table() {
       // skip the header...
       var table_data = d3.selectAll("#sld_table table tr").data().slice(1);
-      saveData(d3.tsvFormat(table_data), "sld_table.txt");
+      saveData(d3.tsv.format(table_data), "sld_table.txt");
     }
     
     function import_table() {
