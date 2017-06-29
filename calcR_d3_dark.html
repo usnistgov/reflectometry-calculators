@@ -77,6 +77,17 @@
         xs_order: {'unpolarized': 0}
       }
     };
+    var api = null;
+    var queued_message = null;
+    var handle_message = function(event) { 
+        var message = event.data;
+        if (api && api.active) {
+            api.call(event.data);
+        } else {
+            queued_message = event.data; 
+        }
+    }
+    window.addEventListener("message", handle_message, false);
     window.onload = function() {        
         $("#AGUIDE_label").css("display", "none");
     }

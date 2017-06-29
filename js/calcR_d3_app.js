@@ -92,6 +92,24 @@ var app_init = function(opts) {
         ,  center__onresize:    autofit
       });
 
+    window.api = {
+      active: false,
+      methods: {set_data: set_data},
+      call: function(message) {
+        var method = message.method;
+        var args = message.args || [];
+        if (method && api.methods.hasOwnProperty(method)) {
+          return api.methods[method].apply(null, args);
+        }
+      },
+      init: function() {
+        if (window.queued_message) {
+          window.api.call(window.queued_message);
+        }
+        this.active = true;
+      }
+    }
+
     var webworker = new Worker(opts.worker_script);
     var webworker_queue = [],
         webworker_busy = false;
@@ -102,9 +120,12 @@ var app_init = function(opts) {
     webworker.onmessage = function(event) {
       var message = JSON.parse(event.data);
       if (message.ready) {
+        window.api.init();
         update_plot_live();
       }
     }
+    
+    
     
     var datafilename = "";
     var sld_plot = null;
