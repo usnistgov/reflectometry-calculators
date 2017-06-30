@@ -29,17 +29,6 @@
     <script src="js/calcR_d3_app.js"></script>
     
 <script type="text/javascript">
-    var api = null;
-    var queued_message = null;
-    var handle_message = function(event) { 
-        var message = event.data;
-        if (api && api.active) {
-            api.call(event.data);
-        } else {
-            queued_message = event.data; 
-        }
-    }
-    window.addEventListener("message", handle_message, false);
     window.onload = function() {
         //app_init(app_options);
         var author = d3.select("meta[name='author']");

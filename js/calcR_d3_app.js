@@ -92,8 +92,7 @@ var app_init = function(opts) {
         ,  center__onresize:    autofit
       });
 
-    window.api = {
-      active: false,
+    var api = {
       methods: {set_data: set_data},
       call: function(message) {
         var method = message.method;
@@ -109,6 +108,11 @@ var app_init = function(opts) {
         this.active = true;
       }
     }
+    var handle_message = function(event) { 
+      var message = event.data;
+      api.call(event.data);
+    }
+    window.addEventListener("message", function (event) { api.call(event.data) }, false);
 
     var webworker = new Worker(opts.worker_script);
     var webworker_queue = [],
@@ -120,7 +124,9 @@ var app_init = function(opts) {
     webworker.onmessage = function(event) {
       var message = JSON.parse(event.data);
       if (message.ready) {
-        window.api.init();
+        if (window.opener && window.opener.postMessage) {
+          window.opener.postMessage({ready: true}, "*")
+        }
         update_plot_live();
       }
     }
