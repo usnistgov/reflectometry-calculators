@@ -125,7 +125,10 @@ var app_init = function(opts) {
       var message = JSON.parse(event.data);
       if (message.ready) {
         if (window.opener && window.opener.postMessage) {
-          window.opener.postMessage({ready: true}, "*")
+          // get connection_id:
+          var href_search = window.location.href.match(/[^\?]*\?.*connection_id=([a-z]+).*/);
+          var connection_id = (href_search) ? href_search[1] : "";
+          window.opener.postMessage({ready: true, connection_id: connection_id}, "*")
         }
         update_plot_live();
       }
