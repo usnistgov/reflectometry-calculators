@@ -69,7 +69,11 @@
     <div id="documentation_popup"></div>
   <script>
     var author = document.querySelector("meta[name='author']").getAttribute("content");
-    document.querySelector("footer").innerHTML = "Last modified " + document.lastModified + " by website owner: NCNR (attn: " + author + ")";
+    var footer_html = "Last modified " + document.lastModified + " by website owner: NCNR (attn: " + author + ")";
+    footer_html += '<br> Please cite as ';
+    footer_html += '<a href="https://doi.org/10.6028/jres.122.034">https://doi.org/10.6028/jres.122.034</a>';
+    footer_html += ' <a href="doc/webcalc.bib">bib</a>';
+    document.querySelector("footer").innerHTML = footer_html;
   </script>
 </body>
 </html>
