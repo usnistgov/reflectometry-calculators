@@ -381,7 +381,7 @@ var app_init = function(opts) {
         return row;
       });
       //data, fileName, type
-      saveData("#" + d3.tsvFormat(output), "profile.tsv", "text/tab-separated-values");
+      saveData("#" + d3.tsv.format(output), "profile.tsv", "text/tab-separated-values");
     }
     
     function calc_exporter() {
@@ -927,7 +927,7 @@ var app_init = function(opts) {
       file_input.value = "";
       var reader = new FileReader();
       reader.onload = function(e) {
-        var new_sld = d3.tsvParse(this.result);
+        var new_sld = d3.tsv.parse(this.result);
         new_sld.forEach(function(d) {
           for (var key in d) {
             if (d.hasOwnProperty(key)) {
