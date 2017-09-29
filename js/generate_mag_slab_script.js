@@ -45,14 +45,14 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, H, Agui
     var i=0;
     sld = sldarray[i];
     py += "# incident medium:\n";
-    py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+    py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+", irho=" + (sld.mu*1e6).toPrecision(prec) + "))\n";
     py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", "+(sld.roughness || 0).toPrecision(prec) +"))\n";
     py += "\n# magnetic layers in the middle:\n";
     
     // then all the magnetic layers in the middle:
     for (i=1; i<sldarray.length-1; i++) {
         sld = sldarray[i];
-        py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+        py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+", irho=" + (sld.mu*1e6).toPrecision(prec) + "))\n";
         py += "slabs.append(MagneticSlab(slds["+String(i)+"]("+String(sld.thickness)+", "+(sld.roughness || 0).toPrecision(prec) +"),";
         py += " rhoM="+(sld.sldm*1e6).toPrecision(prec)+",";
         py += " thetaM="+(sld.thetaM*180.0).toPrecision(prec)+",";
@@ -63,7 +63,7 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, H, Agui
     // now the substrate:
     py += "\n# substrate:\n";
     sld = sldarray[i];
-    py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+"))\n";
+    py += "slds.append(SLD(name='layer"+String(i)+"', rho="+(sld.sld*1e6).toPrecision(prec)+", irho=" + (sld.mu*1e6).toPrecision(prec) + "))\n";
     py += "s.add( slds["+String(i)+"]("+String(sld.thickness)+", 0))\n";
     
     py += "\n";
