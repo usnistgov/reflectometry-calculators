@@ -1,6 +1,6 @@
 Module = {
   postRun: function() {
-    postMessage('{"ready": true}');
+    postMessage({"ready": true});
   },
   memoryInitializerPrefixURL: 'refl/'
 };
@@ -17,10 +17,10 @@ calc_r = function(sld, qmin, qmax, qstep) {
     var layer;
     for (var l=0; l<sld.length; l++) {
       layer = sld[l];
-      depth[l] = layer.thickness;
-      sigma[l] = layer.roughness;
-      rho[l] = layer.sld;
-      irho[l] = layer.mu;
+      depth[l] = +layer.thickness;
+      sigma[l] = +layer.roughness;
+      rho[l] = +layer.sld;
+      irho[l] = +layer.mu;
     };
     
     // cut off first element of sigma:
@@ -54,12 +54,12 @@ calc_r = function(sld, qmin, qmax, qstep) {
 }
 
 onmessage = function(event) {
-    var data = JSON.parse(event.data);
+    var data = event.data;
     var sld = data.sld;
     var qmin = data.qmin;
     var qmax = data.qmax;
     var qstep = data.qstep;
     var r = calc_r(sld, qmin, qmax, qstep);
-    postMessage(JSON.stringify(r));
+    postMessage(r);
     return;
 }

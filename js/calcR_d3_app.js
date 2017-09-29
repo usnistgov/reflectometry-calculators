@@ -122,7 +122,7 @@ var app_init = function(opts) {
       alert("worker error: " + error.message + "\n");
     }
     webworker.onmessage = function(event) {
-      var message = JSON.parse(event.data);
+      var message = event.data;
       if (message.ready) {
         if (window.opener && window.opener.postMessage) {
           // get connection_id:
@@ -589,7 +589,7 @@ var app_init = function(opts) {
     function workerDataHandler(event) {
       var plot_select = opts.plot_choices[current_choice]['data'];
       var series = 0;
-      var message = JSON.parse(event.data);
+      var message = event.data;
       r[series] = message;
       var sd = refl_plot.source_data() || [];
       var new_data = r[series][plot_select];
@@ -614,7 +614,7 @@ var app_init = function(opts) {
         var qstep = (qmax - qmin)/numpoints;
         var message = {sld: sld.slice().reverse(), qmin: qmin, qmax: qmax, qstep: qstep};
         $.extend(message, extra_params);
-        webworker_queue[0] = JSON.stringify(message);
+        webworker_queue[0] = message;
     }
   
     function makeQRangeControls(target_id) {
