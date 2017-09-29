@@ -2,7 +2,7 @@
 
 var Module = {
   postRun: function() {
-    postMessage('{"ready": true}');
+    postMessage({"ready": true});
   },
   memoryInitializerPrefixURL: 'refl/'
 };
@@ -199,12 +199,12 @@ var calc_r_cpplib = function(sld, qmin, qmax, qstep, H, AGUIDE) {
         kz = [];
         
     sld.forEach(function(layer, l) {
-      depth[l] = layer.thickness;
-      sigma[l] = layer.roughness;
-      rho[l] = layer.sld;
-      rhoM[l] = layer.sldm;
-      irho[l] = layer.mu;
-      thetaM[l] = layer.thetaM * Math.PI;
+      depth[l] = +layer.thickness;
+      sigma[l] = +layer.roughness;
+      rho[l] = +layer.sld;
+      rhoM[l] = +layer.sldm;
+      irho[l] = +layer.mu;
+      thetaM[l] = +layer.thetaM * Math.PI;
     });
     
     // cut off first element of sigma:
@@ -239,7 +239,7 @@ var calc_r_cpplib = function(sld, qmin, qmax, qstep, H, AGUIDE) {
 }
 
 onmessage = function(event) {
-    var data = JSON.parse(event.data);
+    var data = event.data;
     var sld = data.sld;
     var qmin = data.qmin;
     var qmax = data.qmax;
@@ -247,6 +247,6 @@ onmessage = function(event) {
     var H = data.H;
     var AGUIDE = data.AGUIDE;
     var r = calc_r_cpplib(sld, qmin, qmax, qstep, H, AGUIDE);
-    postMessage(JSON.stringify(r));
+    postMessage(r);
     return;
 }
