@@ -359,7 +359,7 @@ window.onload = function() {
         }
         */
         if (webworker_full == null) {
-            webworker_full = new Worker("js/calc_r.js");
+            webworker_full = new Worker("js/calc_r_legacy.js");
             
             webworker_full.onmessage = function(event) {
                 r[0] = JSON.parse(event.data);
