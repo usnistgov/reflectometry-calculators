@@ -130,6 +130,8 @@ var app_init = function(opts) {
           var connection_id = (href_search) ? href_search[1] : "";
           window.opener.postMessage({ready: true, connection_id: connection_id}, "*")
         }
+        // replace handler with new one
+        webworker.onmessage = workerDataHandler;
         update_plot_live();
       }
     }
@@ -150,7 +152,7 @@ var app_init = function(opts) {
     var current_choice = Object.keys(opts.plot_choices)[0];
     
     function autofit() {
-        console.log("fitting west");
+        //console.log("fitting west");
         sld_plot.autofit();
         refl_plot.autofit();
     }
@@ -244,7 +246,6 @@ var app_init = function(opts) {
           functional: function(x) { 
             var y = 0, z = 0, layer, l=0, scaled_roughness;
             var cid = s.id;
-            //console.log(initial_sld[0].sld);
             if (initial_sld.length > 1) {
               layer = initial_sld[l];              
               scaled_roughness = Math.abs(layer.roughness) * Math.sqrt(2);
@@ -381,7 +382,7 @@ var app_init = function(opts) {
         return row;
       });
       //data, fileName, type
-      saveData("#" + d3.tsv.format(output), "profile.tsv", "text/tab-separated-values");
+      saveData("#" + d3.tsvFormat(output), "profile.tsv", "text/tab-separated-values");
     }
     
     function calc_exporter() {
@@ -579,14 +580,30 @@ var app_init = function(opts) {
     
     function update_plot_live() {
         //var plot_select = $('#choices input:checked').prop('value');
-        var plot_select = opts.plot_choices[current_choice]['data'];
+        //var plot_select = opts.plot_choices[current_choice]['data'];
         //var plot_select = 'xy';
         var sld = initial_sld;
-        var series = 0;
-        update_plot(series, sld, plot_select);
+        update_plot(sld);
+    }
+    
+    function workerDataHandler(event) {
+      var plot_select = opts.plot_choices[current_choice]['data'];
+      var series = 0;
+      var message = JSON.parse(event.data);
+      r[series] = message;
+      var sd = refl_plot.source_data() || [];
+      var new_data = r[series][plot_select];
+      Array.prototype.splice.apply(sd, [0, new_data.length].concat(new_data));
+      refl_plot.source_data(sd);
+      if (plot_select == 'xy') { refl_plot.min_y(Math.max(refl_plot.min_y(), 1e-10)) }
+      if (!refl_plot.is_zoomed()) {
+        refl_plot.resetzoom();
+      }
+      refl_plot.update();
+      webworker_busy = false;
     }
       
-    function update_plot(series, sld, plot_select) {
+    function update_plot(sld) {
         var qmin = parseFloat(document.getElementById('qmin').value);
         var qmax = parseFloat(document.getElementById('qmax').value);
         var numpoints = parseFloat(document.getElementById('nPts').value);
@@ -595,25 +612,9 @@ var app_init = function(opts) {
           extra_params[e.label] = parseFloat(document.getElementById(e.label).value);
         });
         var qstep = (qmax - qmin)/numpoints;
-        
-        webworker.onmessage = function(event) {
-                var message = JSON.parse(event.data);
-                r[series] = message;
-                var sd = refl_plot.source_data() || [];
-                var new_data = r[series][plot_select];
-                Array.prototype.splice.apply(sd, [0, new_data.length].concat(new_data));
-                refl_plot.source_data(sd);
-                if (plot_select == 'xy') { refl_plot.min_y(Math.max(refl_plot.min_y(), 1e-10)) }
-                if (!refl_plot.is_zoomed()) {
-                  refl_plot.resetzoom();
-                }
-                refl_plot.update();
-                webworker_busy = false;
-            }
-        //var sld = sld.map(function(d) {var dd = $.extend(true, {}, d); dd.sld *= 1e-6; dd.mu *= 1e-6; dd.sldm *= 1e-6; return dd});
         var message = {sld: sld.slice().reverse(), qmin: qmin, qmax: qmax, qstep: qstep};
         $.extend(message, extra_params);
-        webworker_queue[0] = JSON.stringify(message);        
+        webworker_queue[0] = JSON.stringify(message);
     }
   
     function makeQRangeControls(target_id) {
@@ -917,7 +918,7 @@ var app_init = function(opts) {
     function export_table() {
       // skip the header...
       var table_data = d3.selectAll("#sld_table table tr").data().slice(1);
-      saveData(d3.tsv.format(table_data), "sld_table.txt");
+      saveData(d3.tsvFormat(table_data), "sld_table.txt");
     }
     
     function import_table() {
@@ -927,7 +928,7 @@ var app_init = function(opts) {
       file_input.value = "";
       var reader = new FileReader();
       reader.onload = function(e) {
-        var new_sld = d3.tsv.parse(this.result);
+        var new_sld = d3.tsvParse(this.result);
         new_sld.forEach(function(d) {
           for (var key in d) {
             if (d.hasOwnProperty(key)) {
