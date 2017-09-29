@@ -8,21 +8,20 @@ importScripts('complex.js', 'refl/refl.js');
 
 
 calc_r = function(sld, qmin, qmax, qstep) {
-    var qmin = (qmin == null) ? 0.0001 : qmin;
-    var qmax = (qmax == null) ? 0.1 : qmax;
-    var qstep = (qstep == null) ? 0.0003 : qstep;
     var depth = [],
         sigma = [],
         rho = [],
         irho = [],
         kz = [];
-        
-    sld.forEach(function(layer, l) {
+    
+    var layer;
+    for (var l=0; l<sld.length; l++) {
+      layer = sld[l];
       depth[l] = layer.thickness;
       sigma[l] = layer.roughness;
       rho[l] = layer.sld;
       irho[l] = layer.mu;
-    });
+    };
     
     // cut off first element of sigma:
     sigma.splice(0, 1);
