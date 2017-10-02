@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="author" content="Brian B. Maranville">
+<title>Reflectivity and wavefunction for a slab profile</title>
+<!--
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+-->
+    <link rel="stylesheet" href="css/layout-default-latest.css" />
+    <link href="//code.jquery.com/ui/1.12.0/themes/ui-darkness/jquery-ui.css" type="text/css" rel="stylesheet" />
+<!-- Reference jQuery and jQuery UI from the CDN. Remember that the order of these two elements is important -->
+    <script src="//code.jquery.com/jquery-1.12.4.min.js" type="text/javascript"></script>
+    <script src="//code.jquery.com/ui/1.12.0/jquery-ui.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="js/jquery.layout-latest.js"></script>
+    
+    <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/jquery-extend.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/xy-chart.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/profile-interactor.js"></script>
+    <script src="../d3-science-v4/lib/y-slice-interactor.js"></script>
+    <script src="../d3-science-v4/lib/monotonic-function-interactor.js"></script>
+    <script src="../d3-science-v4/lib/colormap.js" charset="utf-8">></script>
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+  }
+  
+  .ui-layout-north h2, .ui-layout-north h3 {
+    display: inline-block;
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+    padding-right: 3em;
+  }
+  
+  text.axis-label {
+    fill: black;
+    font-size: 18px;
+  }
+  
+  .axis .tick text {
+    font-size: 14px;
+  }
+  
+  div.detector-count-div {
+    display: inline-block;
+  }
+  
+  label.detector-count {
+    padding-right: 1em;
+  }
+</style>
+<script type="text/javascript">
+  var jet;
+  var refl_plot;
+  var y_slice;
+  
+  configurations = [
+    {
+      "angle": {
+        "start": 0.001,
+        "step": 0.131,
+        "number": 80
+      },
+      "wavelength": {
+        "start": 4.0, 
+        "step": (6.0-4.0) / (54 - 1),
+        //"stop": 6.0,
+        "number": 54
+      }
+    }
+  ]
+  
+  var optsy = {
+    type: "yslice",
+    name: "yslice",
+    show_lines: true,
+    color1: "blue",
+    color2: "green",
+    y1: 0.0,
+    y2: Math.PI*2.5/180.0,
+    drag_rect: true,
+    fixed: true,
+  }
+  
+  function toXY(config) {
+    // convert to radians in the first step...
+    var angles = d3.range(config.angle.number).map(function(a) { return Math.PI/180.0 * ((a*config.angle.step) + config.angle.start) });
+    var w_step = (config.wavelength.stop - config.wavelength.start)/(config.wavelength.number-1);
+    var wavelengths = d3.range(config.wavelength.number).map(function(w) { return (w*config.wavelength.step) + config.wavelength.start });
+    var output = angles.map(function(a) {
+      return wavelengths.map(function(w) { 
+        var q = 4*Math.PI/w*Math.sin(a/2.0)
+        return [q, a]
+      })
+    })
+    return output
+  }
+  
+  function calculator() {
+    refl_plot = xyChart.default({
+        show_line: false,
+        show_points: true,
+        show_errorbars: false,
+        legend: {show: false},
+        point_size: 2,
+        axes: {
+          xaxis: {label: "Q"}, 
+          yaxis: {label: "detector angle (radians)"}
+        },
+        series: []
+      })
+      
+      y_slice = new ySliceInteractor.default(optsy);
+      
+      d3.select("#rplot")
+        .data(configurations.map(toXY))
+        .call(refl_plot);
+        
+      refl_plot.interactors(y_slice);
+      refl_plot.zoomScroll(true);
+      colorize(jet);
+  }
+  
+  function colorize(cm) {
+    d3.select('svg').selectAll("g.series").selectAll(".dot").style("fill", function(d,i) { return cm((i/53.0) * 255) });
+  }
+  
+  window.onload = function() {
+    jet = colormap.get_colormap("jet");
+    
+    var layout = $('body').layout({
+           west__size:          0
+        ,  north_size:          100
+        ,  east__size:          null
+        ,  south__size:         200
+          // RESIZE Accordion widget when panes resize
+        ,  west__onresize:	    null
+        ,  east__onresize:	    $.layout.callbacks.resizePaneAccordions
+        ,  south__onresize:     $.layout.callbacks.resizePaneAccordions
+        ,  center__onresize:    null
+      });
+    
+    d3.selectAll('input[name="detector_count"]').on("change", function(d) {
+      var value = this.value;
+      var aconf = configurations[0].angle;
+      var y2 = y_slice.state.y1 + Math.PI/180.0 * (aconf.step * parseFloat(value));
+      y_slice.state.y2 = y2;
+      y_slice.update();
+    })
+    
+    calculator();
+  }
+</script>  
+</head>
+<body> 
+    <div id="top_panel" class="ui-layout-north">
+        <h2>CANDOR Q-coverage</h2>
+        <img src="JetColormapFunction_axes.svg" width="200px">
+        <div class="detector-count-div">
+          <h3>detector count</h3>
+          <div>
+            <label class="detector-count">1<input type="radio" name="detector_count" value="1"></label>
+            <label class="detector-count">4<input type="radio" name="detector_count" value="4"></label>
+            <label class="detector-count">20<input type="radio" name="detector_count" value="20" checked></label>
+          </div>
+        </div>
+    </div>
+    <div id="centerpane" class="ui-layout-center">
+        <div id='rplot', style="height:100%"></div>
+    </div>
+    <div id="right" class="ui-layout-east">
+      <div class="flex-column">
+          <div id='config_table'></div>
+      </div>
+    </div>
+    <div id="bottom_controls" align='center'><footer></footer></div>
+    <div id="documentation_popup"></div>
+  <script>
+    var author = document.querySelector("meta[name='author']").getAttribute("content");
+    var footer_html = "Last modified " + document.lastModified + " by website owner: NCNR (attn: " + author + ")";
+    footer_html += '<br> Please cite as ';
+    footer_html += '<a href="https://doi.org/10.6028/jres.122.034">https://doi.org/10.6028/jres.122.034</a>';
+    footer_html += ' <a href="doc/webcalc.bib">bib</a>';
+    document.querySelector("footer").innerHTML = footer_html;
+  </script>
+</body>
+</html>
+
