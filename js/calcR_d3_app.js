@@ -441,7 +441,7 @@ var app_init = function(opts) {
       var colnames = series.map(function(s) {return s.label});
       var colids = series.map(function(s) {return s.id});
       var colcolors = series.map(function(s) {return s.color1 || "none"});
-      colnames.splice(0,0,"thickness", "roughness<br>(above)");
+      colnames.splice(0,0,"thickness (&Aring;)", "roughness<br>(above, &Aring;)");
       colids.splice(0,0,"thickness", "roughness");
       colcolors.splice(0,0,"none","none");
       var target = d3.select("#" + target_id)
