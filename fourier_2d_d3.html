@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!-- Enable IE9 Standards mode -->
+<meta http-equiv="X-UA-Compatible" content="IE=9" >
+<title>Fourier transform of a quadrilateral</title>
+<style type="text/css">
+  label { display: block; font-family: consolas, monospace; text-align: center; }
+  //canvas { border: 1px dotted #888; }
+  .bk { float: left; margin-right: 4px; }
+</style>
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    h1 { text-align: center }
+    
+    .wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      margin-left: 10px;
+    }
+    
+    .plot {
+      /*margin-right: 10px;*/
+      flex: 1;
+    }
+    
+    footer {
+      height: 2em;
+    }
+    svg,
+    canvas {
+      position: absolute;
+      left: 
+      image-rendering: optimizeSpeed;
+      image-rendering: crisp-edges;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: optimize-contrast;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+         
+    .show_hide {
+        display:none;
+    }
+</style>
+    <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/jquery-extend.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/xy-chart.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/heat-chart.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/polygon-interactor.js"></script>
+
+    <script type="text/javascript" src="js/complex.js"></script>
+    <script type="text/javascript" src="js/div_thm_form.js"></script>
+
+<script type="text/javascript">
+  var opts_poly = { 
+    type:'Polygon',
+    radius: 12, 
+    name:'roi_polygon',
+    color1: 'purple',
+    color2: 'LightOrange',
+    //interpolation: 'Cardinal',
+    prevent_crossing: false,
+    show_points: true,
+    show_lines: true,
+    close_path: true,
+    //fill: "MediumPurple",
+    points: [[-1,-1], [1,-1], [0.5,1], [-0.5, 1]]
+  }
+  
+  var control = xyChart.default({show_line: false, show_points: false, show_errorbars: false, ytransform: 'linear', legend: {show: false}});
+  var transform = heatChart.default({dims: {xdim: 512, ydim: 512, xmin: -10.00000001, xmax: 10, ymin: -10.0000001, ymax: 10, zmin: 0.2, zmax: 2}});
+  //transform.autoscale(true);  
+  
+  window.onload = function() {
+    var c = d3.select("div.plot.control")
+        .data([[[[-2,-2],[2,2]]]])
+        .call(control);
+      
+    var polygon = new polygonInteractor.default(opts_poly);
+    control
+      .interactors(polygon)
+      //.zoomRect(true)
+    
+    //polygon.dispatch.on("update.console", function() { console.log(JSON.stringify(polygon.state.points)) });
+    generate_fourier = function(points) {
+        var points_plus = jqueryExtend.default(true, [], points);
+        points_plus.push(points_plus[0]); // wrap around to end of object
+        var fourier_sum = function(qx,qy) {
+            var sum = new Complex(0,0);
+            for (var i=0; i<points.length; i++) {
+                var p0 = points_plus[i];
+                var p1 = points_plus[i+1];
+                var new_component = div_form_line(p0[0], p0[1], p1[0], p1[1], qx, qy);
+                sum = Complex.add(sum, new_component);
+            }
+            //return sum.magnitude()
+            return sum
+        } 
+        return fourier_sum
+    }
+    
+    function calculate_transform() {
+        var z = [];
+        var dims = transform.dims();
+        var dx = (dims.xmax - dims.xmin) / (dims.xdim);
+        var dy = (dims.ymax - dims.ymin) / (dims.ydim);
+        var p = 0;
+        var g = generate_fourier(polygon.state.points);
+        for (var i=0; i<512; i++) {
+          var qy = dims.ymin + i * dy;
+          for (var j=0; j<512; j++) {
+            var qx = dims.xmin + j * dx;
+            var f = g(qx, qy);
+            z[p++] = f.magnitude();
+          }
+        }
+        return z
+    }
+    
+    var zz = calculate_transform();
+    
+    var t = d3.select("div.plot.transform")
+      .data([zz])
+      .call(transform);
+    //transform.zoomScroll(true);
+    transform.ztransform('log');
+    
+    polygon.dispatch.on("update.transform", function() {
+        var zz = calculate_transform();
+        transform.source_data(zz);
+    });
+    
+    d3.selectAll("g.corners circle.corner").on("dblclick", function() {
+        console.log(this, d3.select(this));
+        var vertex = parseInt(d3.select(this).attr("vertex"));
+        console.log(vertex);
+        polygon.state.points.splice(vertex, 1);
+        polygon.update();
+    });
+    d3.select("g.edges").on("dblclick", function(d) { 
+        var coords = d3.mouse(this);
+        var new_x = control.x().invert(coords[0]);
+        var new_y = control.y().invert(coords[1]);
+        console.log(new_x, new_y);
+    });
+  }
+
+</script>
+</head>
+<body bgColor='#eeffdd'>
+    <header>
+      <h1>Fourier Transform of 2-dimensional shape</h1>
+    </header>
+    <div class="wrapper">
+      <div class="plot control"></div>
+      <div class="plot transform"></div>
+    </div>
+    <footer>I'm a footer</footer>
+</body>
+</html>
