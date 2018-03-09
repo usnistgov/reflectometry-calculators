@@ -51,6 +51,15 @@
     .show_hide {
         display:none;
     }
+    
+    .axis-label {
+        font-size: 18px;
+        fill: black;
+    }
+
+    .axis .tick text {
+        font: 14px sans-serif;
+    }
 </style>
     <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
     <script src="../d3-science-v4/lib/jquery-extend.js" charset="utf-8"></script>
@@ -433,8 +442,36 @@ function closestPoint(pathNode, point) {
   var renderer = function() {}; // placeholder;
   var scale = 'log';
   
-  var control = xyChart.default({show_line: false, show_points: false, show_errorbars: false, ytransform: 'linear', legend: {show: false}});
-  var transform = heatChart.default({ztransform: scale, autoscale: false, show_grid: false, dims: {xdim: 1, ydim: 1, xmin: -10.00000001, xmax: 10, ymin: -10.0000001, ymax: 10, zmin: 0.0001, zmax: 2.0}});
+  var control = xyChart.default({
+    show_line: false, 
+    show_points: false, 
+    show_errorbars: false, 
+    ytransform: 'linear', 
+    legend: {show: false},
+    axes: {
+          xaxis: {label: "X (length)"}, 
+          yaxis: {label: "Y (length)"}
+    }  
+  });
+  var transform = heatChart.default({
+    ztransform: scale, 
+    autoscale: false, 
+    show_grid: false, 
+    dims: {
+      xdim: 1, 
+      ydim: 1, 
+      xmin: -10.00000001, 
+      xmax: 10, 
+      ymin: -10.0000001, 
+      ymax: 10, 
+      zmin: 0.0001, 
+      zmax: 2.0
+    },
+    axes: {
+          xaxis: {label: "Qx (inverse length)"}, 
+          yaxis: {label: "Qy (inverse length)"}
+    } 
+  });
   //transform.autoscale(false);  
   
   window.onload = function() {
