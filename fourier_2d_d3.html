@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <!-- Enable IE9 Standards mode -->
 <meta http-equiv="X-UA-Compatible" content="IE=9" >
-<title>Fourier transform of a quadrilateral</title>
+<title>Fourier transform of a polygon</title>
 <style type="text/css">
   label { display: block; font-family: consolas, monospace; text-align: center; }
   //canvas { border: 1px dotted #888; }
@@ -62,6 +62,57 @@
     <script type="text/javascript" src="js/div_thm_form.js"></script>
 
 <script type="text/javascript">
+function distanceToLine(p0, p1, p) {
+    // p0 and p1 define the endpoints of a line
+    // p is the test point
+    let num = Math.abs((p1[1]-p0[1])*p[0] - (p1[0]-p0[0])*p[1] + p1[0]*p0[1] - p1[1]*p0[0]);
+    let den = Math.sqrt(Math.pow(p1[1] - p0[1], 2) + Math.pow(p1[0] - p0[0], 2));
+    return num/den;
+}
+function closestPoint(pathNode, point) {
+  var pathLength = pathNode.getTotalLength(),
+      precision = 8,
+      best,
+      bestLength,
+      bestDistance = Infinity;
+
+  // linear scan for coarse approximation
+  for (var scan, scanLength = 0, scanDistance; scanLength <= pathLength; scanLength += precision) {
+    if ((scanDistance = distance2(scan = pathNode.getPointAtLength(scanLength))) < bestDistance) {
+      best = scan, bestLength = scanLength, bestDistance = scanDistance;
+    }
+  }
+
+  // binary search for precise estimate
+  precision /= 2;
+  while (precision > 0.5) {
+    var before,
+        after,
+        beforeLength,
+        afterLength,
+        beforeDistance,
+        afterDistance;
+    if ((beforeLength = bestLength - precision) >= 0 && (beforeDistance = distance2(before = pathNode.getPointAtLength(beforeLength))) < bestDistance) {
+      best = before, bestLength = beforeLength, bestDistance = beforeDistance;
+    } else if ((afterLength = bestLength + precision) <= pathLength && (afterDistance = distance2(after = pathNode.getPointAtLength(afterLength))) < bestDistance) {
+      best = after, bestLength = afterLength, bestDistance = afterDistance;
+    } else {
+      precision /= 2;
+    }
+  }
+
+  best = [best.x, best.y];
+  best.distance = Math.sqrt(bestDistance);
+  return best;
+
+  function distance2(p) {
+    var dx = p.x - point[0],
+        dy = p.y - point[1];
+    return dx * dx + dy * dy;
+  }
+}
+</script>
+<script type="text/javascript">
   var opts_poly = { 
     type:'Polygon',
     radius: 12, 
@@ -73,7 +124,7 @@
     show_points: true,
     show_lines: true,
     close_path: true,
-    //fill: "MediumPurple",
+    fill: "MediumPurple",
     points: [[-1,-1], [1,-1], [0.5,1], [-0.5, 1]]
   }
   
@@ -140,19 +191,46 @@
         transform.source_data(zz);
     });
     
-    d3.selectAll("g.corners circle.corner").on("dblclick", function() {
-        console.log(this, d3.select(this));
-        var vertex = parseInt(d3.select(this).attr("vertex"));
-        console.log(vertex);
-        polygon.state.points.splice(vertex, 1);
-        polygon.update();
-    });
-    d3.select("g.edges").on("dblclick", function(d) { 
-        var coords = d3.mouse(this);
-        var new_x = control.x().invert(coords[0]);
-        var new_y = control.y().invert(coords[1]);
-        console.log(new_x, new_y);
-    });
+    function set_corner_handlers() {
+        d3.selectAll("g.corners circle.corner").on("dblclick", function() {
+            var vertex = parseInt(d3.select(this).attr("vertex"));
+            polygon.state.points.splice(vertex, 1);
+            polygon.update();
+        });
+    }
+    function set_edge_handlers() {
+        d3.select("g.edges").on("dblclick", function(d) {
+            var coords = d3.mouse(this);
+            var path = d3.select(this).select('path');
+            var p = closestPoint(path.node(), coords);
+            
+            var xa = control.x();
+            var ya = control.y();
+            var new_px = control.x().invert(p[0]);
+            var new_py = control.y().invert(p[1]);
+            var index_before;
+            var min_d = Infinity;
+            var distances = polygon.state.points.map(function(p,i,a) {
+                let pp = (i == a.length-1) ? a[0] : a[i+1];
+                let p0 = [xa(p[0]), ya(p[1])];
+                let p1 = [xa(pp[0]), ya(pp[1])];
+                let d = distanceToLine(p0, p1, coords);
+                if (d < min_d) {
+                    min_d = d;
+                    index_before = i;
+                }
+                return d;
+            })
+                    
+            if (index_before != null) {
+                polygon.state.points.splice(index_before+1, 0, [new_px, new_py]);
+                polygon.update();
+                set_corner_handlers();
+            }
+        });
+    }
+    set_corner_handlers();
+    set_edge_handlers();
   }
 
 </script>
