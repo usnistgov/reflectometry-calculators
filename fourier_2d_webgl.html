@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!-- Enable IE9 Standards mode -->
+<meta http-equiv="X-UA-Compatible" content="IE=9" >
+<title>Fourier transform of a quadrilateral</title>
+<style type="text/css">
+  label { display: block; font-family: consolas, monospace; text-align: center; }
+  //canvas { border: 1px dotted #888; }
+  .bk { float: left; margin-right: 4px; }
+</style>
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    h1 { text-align: center }
+    
+    .wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      margin-left: 10px;
+    }
+    
+    .plot {
+      /*margin-right: 10px;*/
+      flex: 1;
+    }
+    
+    footer {
+      height: 2em;
+    }
+    svg,
+    canvas {
+      position: absolute;
+      left: 
+      image-rendering: optimizeSpeed;
+      image-rendering: crisp-edges;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: optimize-contrast;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+         
+    .show_hide {
+        display:none;
+    }
+</style>
+    <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/jquery-extend.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/xy-chart.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/heat-chart.js" charset="utf-8"></script>
+    <script src="../d3-science-v4/lib/polygon-interactor.js"></script>
+    
+    <script src="js/webgl-utils.js"></script>
+    
+    <script type="text/javascript" src="js/complex.js"></script>
+    <script type="text/javascript" src="js/div_thm_form.js"></script>
+
+<!--
+<script id="2d-vertex-shader" type="x-shader/x-vertex">
+-->
+<script type="text/javascript">
+VERTEX_SHADER = `
+attribute vec2 a_position;
+attribute vec2 a_texCoord;
+
+uniform vec2 u_resolution;
+
+varying vec2 v_texCoord;
+
+void main() {
+   // convert the rectangle from pixels to 0.0 to 1.0
+   vec2 zeroToOne = a_position / u_resolution;
+
+   // convert from 0->1 to 0->2
+   vec2 zeroToTwo = zeroToOne * 2.0;
+
+   // convert from 0->2 to -1->+1 (clipspace)
+   vec2 clipSpace = zeroToTwo - 1.0;
+   gl_Position = vec4(clipSpace * vec2(1, 1), 0, 1);
+
+   // pass the texCoord to the fragment shader
+   // The GPU will interpolate this value between points.
+   v_texCoord = a_texCoord;
+}
+`
+</script>
+<!-- fragment shader -->
+<!-- <script id="2d-fragment-shader" type="x-shader/x-fragment"> -->
+<script type="text/javascript">
+FRAG_SHADER = `
+precision highp float;
+const float PI = 3.1415926535897932384626433832795;
+const float PI_2 = 1.57079632679489661923;
+const float PI_4 = 0.785398163397448309616;
+
+//const float xscale = 4.0*PI;
+//const float yscale = 4.0*PI;
+//const float xoffset = -xscale/2.0;
+//const float yoffset = -yscale/2.0;
+
+uniform float a_time;
+const int numpoints = <numpoints>;
+uniform vec2 x_scale_offset;
+uniform vec2 y_scale_offset;
+uniform vec2 z_min_max;
+uniform vec2 vertex_points[numpoints];
+
+// the texCoords passed in from the vertex shader.
+varying vec2 v_texCoord;
+
+//Define complex operations
+#define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
+#define conjugate(a) vec2(a.x,-a.y)
+#define divide(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
+#define cexp(a) vec2(exp(a.x) * cos(a.y), exp(a.x) * sin(a.y))
+
+float interpolate( float val, float y0, float x0, float y1, float x1 ) {
+    return (val-x0)*(y1-y0)/(x1-x0) + y0;
+}
+
+float base( float val ) {
+    if ( val <= -0.75 ) return 0.0;
+    else if ( val <= -0.25 ) return interpolate( val, 0.0, -0.75, 1.0, -0.25 );
+    else if ( val <= 0.25 ) return 1.0;
+    else if ( val <= 0.75 ) return interpolate( val, 1.0, 0.25, 0.0, 0.75 );
+    else return 0.0;
+}
+
+float red( float gray ) {
+    return base( gray - 0.5 );
+}
+float green( float gray ) {
+    return base( gray );
+}
+float blue( float gray ) {
+    return base( gray + 0.5 );
+}
+
+vec2 div_form_line(vec2 point0, vec2 point1) {
+    // = function(x0, y0, x1, y1, qx, qy) {
+    float x0 = point0.x;
+    float y0 = point0.y;
+    float x1 = point1.x;
+    float y1 = point1.y;
+    float dx = x1 - x0;
+    float dy = y1 - y0;
+    float qx = v_texCoord.x * x_scale_offset[0] + x_scale_offset[1];
+    float qy = v_texCoord.y * y_scale_offset[0] + y_scale_offset[1];
+    float qlensq = qx*qx + qy*qy;
+    vec2 result;
+    if (qlensq == 0.0) { 
+        result = vec2(x0 * dy - y0 * dx, 0);
+    }
+    else {
+        vec2 prefac = vec2(1.0/(qlensq) * (-qx*dy + qy*dx)/(qx*dx + qy*dy), 0);
+        result = product(prefac, vec2(
+            cos(qx*x1 + qy*y1) - cos(qx*x0 + qy*y0), 
+            sin(qx*x1 + qy*y1) - sin(qx*x0 + qy*y0))
+        ); 
+    }
+    return result;
+}
+
+float scale(float point) {
+    return 1.0;
+}
+
+void main() {
+   vec2 F = vec2(0.0, 0.0);
+   for (int i=0; i<numpoints-1; i++) {
+       F += div_form_line(vertex_points[i], vertex_points[i+1]);
+   }
+   float US = sqrt(F.x*F.x + F.y * F.y); //unscaled
+   float C = clamp(US, z_min_max[0], z_min_max[1]);
+   float G = <scale>(C);
+   // full length of color scale is 2.5 in units of "gray", [-1.25, 1.25]
+   float zrange = <scale>(z_min_max[1]) - <scale>(z_min_max[0]);
+   float gray = -1. + (2. * (G - <scale>(z_min_max[0])) / zrange);
+   gl_FragColor.r = red(gray); //abs(sin(v_texCoord.y * 2.0 * PI));
+   gl_FragColor.g = green(gray); //abs(sin((v_texCoord.x  + a_time ) * 2.0 * PI));
+   gl_FragColor.b = blue(gray); //abs(sin(v_texCoord.y * 2.0 * PI));
+   gl_FragColor.a = 1.0;
+}
+`
+</script>
+<script>
+"use strict";
+
+
+function make_renderer(canvas, num_polygon_points, scale) {
+  // Get A WebGL context
+  /** @type {HTMLCanvasElement} */
+  var scale = scale || ""; // use log if desired, leave blank for linear.
+  //var canvas = document.getElementById("transform_canvas");
+  var gl = canvas.getContext("webgl");
+  if (!gl) {
+    return;
+  }
+
+  // setup GLSL program
+  var fshader = FRAG_SHADER
+    .replace(/<numpoints>/g, (num_polygon_points + 1).toFixed())
+    .replace(/<scale>/g, scale);
+  var program = webglUtils.createProgramFromSources(gl, [VERTEX_SHADER, fshader]);
+
+  // look up where the vertex data needs to go.
+  var positionLocation = gl.getAttribLocation(program, "a_position");
+  var texcoordLocation = gl.getAttribLocation(program, "a_texCoord");
+
+  // Create a buffer to put three 2d clip space points in
+  var positionBuffer = gl.createBuffer();
+
+  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  // Set a rectangle the same size as the image.
+  setRectangle(gl, 0, 0, canvas.width, canvas.height);
+
+  // provide texture coordinates for the rectangle.
+  var texcoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      0.0,  0.0,
+      1.0,  0.0,
+      0.0,  1.0,
+      0.0,  1.0,
+      1.0,  0.0,
+      1.0,  1.0,
+  ]), gl.STATIC_DRAW);
+
+  // Create a texture.
+  //var texture = gl.createTexture();
+  //gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // Set the parameters so we can render any size image.
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  // Upload the image into the texture.
+  //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+  // lookup uniforms
+  var resolutionLocation = gl.getUniformLocation(program, "u_resolution");
+  var timeLocation = gl.getUniformLocation(program, "a_time");
+  var vertexLocation = gl.getUniformLocation(program, "vertex_points");
+  var xscaleLocation = gl.getUniformLocation(program, "x_scale_offset");
+  var yscaleLocation = gl.getUniformLocation(program, "y_scale_offset");
+  var zrangeLocation = gl.getUniformLocation(program, "z_min_max");
+
+
+  webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+
+  // Tell WebGL how to convert from clip space to pixels
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  // Clear the canvas
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  // Tell it to use our program (pair of shaders)
+  gl.useProgram(program);
+
+  // Turn on the position attribute
+  gl.enableVertexAttribArray(positionLocation);
+
+  // Bind the position buffer.
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+  var size = 2;          // 2 components per iteration
+  var type = gl.FLOAT;   // the data is 32bit floats
+  var normalize = false; // don't normalize the data
+  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+  var offset = 0;        // start at the beginning of the buffer
+  gl.vertexAttribPointer(
+      positionLocation, size, type, normalize, stride, offset)
+
+  // Turn on the teccord attribute
+  gl.enableVertexAttribArray(texcoordLocation);
+
+  // Bind the position buffer.
+  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+  
+  
+
+  // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+  var size = 2;          // 2 components per iteration
+  var type = gl.FLOAT;   // the data is 32bit floats
+  var normalize = false; // don't normalize the data
+  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+  var offset = 0;        // start at the beginning of the buffer
+  gl.vertexAttribPointer(
+      texcoordLocation, size, type, normalize, stride, offset)
+
+  // set the resolution
+  gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
+  
+  // set the time
+  gl.uniform1f(timeLocation, Date.now() % 10000 / 1000.0);
+  
+  class Renderer {
+    constructor() {
+      // set a default zrange
+      this.set_xrange(-6.0, 6.0);
+      this.set_yrange(-6.0, 6.0);
+      this.set_zrange(0.001, 1.0);
+    }
+    
+    render(vertex_points) {
+      // pass in the vertex positions
+      var wrapped_vertices = [];
+      for (var i=0; i<vertex_points.length; i++) {
+          wrapped_vertices = wrapped_vertices.concat(vertex_points[i]);
+      }
+      // now wrap...
+      wrapped_vertices = wrapped_vertices.concat(vertex_points[0]);
+      gl.uniform2fv(vertexLocation,  wrapped_vertices);
+        
+
+      // Draw the rectangle.
+      var primitiveType = gl.TRIANGLES;
+      var offset = 0;
+      var count = 6;
+      gl.drawArrays(primitiveType, offset, count);
+    }
+    
+    set_xrange(xmin, xmax) {
+      gl.uniform2f(xscaleLocation, (xmax-xmin), xmin);
+    }
+    set_yrange(ymin, ymax) {
+      gl.uniform2f(yscaleLocation, (ymax-ymin), ymin);
+    }
+    set_zrange(zmin, zmax) {
+      gl.uniform2f(zrangeLocation, zmin, zmax);
+    }
+  }
+  
+  return new Renderer();
+
+}
+
+function setRectangle(gl, x, y, width, height) {
+  var x1 = x;
+  var x2 = x + width;
+  var y1 = y;
+  var y2 = y + height;
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+     x1, y1,
+     x2, y1,
+     x1, y2,
+     x1, y2,
+     x2, y1,
+     x2, y2,
+  ]), gl.STATIC_DRAW);
+}
+
+</script>
+<script type="text/javascript">
+function distanceToLine(p0, p1, p) {
+    // p0 and p1 define the endpoints of a line
+    // p is the test point
+    let num = Math.abs((p1[1]-p0[1])*p[0] - (p1[0]-p0[0])*p[1] + p1[0]*p0[1] - p1[1]*p0[0]);
+    let den = Math.sqrt(Math.pow(p1[1] - p0[1], 2) + Math.pow(p1[0] - p0[0], 2));
+    return num/den;
+}
+function closestPoint(pathNode, point) {
+  var pathLength = pathNode.getTotalLength(),
+      precision = 8,
+      best,
+      bestLength,
+      bestDistance = Infinity;
+
+  // linear scan for coarse approximation
+  for (var scan, scanLength = 0, scanDistance; scanLength <= pathLength; scanLength += precision) {
+    if ((scanDistance = distance2(scan = pathNode.getPointAtLength(scanLength))) < bestDistance) {
+      best = scan, bestLength = scanLength, bestDistance = scanDistance;
+    }
+  }
+
+  // binary search for precise estimate
+  precision /= 2;
+  while (precision > 0.5) {
+    var before,
+        after,
+        beforeLength,
+        afterLength,
+        beforeDistance,
+        afterDistance;
+    if ((beforeLength = bestLength - precision) >= 0 && (beforeDistance = distance2(before = pathNode.getPointAtLength(beforeLength))) < bestDistance) {
+      best = before, bestLength = beforeLength, bestDistance = beforeDistance;
+    } else if ((afterLength = bestLength + precision) <= pathLength && (afterDistance = distance2(after = pathNode.getPointAtLength(afterLength))) < bestDistance) {
+      best = after, bestLength = afterLength, bestDistance = afterDistance;
+    } else {
+      precision /= 2;
+    }
+  }
+
+  best = [best.x, best.y];
+  best.distance = Math.sqrt(bestDistance);
+  return best;
+
+  function distance2(p) {
+    var dx = p.x - point[0],
+        dy = p.y - point[1];
+    return dx * dx + dy * dy;
+  }
+}
+</script>
+<script type="text/javascript">
+  var opts_poly = { 
+    type:'Polygon',
+    radius: 20, 
+    name:'roi_polygon',
+    color1: 'purple',
+    color2: 'LightOrange',
+    //interpolation: 'Cardinal',
+    prevent_crossing: false,
+    show_points: true,
+    show_lines: true,
+    close_path: true,
+    fill: "MediumPurple",
+    points: [[-1,-1], [1,-1], [0.5,1], [-0.5, 1]]
+  }
+  var renderer = function() {}; // placeholder;
+  var scale = 'log';
+  
+  var control = xyChart.default({show_line: false, show_points: false, show_errorbars: false, ytransform: 'linear', legend: {show: false}});
+  var transform = heatChart.default({ztransform: scale, autoscale: false, show_grid: false, dims: {xdim: 1, ydim: 1, xmin: -10.00000001, xmax: 10, ymin: -10.0000001, ymax: 10, zmin: 0.0001, zmax: 2.0}});
+  //transform.autoscale(false);  
+  
+  window.onload = function() {
+    var c = d3.select("div.plot.control")
+        .data([[[[-2,-2],[2,2]]]])
+        .call(control);
+    
+    d3.select("canvas.transform")
+        .attr("width", parseInt(d3.select("div.plot.transform").style("width").replace(/px/, "")))
+        .attr("height", parseInt(d3.select("div.plot.transform").style("height").replace(/px/, "")))
+        
+    var polygon = new polygonInteractor.default(opts_poly);
+    control
+      .interactors(polygon)
+      //.zoomRect(true)
+    
+    var t = d3.select("div.plot.transform")
+      .data([[0]])
+      .call(transform);
+    transform.zoomScroll(true);
+    //transform.ztransform(scale);
+    
+    var canvas = transform.mainCanvas.node().cloneNode(true);
+    console.log(canvas, d3.select(canvas));
+    console.log(transform.outercontainer.select(".heatmap-container"));
+    transform.outercontainer.select(".heatmap-container").node().insertBefore(canvas, transform.svg.node());
+    
+    renderer = make_renderer(canvas, polygon.state.points.length, scale);
+    renderer.render(polygon.state.points);
+    
+    var watcher = function() {
+      var self = this;
+      this.zscalefunc = transform.ztransform();
+      var f = function() { return self };
+      this.x = this.y = this.apply = f;
+      this.update = function() {
+        console.log(
+        transform.x().domain(),
+        transform.y().domain(),
+        transform.z().domain()
+      );
+        var xrange = transform.x().domain();
+        var yrange = transform.y().domain();
+        var zrange = transform.z().domain();
+        
+        self.renderer.set_xrange.apply(null, xrange);
+        self.renderer.set_yrange.apply(null, yrange);
+        self.renderer.set_zrange.apply(null, zrange);
+        self.renderer.render(polygon.state.points);
+      }
+      return this;
+    }
+    
+    W = new watcher();
+    W.renderer =renderer;
+    transform.interactors(W);
+    
+    polygon.dispatch.on("update.transform", function() {
+        //var zz = calculate_transform();
+        //transform.source_data(zz);
+        renderer.render(polygon.state.points);
+        
+    });
+    
+    
+    function set_corner_handlers() {
+        d3.selectAll("g.corners circle.corner").on("dblclick", function() {
+            var vertex = parseInt(d3.select(this).attr("vertex"));
+            polygon.state.points.splice(vertex, 1);
+            renderer = make_renderer(canvas, polygon.state.points.length);
+            polygon.update();
+        });
+    }
+    function set_edge_handlers() {
+        d3.select("g.edges").on("dblclick", function(d) {
+            var coords = d3.mouse(this);
+            var path = d3.select(this).select('path');
+            var p = closestPoint(path.node(), coords);
+            
+            var xa = control.x();
+            var ya = control.y();
+            var new_px = control.x().invert(p[0]);
+            var new_py = control.y().invert(p[1]);
+            var index_before;
+            var min_d = Infinity;
+            var distances = polygon.state.points.map(function(p,i,a) {
+                let pp = (i == a.length-1) ? a[0] : a[i+1];
+                let p0 = [xa(p[0]), ya(p[1])];
+                let p1 = [xa(pp[0]), ya(pp[1])];
+                let d = distanceToLine(p0, p1, coords);
+                if (d < min_d) {
+                    min_d = d;
+                    index_before = i;
+                }
+                return d;
+            })
+                    
+            if (index_before != null) {
+                polygon.state.points.splice(index_before+1, 0, [new_px, new_py]);
+                renderer = make_renderer(polygon.state.points.length, scale);
+                polygon.update();
+                set_corner_handlers();
+            }
+        });
+    }
+    
+    set_corner_handlers();
+    set_edge_handlers();
+  }
+
+</script>
+</head>
+<body bgColor='#eeffdd'>
+    <header>
+      <h1>Fourier Transform of 2-dimensional shape</h1>
+    </header>
+    <div class="wrapper">
+      <div class="plot control"></div>
+      <div class="plot transform"></div>
+    </div>
+    <footer>I'm a footer</footer>
+</body>
+</html>
