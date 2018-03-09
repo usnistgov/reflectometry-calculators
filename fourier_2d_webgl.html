@@ -526,23 +526,23 @@ function closestPoint(pathNode, point) {
     }
     
     W = new watcher();
-    W.renderer =renderer;
+    W.renderer = renderer;
     transform.interactors(W);
     
     polygon.dispatch.on("update.transform", function() {
-        //var zz = calculate_transform();
-        //transform.source_data(zz);
         renderer.render(polygon.state.points);
-        
     });
-    
     
     function set_corner_handlers() {
         d3.selectAll("g.corners circle.corner").on("dblclick", function() {
             var vertex = parseInt(d3.select(this).attr("vertex"));
             polygon.state.points.splice(vertex, 1);
-            renderer = make_renderer(canvas, polygon.state.points.length);
+            renderer = make_renderer(canvas, polygon.state.points.length, scale);
+            W.renderer = renderer;
             polygon.update();
+            polygon.update();
+            W.update();
+
         });
     }
     function set_edge_handlers() {
@@ -571,8 +571,11 @@ function closestPoint(pathNode, point) {
                     
             if (index_before != null) {
                 polygon.state.points.splice(index_before+1, 0, [new_px, new_py]);
-                renderer = make_renderer(polygon.state.points.length, scale);
+                renderer = make_renderer(canvas, polygon.state.points.length, scale);
+                W.renderer = renderer;
                 polygon.update();
+                polygon.update();
+                W.update();
                 set_corner_handlers();
             }
         });
