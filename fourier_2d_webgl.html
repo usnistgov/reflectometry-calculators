@@ -193,9 +193,9 @@ void main() {
    // full length of color scale is 2.5 in units of "gray", [-1.25, 1.25]
    float zrange = <scale>(z_min_max[1]) - <scale>(z_min_max[0]);
    float gray = -1. + (2. * (G - <scale>(z_min_max[0])) / zrange);
-   gl_FragColor.r = red(gray); //abs(sin(v_texCoord.y * 2.0 * PI));
-   gl_FragColor.g = green(gray); //abs(sin((v_texCoord.x  + a_time ) * 2.0 * PI));
-   gl_FragColor.b = blue(gray); //abs(sin(v_texCoord.y * 2.0 * PI));
+   gl_FragColor.r = red(gray);
+   gl_FragColor.g = green(gray);
+   gl_FragColor.b = blue(gray);
    gl_FragColor.a = 1.0;
 }
 `
@@ -495,8 +495,6 @@ function closestPoint(pathNode, point) {
     //transform.ztransform(scale);
     
     var canvas = transform.mainCanvas.node().cloneNode(true);
-    console.log(canvas, d3.select(canvas));
-    console.log(transform.outercontainer.select(".heatmap-container"));
     transform.outercontainer.select(".heatmap-container").node().insertBefore(canvas, transform.svg.node());
     
     renderer = make_renderer(canvas, polygon.state.points.length, scale);
@@ -508,11 +506,6 @@ function closestPoint(pathNode, point) {
       var f = function() { return self };
       this.x = this.y = this.apply = f;
       this.update = function() {
-        console.log(
-        transform.x().domain(),
-        transform.y().domain(),
-        transform.z().domain()
-      );
         var xrange = transform.x().domain();
         var yrange = transform.y().domain();
         var zrange = transform.z().domain();
@@ -530,13 +523,21 @@ function closestPoint(pathNode, point) {
     transform.interactors(W);
     
     polygon.dispatch.on("update.transform", function() {
-        renderer.render(polygon.state.points);
+        if (polygon.state.points.length > 1) {
+          renderer.render(polygon.state.points);
+        }
     });
     
     function set_corner_handlers() {
         d3.selectAll("g.corners circle.corner").on("dblclick", function() {
             var vertex = parseInt(d3.select(this).attr("vertex"));
-            polygon.state.points.splice(vertex, 1);
+            var new_points = jqueryExtend.default(true, [], polygon.state.points);
+            new_points.splice(vertex, 1);
+            // clear the old polygon - touch handler doesn't work correctly if you just
+            // delete points
+            polygon.state.points = [];
+            polygon.update();
+            polygon.state.points = new_points;
             renderer = make_renderer(canvas, polygon.state.points.length, scale);
             W.renderer = renderer;
             polygon.update();
@@ -570,7 +571,11 @@ function closestPoint(pathNode, point) {
             })
                     
             if (index_before != null) {
-                polygon.state.points.splice(index_before+1, 0, [new_px, new_py]);
+                let new_points = jqueryExtend.default(true, [], polygon.state.points);
+                new_points.splice(index_before+1, 0, [new_px, new_py]);
+                polygon.state.points = [];
+                polygon.update();
+                polygon.state.points = new_points;
                 renderer = make_renderer(canvas, polygon.state.points.length, scale);
                 W.renderer = renderer;
                 polygon.update();
