@@ -60,10 +60,10 @@ var app_options = {
   fitting: {
     funcname: "fit_magrefl",
     xs_order: {
-      "++": 0, 
-      "+-": 1, 
-      "-+": 2, 
-      "--": 3
+      "++": 3, 
+      "+-": 2, 
+      "-+": 1, 
+      "--": 0
     },
     columns: [
       {"label": "thickness", "scale": 10, "minimum": 0},
