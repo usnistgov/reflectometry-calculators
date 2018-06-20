@@ -7,7 +7,7 @@ Module = {
 importScripts('complex.js', 'refl/refl.js');
 
 
-calc_r = function(sld, qmin, qmax, qstep) {
+calc_r = function(sld, qmin, qmax, qstep, bkg) {
     var depth = [],
         sigma = [],
         rho = [],
@@ -41,7 +41,7 @@ calc_r = function(sld, qmin, qmax, qstep) {
         var rc = new Complex();
         rc.x = rr[0];
         rc.y = rr[1];
-        xy[0][i] = [q, rc.magsq()];
+        xy[0][i] = [q, rc.magsq() + bkg];
         phase[0][i] = [q, rc.phase()];
       });
       
@@ -59,7 +59,8 @@ onmessage = function(event) {
     var qmin = data.qmin;
     var qmax = data.qmax;
     var qstep = data.qstep;
-    var r = calc_r(sld, qmin, qmax, qstep);
+    var bkg = data.bkg || 0;
+    var r = calc_r(sld, qmin, qmax, qstep, bkg);
     postMessage(r);
     return;
 }

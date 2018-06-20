@@ -71,7 +71,9 @@
           {"label": "sld", "scale": 0.1},
           {"label": "mu", "scale": 0.1, "minimum": 0} // no radiation sources allowed in sample!
         ],
-        extra_params: [],
+        extra_params: [
+          {"label": "bkg", "default": 0.0, "step": 1e-7, "minimum": 0, "scale": 1e-7},
+        ],
         xs_order: {'unpolarized': 0}
       }
     };
