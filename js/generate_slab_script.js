@@ -1,6 +1,6 @@
 var prec = 5; // precision
 
-generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L) {
+generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, bkg) {
     py = "";
     //var filename = filename || "myfile.refl";
     
@@ -21,6 +21,9 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L) {
     py += "L=";
     py += ((L == null) ? 5.0 : L).toPrecision(prec) + ")\n";
     py += "\n";
+    py += "# Background parameter\n";
+    py += "probe.background.value = " + ((bkg == null) ? 0 : bkg).toPrecision(prec) + ";\n";
+    py += "# probe.background.range(1e-9, 1e-5);\n\n";
     py += "## === Stack ===\n";
     py += "\n";
     //py += "slds = []\n";
@@ -129,7 +132,7 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L) {
     py += "## approximation is used to account for roughness.  This approximation speeds up\r\n";
     py += "## the caclulation tremendously, and is reasonably accuarate as long as the\r\n";
     py += "## roughness is much less than the layer thickness\r\n";
-    py += "step = True\r\n";
+    py += "step = False\r\n";
     py += "\r\n";
     py += "model = Experiment(sample=sample, probe=probe, dz=zed, dA=0, step_interfaces = step)\r\n";
     py += "## simultaneous fitting: if you define two models\r\n";

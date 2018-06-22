@@ -149,7 +149,7 @@ generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, H, Agui
     py += "# roughness is much less than the layer thickness\n";
     py += "step = True\n";
     py += "\n";
-    py += "model = Experiment(sample=s, probe=probe, dz=zed, dA=0, step_interfaces = step)\n";
+    py += "model = Experiment(sample=s, probe=probe, dz=zed, step_interfaces = step)\n";
     py += "## simultaneous fitting: if you define two models\n";
     py += "## models = model1, model2\n";
     py += "## problem = MultiFitProblem(models=models)\n";
