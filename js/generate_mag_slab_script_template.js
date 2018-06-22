@@ -8,10 +8,11 @@ function make_probe(filename, tmin, tmax, nPts, L, H, Aguide) {
   var Aguide_str = Aguide.toPrecision(prec);
   var H_str = H.toPrecision(prec); 
   var output = `
-${(filename == null) ? '#' : ''}probe = load4('${filename}', back_reflectivity=False)
-${(filename != null) ? '#' : ''}xs_probes = [Probe(T=numpy.linspace(${tmin_str}, ${tmax_str}, ${nPts_str}, L=${L_str}) for xs in range(4)]
-${(filename != null) ? '#' : ''}probe = PolarizedNeutronProbe(xs_probes, Aguide=${Aguide_str}, H=${H_str})
+${(filename == "") ? '#' : ''}probe = load4('${filename}', back_reflectivity=False)
+${(filename != "") ? '#' : ''}xs_probes = [Probe(T=numpy.linspace(${tmin_str}, ${tmax_str}, ${nPts_str}), L=${L_str}) for xs in range(4)]
+${(filename != "") ? '#' : ''}probe = PolarizedNeutronProbe(xs_probes, Aguide=${Aguide_str}, H=${H_str})
 `
+  return output
 }
 
 function add_layer(sld, layernum) {
@@ -26,8 +27,7 @@ function add_layer(sld, layernum) {
   var output = `
 slds.append(SLD(name='layer${l}', rho=${rho}, irho=${irho}))
 slabs.append(slds[${l}](${thickness}, ${roughness}, magnetism=Magnetism(rhoM=${rhoM}, thetaM=${thetaM})))
-s.add( slabs[${l}])
-`
+s.add( slabs[${l}])`
   return output
 }
 
@@ -155,7 +155,7 @@ zed = 1
 # approximation is used to account for roughness.  This approximation speeds up
 # the caclulation tremendously, and is reasonably accuarate as long as the
 # roughness is much less than the layer thickness
-step = True
+step = False
 
 model = Experiment(sample=s, probe=probe, dz=zed, step_interfaces = step)
 ## simultaneous fitting: if you define two models
