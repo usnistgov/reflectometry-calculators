@@ -909,9 +909,13 @@ var app_init = function(opts) {
         // sldarray order is based on the old reflpak ordering (beam source side first)
         // while refl1d builds the slab model from the "bottom", with the substrate slab first
         var script_params = [sldarray, datafilename, tmin, tmax, nPts, L].concat(extra_params);
-        var pyscript = generate_slab_script.apply(null, script_params);
-        var filename = document.getElementById("scriptname").value;
-        saveData(pyscript, filename);
+        try {
+          var pyscript = generate_slab_script.apply(null, script_params);
+          var filename = document.getElementById("scriptname").value;
+          saveData(pyscript, filename);
+        } catch(e) {
+          alert('error! ' + e.message)
+        }
     }
     document.getElementById("scriptbutton").onclick = show_script;
     

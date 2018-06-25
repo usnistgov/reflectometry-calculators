@@ -1,81 +1,5 @@
 var prec = 5;
 
-function make_probe(filename, tmin, tmax, nPts, L, H, Aguide) {
-  var tmin_str = ((tmin == null) ? 0.0001 : tmin).toPrecision(prec);
-  var tmax_str = ((tmax == null) ? 0.1000 : tmax).toPrecision(prec);
-  var nPts_str = ((nPts == null) ? 251 : nPts).toFixed(0);
-  var L_str = ((L == null) ? 5.0 : L).toPrecision(prec);
-  var Aguide_str = Aguide.toPrecision(prec);
-  var H_str = H.toPrecision(prec); 
-  var output = `
-${(filename == "") ? '#' : ''}probe = load4('${filename}', back_reflectivity=False)
-${(filename != "") ? '#' : ''}xs_probes = [Probe(T=numpy.linspace(${tmin_str}, ${tmax_str}, ${nPts_str}), L=${L_str}) for xs in range(4)]
-${(filename != "") ? '#' : ''}probe = PolarizedNeutronProbe(xs_probes, Aguide=${Aguide_str}, H=${H_str})
-`
-  return output
-}
-
-function add_layer(sld, layernum) {
-  var l = layernum.toFixed(0);
-  var rho = (sld.sld*1e6).toPrecision(prec);
-  var irho = (sld.mu*1e6).toPrecision(prec);
-  var thickness = (sld.thickness).toPrecision(prec);
-  var roughness = (sld.roughness || 0).toPrecision(prec);
-  var rhoM = (sld.sldm*1e6).toPrecision(prec);
-  var thetaM = (sld.thetaM*180.0).toPrecision(prec);
-  
-  var output = `
-slds.append(SLD(name='layer${l}', rho=${rho}, irho=${irho}))
-slabs.append(slds[${l}](${thickness}, ${roughness}, magnetism=Magnetism(rhoM=${rhoM}, thetaM=${thetaM})))
-s.add( slabs[${l}])`
-  return output
-}
-
-function make_rho_range(sld, layernum) {
-  var l = layernum.toFixed(0);
-  var range_span = 1.0;
-  var lower = (sld.sld*1e6 - range_span).toPrecision(prec);
-  var upper = (sld.sld*1e6 + range_span).toPrecision(prec);
-  var output = `s[${l}].material.rho.range(${lower}, ${upper})`
-  return output
-}
-
-function make_rhom_range(sld, layernum) {
-  var l = layernum.toFixed(0);
-  var range_span = 1.0;
-  var lower = (sld.sldm*1e6 - range_span).toPrecision(prec);
-  var upper = (sld.sldm*1e6 + range_span).toPrecision(prec);
-  var output = `s[${l}].magnetism.rhoM.range(${lower}, ${upper})`
-  return output
-}
-
-function make_thetam_range(sld, layernum) {
-  var l = layernum.toFixed(0);
-  var range_span = 30.0;
-  var lower = (sld.thetaM*180.0 - range_span).toPrecision(prec);
-  var upper = (sld.thetaM*180.0 + range_span).toPrecision(prec);
-  var output = `s[${l}].magnetism.rhoM.range(${lower}, ${upper})`
-  return output
-}
-
-function make_thickness_range(sld, layernum) {
-  var l = layernum.toFixed(0);
-  var range_span = 100.0;
-  var lower = (Math.max(sld.thickness - range_span, 0.0)).toPrecision(prec);
-  var upper = (sld.thickness + range_span).toPrecision(prec);
-  var output = `s[${l}].thickness.range(${lower}, ${upper})`
-  return output
-}
-
-function make_roughness_range(sld, layernum) {
-  var l = layernum.toFixed(0);
-  var range_span = 10.0;
-  var lower = (Math.max(sld.roughness - range_span, 0.0)).toPrecision(prec);
-  var upper = (sld.roughness + range_span).toPrecision(prec);
-  var output = `s[${l}].interface.range(${lower}, ${upper})`
-  return output
-}
-
 var generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, H, Aguide) {
 
   var template = `
@@ -168,4 +92,82 @@ problem = FitProblem(model)
 problem.name = "${filename}"
 `
   return template
+}
+
+// Helper functions //
+
+function make_probe(filename, tmin, tmax, nPts, L, H, Aguide) {
+  var tmin_str = ((tmin == null) ? 0.0001 : tmin).toPrecision(prec);
+  var tmax_str = ((tmax == null) ? 0.1000 : tmax).toPrecision(prec);
+  var nPts_str = ((nPts == null) ? 251 : nPts).toFixed(0);
+  var L_str = ((L == null) ? 5.0 : L).toPrecision(prec);
+  var Aguide_str = Aguide.toPrecision(prec);
+  var H_str = H.toPrecision(prec); 
+  var output = `
+${(filename == "") ? '#' : ''}probe = load4('${filename}', back_reflectivity=False)
+${(filename != "") ? '#' : ''}xs_probes = [Probe(T=numpy.linspace(${tmin_str}, ${tmax_str}, ${nPts_str}), L=${L_str}) for xs in range(4)]
+${(filename != "") ? '#' : ''}probe = PolarizedNeutronProbe(xs_probes, Aguide=${Aguide_str}, H=${H_str})
+`
+  return output
+}
+
+function add_layer(sld, layernum) {
+  var l = layernum.toFixed(0);
+  var rho = (sld.sld*1e6).toPrecision(prec);
+  var irho = (sld.mu*1e6).toPrecision(prec);
+  var thickness = (sld.thickness).toPrecision(prec);
+  var roughness = (sld.roughness || 0).toPrecision(prec);
+  var rhoM = (sld.sldm*1e6).toPrecision(prec);
+  var thetaM = (sld.thetaM*180.0).toPrecision(prec);
+  
+  var output = `
+slds.append(SLD(name='layer${l}', rho=${rho}, irho=${irho}))
+slabs.append(slds[${l}](${thickness}, ${roughness}, magnetism=Magnetism(rhoM=${rhoM}, thetaM=${thetaM})))
+s.add( slabs[${l}])`
+  return output
+}
+
+function make_rho_range(sld, layernum) {
+  var l = layernum.toFixed(0);
+  var range_span = 1.0;
+  var lower = (sld.sld*1e6 - range_span).toPrecision(prec);
+  var upper = (sld.sld*1e6 + range_span).toPrecision(prec);
+  var output = `s[${l}].material.rho.range(${lower}, ${upper})`
+  return output
+}
+
+function make_rhom_range(sld, layernum) {
+  var l = layernum.toFixed(0);
+  var range_span = 1.0;
+  var lower = (sld.sldm*1e6 - range_span).toPrecision(prec);
+  var upper = (sld.sldm*1e6 + range_span).toPrecision(prec);
+  var output = `s[${l}].magnetism.rhoM.range(${lower}, ${upper})`
+  return output
+}
+
+function make_thetam_range(sld, layernum) {
+  var l = layernum.toFixed(0);
+  var range_span = 30.0;
+  var lower = (sld.thetaM*180.0 - range_span).toPrecision(prec);
+  var upper = (sld.thetaM*180.0 + range_span).toPrecision(prec);
+  var output = `s[${l}].magnetism.rhoM.range(${lower}, ${upper})`
+  return output
+}
+
+function make_thickness_range(sld, layernum) {
+  var l = layernum.toFixed(0);
+  var range_span = 100.0;
+  var lower = (Math.max(sld.thickness - range_span, 0.0)).toPrecision(prec);
+  var upper = (sld.thickness + range_span).toPrecision(prec);
+  var output = `s[${l}].thickness.range(${lower}, ${upper})`
+  return output
+}
+
+function make_roughness_range(sld, layernum) {
+  var l = layernum.toFixed(0);
+  var range_span = 10.0;
+  var lower = (Math.max(sld.roughness - range_span, 0.0)).toPrecision(prec);
+  var upper = (sld.roughness + range_span).toPrecision(prec);
+  var output = `s[${l}].interface.range(${lower}, ${upper})`
+  return output
 }
