@@ -76,7 +76,7 @@ zed = 1
 ## step = True corresponds to a calculation of the reflectivity from an actual profile
 ## with microslabbed interfaces.  When step = False, the Nevot-Croce
 ## approximation is used to account for roughness.  This approximation speeds up
-## the caclulation tremendously, and is reasonably accuarate as long as the
+## the calculation tremendously, and is reasonably accuarate as long as the
 ## roughness is much less than the layer thickness
 step = False
 
