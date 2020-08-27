@@ -175,7 +175,7 @@ neutron_wavefunction.prototype.calculateR_BA = function() {
     var k0z_sq = Math.pow(this.k0z, 2); 
     // calculate phases:
     var z=0, zs = [0];
-    var qz = this.k0z * 2.0;
+    var qz = this.kz_in * 2.0;
     var dsld = [0];
     for (var i=1; i<this.layer_num_total; i++) {       
         zs[i] = z;

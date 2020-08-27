@@ -13,7 +13,7 @@ calc_r = function(sld, qmin, qmax, qstep) {
     var dp, r;
     var wf = new neutron_wavefunction();
     // reverse the sld for calculation: in line with the way refl1d shows it;
-    wf.init(qmin/2.0, sld.reverse());
+    wf.init(qmin/2.0, sld); // .reverse());
     var i=0;
     for (var q=qmin; q<qmax; q+=qstep) {
         qlist[i] = q;
