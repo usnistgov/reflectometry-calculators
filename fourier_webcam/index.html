@@ -265,6 +265,28 @@
 
     processor.doLoad();
 
+    window.onresize = function() {
+      let fullwidth = document.body.clientWidth;
+      let self = processor;
+      self.display_size = Math.round(fullwidth / 2 - 20);
+      let width = self.video.videoWidth;
+      let height = self.video.videoHeight;
+      let size = Math.min(width, height);
+      //let size = 512;
+      self.x_offset = Math.round((width - size) / 2.0);
+      self.y_offset = Math.round((height - size) / 2.0);
+      self.size = size;
+      self.width = width;
+      self.height = height;
+      self.bc.width = width;
+      self.bc.height = height;
+      self.wc.width = self.display_size;
+      self.wc.height = self.display_size;
+      self.bfftc.width = size;
+      self.bfftc.height = size;
+      self.fftc.width = self.display_size;
+      self.fftc.height = self.display_size;
+    }
 
     if (navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.enumerateDevices().then((devices) =>  {
