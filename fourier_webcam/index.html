@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Display Webcam Stream</title>
+
+  <style>
+    #videoElement {
+      width: 500px;
+      height: 375px;
+      background-color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <canvas id="my-canvas" width="300" height="150"></canvas>
+    <canvas id="fft-canvas" width="300" height="150"></canvas>
+
+  </div>
+  <script src="compiled/a.out.js"></script>
+  <script src="kissfft.js"></script>
+
+  <script>
+    var processor = {
+      center: true,
+      timerCallback: function () {
+        if (processor.video.paused || processor.video.ended) {
+          return;
+        }
+        processor.computeFrame();
+        window.requestAnimationFrame(processor.timerCallback)
+        //var self = this;
+        //setTimeout(function () {
+        //  self.timerCallback();
+        //}, 16); // roughly 60 frames per second
+      },
+
+      doLoad: function (stream) {
+        this.video = document.createElement("video");
+        this.video.setAttribute("autoplay", true);
+        //this.video.srcObject = stream;
+        this.c1 = document.getElementById("my-canvas");
+        this.fftc = document.getElementById("fft-canvas");
+        this.bc = document.createElement("canvas");
+        this.bfftc = document.createElement("canvas");
+        this.bfftctx = this.bfftc.getContext("2d");
+        this.bctx = this.bc.getContext("2d");
+        this.ctx1 = this.c1.getContext("2d");
+        this.fftctx = this.fftc.getContext("2d");
+        var self = this;
+
+        this.video.addEventListener("play", function () {
+          let width = self.video.videoWidth;
+          let height = self.video.videoHeight;
+          let size = Math.min(width, height);
+          //let size = 512;
+          self.x_offset = Math.round((width - size) / 2.0);
+          self.y_offset = Math.round((height - size) / 2.0);
+          self.size = size;
+          self.width = width;
+          self.height = height;
+          self.bc.width = width;
+          self.bc.height = height;
+          self.c1.width = size;
+          self.c1.height = size;
+          self.bfftc.width = size;
+          self.bfftc.height = size;
+          self.fftc.width = size;
+          self.fftc.height = size;
+          // translate context to center of canvas
+          //self.fftctx.translate(size / 2, 0);
+          // flip context horizontally
+          //self.fftctx.scale(-1, 1);
+          //self.fftctx.setTransform(-1,0,0,1,size,0);
+          console.log(self);
+          self.timerCallback();
+        }, false);
+        console.log("doLoad finished");
+      },
+
+      computeFrame: function () {
+        this.bctx.drawImage(this.video, 0, 0, this.width, this.height);
+        var frame = this.bctx.getImageData(this.x_offset, this.y_offset, this.size, this.size);
+        var l = frame.data.length / 4;
+        var data = new Float32Array(this.size * this.size);
+
+        for (var i = 0; i < l; i++) {
+          var grey = (frame.data[i * 4 + 0] + frame.data[i * 4 + 1] + frame.data[i * 4 + 2]) / 3;
+
+          frame.data[i * 4 + 0] = grey;
+          frame.data[i * 4 + 1] = grey;
+          frame.data[i * 4 + 2] = grey;
+          data[i] = grey;
+        }
+        this.ctx1.putImageData(frame, 0, 0);
+        let size = this.size;
+        let sq_size = size * size;
+        //let ft = fftdata(data, size);
+        //console.log(ft);
+        let ft = rfft2d(data, size, size);
+        let ft_real_partial = ft.filter((v, i) => (i % 2 == 0));
+        let ft_imag_partial = ft.filter((v, i) => (i % 2 == 1));
+        // size of chunks that need to be copied to fill in zeros from symmetry:
+        let missing_size = (size / 2) - 1;
+        let partial_size = (size / 2) + 1;
+        //assert(chunksize == Math.round(chunksize)); // it should be an int
+
+        // this returns the left side of the fft only (up to width/2 + 1)
+        // Symmetries:
+        //
+        // Fr(u,v)  = Fr(-u, -v)
+        // Fr(-u,v) = Fr(u, -v)
+
+        // Fi(u,v) = -Fi(-u,-v)
+        // Fi(-u,v) = -Fi(u, -v)
+        let ft_real = new Float32Array(ft_real_partial);
+        let ft_imag = new Float32Array(ft_imag_partial);
+        for (let row = 0; row < size; row++) {
+          ft_real.set(ft_real_partial.slice(row * partial_size, (row + 1) * partial_size), row * size);
+          ft_imag.set(ft_imag_partial.slice(row * partial_size, (row + 1) * partial_size), row * size);
+        }
+        // for (let row=0; row<size; row++) {
+        //   let patch_row = (size - row) % size; // patch_row for row zero is row zero;
+        //   let patch_start_index = patch_row * size;
+        //   let real_patch = ft_real.slice(patch_start_index, patch_start_index + missing_size).reverse();
+        //   ft_real.set(real_patch, row * size + partial_size);
+        //   let imag_patch = ft_imag.slice(patch_start_index, patch_start_index + missing_size).reverse().map((x) => (-x));
+        //   ft_imag.set(imag_patch, row * size + partial_size);
+        // }
+        for (let row = 0; row < size; row++) {
+          let patch_row = (size - row) % size; // patch_row for row zero is row zero;
+          let patch_start_index = patch_row * partial_size;
+          let real_patch = ft_real_partial.slice(patch_start_index, patch_start_index + missing_size).reverse();
+          ft_real.set(real_patch, row * size + partial_size);
+          let imag_patch = ft_imag_partial.slice(patch_start_index, patch_start_index + missing_size).reverse().map((x) => (-x));
+          ft_imag.set(imag_patch, row * size + partial_size);
+        }
+
+        let fabs_log = ft_real.map((real, i) => {
+          let imag = ft_imag[i];
+          return Math.log(real * real + imag * imag);
+        })
+        //this.drawSpectrum(ft);
+
+
+        //let fabs_log = new Float32Array(size * size);
+        //let fabs_log = [...new Array(size*size)].map((_,i) => (Math.log(Math.pow(ft[2*i], 2) + Math.pow(ft[2*i+1], 2))));
+        //let fabs_log = [...new Array(size*size)].map((_,i) => (Math.log(Math.pow(ft[i], 2))));
+        let minval = Infinity;
+        let maxval = -Infinity;
+        fabs_log.forEach((v) => { if (isFinite(v) && v < minval) { minval = v }; if (isFinite(v) && v > maxval) { maxval = v } });
+        minval = 12;
+        let scale = 255 / (maxval - minval);
+
+        let ft_frame = new ImageData(size, size);
+        for (var i = 0; i < l; i++) {
+          //let inv = 255 - data[i];
+          //let inv = Math.round(ft[i] * 255);
+          let inv = Math.round((fabs_log[i] - minval) * scale);
+          ft_frame.data[i * 4 + 0] = inv;
+          ft_frame.data[i * 4 + 1] = inv;
+          ft_frame.data[i * 4 + 2] = inv;
+          ft_frame.data[i * 4 + 3] = 255;
+        }
+        if (this.center) {
+          let offset = size / 2;
+          this.bfftctx.putImageData(ft_frame, offset, offset, 0, 0, offset, offset);
+          this.bfftctx.putImageData(ft_frame, -offset, -offset, offset, offset, offset, offset);
+          this.bfftctx.putImageData(ft_frame, -offset, offset, offset, 0, offset, offset);
+          this.bfftctx.putImageData(ft_frame, offset, -offset, 0, offset, offset, offset);
+        }
+        else {
+          this.bfftctx.putImageData(ft_frame, 0, 0);
+        }
+        this.fftctx.drawImage(this.bfftc, 0, 0);
+
+        return;
+      },
+
+      drawSpectrum: function (spectrum) {
+        var spectrumCanvas = this.fftc;
+        var ctx = this.fftctx;
+
+        var maxval = 0;
+        var minval = 999999999;
+        var n = spectrumCanvas.height * (spectrumCanvas.width / 2 + 1);
+        for (var i = 0; i < 2 * n; i += 2) {
+          spectrum[i] = Math.log(spectrum[i] * spectrum[i] + spectrum[i + 1] * spectrum[i + 1]);
+          maxval = Math.max(maxval, spectrum[i]);
+          minval = Math.min(minval, spectrum[i]);
+        }
+
+        var imgData = ctx.getImageData(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+        var y = 0, x = 0;
+        for (var i = 0; i <= 2 * n; i += 2) {
+          var val = (spectrum[i] - minval) * 255 / maxval;
+
+          var j = y * spectrumCanvas.width + x;
+          var k = (y + 1) * spectrumCanvas.width - (x + 1);
+          for (var l = 0; l < 4; l++) {
+            imgData.data[j * 4 + l] = l < 3 ? val : 255;
+            imgData.data[k * 4 + l] = l < 3 ? val : 255;
+          }
+
+          x++;
+          if (x == spectrumCanvas.width / 2 + 1) {
+            x = 0;
+            y++;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+    };
+
+    function fftdata(array, size) {
+      // assumes square array
+      let output = new Array(size * size);
+      let norm = size * size;
+      let fftx = [...new Array(size)].map((_, i) => {
+        let frow = fft_engine_cplx.forward(array.slice(i * size, (i + 1) * size).map((x) => [x, 0]).flat());
+        let px = 0;
+        //let freal = new Array(size);
+        //let fimag = new Array(size);
+
+        //for (let px=0; px<size; px++) {
+        //  freal[px] = frow[px*2] / size;
+        //  fimag[px] = frow[px*2 + 1]
+        //}
+        //return freal;
+        return [...frow];
+      })
+      let fcols = [...new Array(size)].map(() => (new Array(size * 2)));
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          fcols[i][2 * j] = fftx[j][2 * i];
+          fcols[i][2 * j + 1] = fftx[j][2 * i + 1];
+        }
+      }
+      let fft = fcols.map((fcol, i) => {
+        return new Float32Array(fft_engine_cplx.forward(fcol));
+      })
+
+      let fabs = fft.map((ffty) => {
+        return [...new Array(size)].map((_, i) => {
+          return Math.sqrt(Math.pow(ffty[2 * i], 2) + Math.pow(ffty[2 * i + 1], 2)) / (Math.pow(size, 2));
+        })
+      })
+      return fabs.flat();
+    }
+
+    processor.doLoad();
+
+
+    if (navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.enumerateDevices().then((devices) =>  {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        // grab the last one
+        //alert(JSON.stringify(videoDevices.map(v => v.deviceID)));
+        console.log(JSON.stringify(videoDevices.map(v => v.deviceId)));
+        //alert(JSON.stringify(videoDevices.map(v => v.label)));
+        let lastcam = videoDevices[videoDevices.length - 1];
+        let firstcam = videoDevices[0];
+        return lastcam.deviceId;
+      }).then((camid) =>  {
+        return navigator.mediaDevices.getUserMedia({ 
+          video: {
+            facingMode: "environment"
+          }
+          //deviceId: {
+          //  exact: camid
+          //} 
+        })
+      }).then(function (stream) {
+          console.log(stream);
+          console.log(processor.video);
+          processor.video.srcObject = stream;
+        })
+        .catch(function (err0r) {
+          console.log("Something went wrong!");
+        });
+    }
+
+  </script>
+</body>
+
+</html>
