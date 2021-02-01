@@ -11,12 +11,18 @@
       height: 375px;
       background-color: #666;
     }
+    div.container {
+      float: left;
+    }
+    canvas {
+
+    }
   </style>
 </head>
 
 <body>
   <div id="container">
-    <canvas id="my-canvas" width="300" height="150"></canvas>
+    <canvas id="webcam" width="300" height="150"></canvas>
     <canvas id="fft-canvas" width="300" height="150"></canvas>
 
   </div>
@@ -39,16 +45,21 @@
       },
 
       doLoad: function (stream) {
+        // unmounted video element
         this.video = document.createElement("video");
         this.video.setAttribute("autoplay", true);
+        let fullwidth = document.body.clientWidth;
+        this.display_size = Math.round(fullwidth / 2 - 20);
         //this.video.srcObject = stream;
-        this.c1 = document.getElementById("my-canvas");
-        this.fftc = document.getElementById("fft-canvas");
+        this.wc = document.getElementById("webcam");
+        // backing canvas:
         this.bc = document.createElement("canvas");
+        this.fftc = document.getElementById("fft-canvas");
+        // backing fft canvas:
         this.bfftc = document.createElement("canvas");
         this.bfftctx = this.bfftc.getContext("2d");
         this.bctx = this.bc.getContext("2d");
-        this.ctx1 = this.c1.getContext("2d");
+        this.wctx = this.wc.getContext("2d");
         this.fftctx = this.fftc.getContext("2d");
         var self = this;
 
@@ -64,12 +75,12 @@
           self.height = height;
           self.bc.width = width;
           self.bc.height = height;
-          self.c1.width = size;
-          self.c1.height = size;
+          self.wc.width = self.display_size;
+          self.wc.height = self.display_size;
           self.bfftc.width = size;
           self.bfftc.height = size;
-          self.fftc.width = size;
-          self.fftc.height = size;
+          self.fftc.width = self.display_size;
+          self.fftc.height = self.display_size;
           // translate context to center of canvas
           //self.fftctx.translate(size / 2, 0);
           // flip context horizontally
@@ -95,7 +106,8 @@
           frame.data[i * 4 + 2] = grey;
           data[i] = grey;
         }
-        this.ctx1.putImageData(frame, 0, 0);
+        this.bctx.putImageData(frame, 0, 0);
+        this.wctx.drawImage(this.bc, 0, 0, this.size, this.size, 0, 0, this.display_size, this.display_size);
         let size = this.size;
         let sq_size = size * size;
         //let ft = fftdata(data, size);
@@ -175,7 +187,7 @@
         else {
           this.bfftctx.putImageData(ft_frame, 0, 0);
         }
-        this.fftctx.drawImage(this.bfftc, 0, 0);
+        this.fftctx.drawImage(this.bfftc, 0, 0, this.display_size, this.display_size);
 
         return;
       },
