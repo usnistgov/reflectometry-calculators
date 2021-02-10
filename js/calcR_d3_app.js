@@ -148,6 +148,11 @@ var app_init = function(opts) {
     var r = [];
     var sld = [];
     var initial_sld = opts.initial_sld;
+    var undo_sld;
+    function save_undo() {
+      undo_sld = initial_sld.map((row) => $.extend(true, {}, row));
+    }
+    save_undo();
     var to_fit = opts.to_fit;
     var current_choice = Object.keys(opts.plot_choices)[0];
     
@@ -475,6 +480,7 @@ var app_init = function(opts) {
               .style("font-family", "inherit")
               .property("value", d[c].toPrecision(5))
               .on("change", function() {
+                save_undo();
                 d[c] = parseFloat(this.value);
                 this.value = parseFloat(this.value).toPrecision(5);
                 profile_interactor.update();
@@ -941,6 +947,7 @@ var app_init = function(opts) {
             }
           }
         });
+        save_undo();
         initial_sld.splice(0, initial_sld.length + 1);
         $.extend(true, initial_sld, new_sld);
         table_draw(initial_sld);
@@ -1005,7 +1012,7 @@ var app_init = function(opts) {
       bndl = bndl.concat(extra_param_values); // don't fit for now
       bndu = bndu.concat(extra_param_values);
       
-      console.log({c: c, s: s, bndl: bndl, bndu: bndu});
+      //console.log({c: c, s: s, bndl: bndl, bndu: bndu});
       return {c: c, s: s, bndl: bndl, bndu: bndu, layers: layers}
     }
     
@@ -1048,6 +1055,7 @@ var app_init = function(opts) {
             
     
     function fit() {
+      save_undo();
       var extra_params = opts.fitting.extra_params.map(function(e,i) { 
         var input = d3.select("input#" + e.label);
         return (input.empty()) ? 0 : +(input.node().value);
@@ -1064,7 +1072,7 @@ var app_init = function(opts) {
       
       var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
       var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
-      console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
+      //console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
       var fit_func = opts.fit_func
       var str_result = Module[opts.fitting.funcname].call(null, xs, ys, ws, cs, ss, lower_bound, upper_bound);
       var result = JSON.parse(str_result);
@@ -1098,4 +1106,13 @@ var app_init = function(opts) {
         }
       });
     });
+
+    $("button#undo").on("click", function() {
+      initial_sld.splice(0, initial_sld.length + 1, ...undo_sld);
+      table_draw(initial_sld);
+      update_profile_limits(initial_sld);
+      profile_interactor.update();
+      sld_plot.resetzoom();
+      update_plot_live();
+    })
 }
