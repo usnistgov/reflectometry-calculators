@@ -540,7 +540,7 @@ var app_init = function(opts) {
       }
     }
     
-    
+    profile_interactor.dispatch.on("start", save_undo);
     profile_interactor.dispatch.on("changed.table_update", table_update);
     profile_interactor.dispatch.on("changed.refl_update", update_plot_live);
     profile_interactor.dispatch.on("changed.sld_update", update_profile_limits);
