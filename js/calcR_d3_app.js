@@ -1107,12 +1107,18 @@ var app_init = function(opts) {
       });
     });
 
-    $("button#undo").on("click", function() {
+    function undo() {
       initial_sld.splice(0, initial_sld.length + 1, ...undo_sld);
       table_draw(initial_sld);
       update_profile_limits(initial_sld);
       profile_interactor.update();
       sld_plot.resetzoom();
       update_plot_live();
-    })
+    }
+    $("button#undo").on("click", undo);
+    document.addEventListener('keydown', function(event) {
+      if (event.ctrlKey && event.key === 'z') {
+        undo()
+      }
+    });
 }
