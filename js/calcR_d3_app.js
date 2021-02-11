@@ -136,8 +136,6 @@ var app_init = function(opts) {
       }
     }
     
-    
-    
     var datafilename = "";
     var sld_plot = null;
     var refl_plot = null;
@@ -156,6 +154,21 @@ var app_init = function(opts) {
     var to_fit = opts.to_fit;
     var current_choice = Object.keys(opts.plot_choices)[0];
     
+    var fitworker = new Worker('js/fit_worker.js');
+    fitworker.onmessage = function(event) {
+      let result = event.data;
+      let new_sld = params_to_sld(result);
+      initial_sld.splice(0, initial_sld.length + 1, ...new_sld.sld);
+      table_update(initial_sld);
+      update_profile_limits(initial_sld);
+      profile_interactor.update();
+      sld_plot.resetzoom();
+      update_plot_live();
+      
+      d3.select("pre.fit.log").text(fit_report(result, to_fit));
+      d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
+    }
+
     function autofit() {
         //console.log("fitting west");
         sld_plot.autofit();
@@ -739,6 +752,7 @@ var app_init = function(opts) {
         
       fitControls.append("button")
         .text("start fit")
+        .attr("id", "start_fit")
         .classed("ui-button ui-corner-all ui-widget", true)
         .on("click", fit)
         
@@ -1074,20 +1088,13 @@ var app_init = function(opts) {
       var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
       //console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
       var fit_func = opts.fit_func
-      var str_result = Module[opts.fitting.funcname].call(null, xs, ys, ws, cs, ss, lower_bound, upper_bound);
-      var result = JSON.parse(str_result);
-      
-      var new_sld = params_to_sld(result);
-      //initial_sld.splice(0, initial_sld.length + 1);
-      $.extend(true, initial_sld, new_sld.sld);
-      //d3.selectAll("div#sld_table table tbody tr").data(initial_sld);
-      table_update(initial_sld);
-      update_profile_limits(initial_sld);
-      profile_interactor.update();
-      sld_plot.resetzoom();
-      update_plot_live();
-      
-      d3.select("pre.fit.log").text(fit_report(result, to_fit));    
+      let message = {
+        funcname: opts.fitting.funcname,
+        xs, ys, ws, cs, ss, lower_bound, upper_bound
+      }
+      d3.select("pre.fit.log").text("fitting started...");
+      d3.select("button#start_fit").property("disabled", true).classed("ui-disabled ui-button-disabled ui-state-disabled", true);
+      fitworker.postMessage(message);
     }
     
     var current_item = d3.selectAll('input.plot-choice[value="' + current_choice + '"]');
