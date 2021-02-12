@@ -503,6 +503,7 @@ var app_init = function(opts) {
                 }
                 //console.log(d3.event, this, row_index, col_index);
               })
+              .on("contextmenu", function() {d3.event.preventDefault()})
             var entry = cell
               .append("input")
                 .classed("data-value", true)
