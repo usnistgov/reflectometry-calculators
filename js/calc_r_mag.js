@@ -1,12 +1,16 @@
 "use strict";
+const LIB_PATH = "../../webalglib/lib/";
 
-var Module = {
+self.Module = {
+  locateFile: function (s) {
+      return LIB_PATH + s;
+  },
   postRun: function() {
     postMessage({"ready": true});
-  },
-  memoryInitializerPrefixURL: 'refl/'
+  }
 };
-importScripts('complex.js', 'magnetic_wf_B3.js', 'refl/magrefl.js');
+
+self.importScripts('complex.js', 'magnetic_wf_B3.js', LIB_PATH + 'magrefl.js');
 
 var minimum_intensity = 1e-15;
 

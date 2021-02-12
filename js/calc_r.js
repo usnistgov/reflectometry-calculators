@@ -1,11 +1,15 @@
-Module = {
+const LIB_PATH = "../../webalglib/lib/";
+
+self.Module = {
+  locateFile: function (s) {
+      return LIB_PATH + s;
+  },
   postRun: function() {
     postMessage({"ready": true});
-  },
-  memoryInitializerPrefixURL: 'refl/'
+  }
 };
-importScripts('complex.js', 'refl/refl.js');
 
+self.importScripts('complex.js', LIB_PATH + 'refl.js');
 
 calc_r = function(sld, qmin, qmax, qstep, bkg) {
     var depth = [],
