@@ -136,20 +136,13 @@ table td.data-cell.meaningless input {
     user-select: none;
 }    
 
-table td.data-cell.edit-mode {
+table td.data-cell {
     background-color: white;
     color: DarkBlue;
 }
 
-table td.data-cell.fit-mode {
-    background-color: DimGray;
-    color: white;
-    user-select: none;
-}
-
-table td.data-cell.fit-mode.selected:not(.meaningless) {
-    background-color: LightGreen;
-    color: DarkGreen;
+table td.data-cell.selected:not(.meaningless) {
+    background-color: lightgreen;
 }
 
 table input {
@@ -157,6 +150,7 @@ table input {
   border: 1px;
   color: inherit;
   user-select: inherit;
+  outline: none;
 }
 
 text.position-cursor {

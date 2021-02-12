@@ -491,29 +491,37 @@ var app_init = function(opts) {
         .append("tr")
       target.select("table tbody").selectAll("tr")
         .style("font-family", "inherit")
-        .each(function(d,i) {
+        .each(function(row,row_index) {
           var tr = d3.select(this);
-          colids.forEach(function(c) {
-            var entry = tr.append("td")
+          colids.forEach(function(col, col_index) {
+            var cell = tr.append("td")
               .classed("data-cell", true)
-              .classed("meaningless", function(d) { return d[c].meaningless })
+              .classed("meaningless", function(d) { return row[col].meaningless })
+              .on("mousedown", function() {
+                if (d3.event.ctrlKey) {
+                  this.classList.toggle("selected");
+                }
+                //console.log(d3.event, this, row_index, col_index);
+              })
+            var entry = cell
               .append("input")
-              .classed("data-value", true)
-              .attr("data-id", c)
-              .attr("type", "text")
-              .attr("size", "6")
-              .style("background-color", "inherit")
-              .style("font-family", "inherit")
-              .property("value", d[c].toPrecision(5))
-              .on("change", function() {
-                save_undo();
-                d[c] = parseFloat(this.value);
-                this.value = parseFloat(this.value).toPrecision(5);
-                profile_interactor.update();
-                update_profile_limits(data);
-                update_roughnesses();
-                update_plot_live();
-              });
+                .classed("data-value", true)
+                .attr("data-id", col)
+                .attr("type", "text")
+                .attr("size", "6")
+                .style("background-color", "inherit")
+                .style("font-family", "inherit")
+                .property("value", row[col].toPrecision(5))
+                .on("change", function() {
+                  save_undo();
+                  row[col] = parseFloat(this.value);
+                  this.value = parseFloat(this.value).toPrecision(5);
+                  profile_interactor.update();
+                  update_profile_limits(data);
+                  update_roughnesses();
+                  update_plot_live();
+                })
+                
           })
           tr.append("td")
             .append("button")
@@ -522,9 +530,9 @@ var app_init = function(opts) {
             .style("font-family", "inherit")
             .style("border-radius", "5px")
             .on("click", function() {
-              var new_row = jQuery.extend(true, {}, d); 
+              var new_row = jQuery.extend(true, {}, row); 
               new_row.thickness = 0;
-              data.splice(i+1, 0, new_row); 
+              data.splice(row_index+1, 0, new_row); 
               table_draw(data);
               profile_interactor.update();
               update_profile_limits(data);
@@ -537,7 +545,7 @@ var app_init = function(opts) {
             .style("color", "red")
             .text("x")
             .on("click", function() {
-              data.splice(i, 1);
+              data.splice(row_index, 1);
               table_draw(data);
               profile_interactor.update();
               update_profile_limits(data);
@@ -546,7 +554,6 @@ var app_init = function(opts) {
             });
         });
         
-      update_mode();
     }      
         
     function table_update(data) {
@@ -735,30 +742,7 @@ var app_init = function(opts) {
     makeFileControls('file_controls');
     $("#file_controls").controlgroup();
     
-    function makeModeControls(target_id) {
-      var modeControls = d3.select("#" + target_id).append('div')
-          .classed("mode controls", true)
-      
-      
-      modeControls
-        .append("label")
-        .text("edit mode")
-        .append("input")
-          .attr("type", "radio")
-          .property("checked", true)
-          .attr("name", "mode")
-          .attr("value", "edit")
-          .on("change", update_mode)
-      modeControls
-        .append("label")
-        .text("fit mode")
-        .append("input")
-          .attr("type", "radio")
-          .property("checked", false)
-          .attr("name", "mode")
-          .attr("value", "fit")
-          .on("change", update_mode)
-      
+    function makeFitControls(target_id) {      
       var fitControls = d3.select("#" + target_id).append('div')
         .classed("fit controls", true)
         .style("padding-top", "5px")
@@ -774,40 +758,11 @@ var app_init = function(opts) {
       
       fitControls.append("div")
         .append("pre")
-        .classed("fit log", true)
-
-      update_mode.call({value: "edit"});
-      
-      $(modeControls.node()).controlgroup();
+        .classed("fit log", true)      
     }
     
-    function update_mode() {
-      var modechoice = d3.select("div.mode.controls input:checked");
-      if (modechoice.empty()) {
-        // probably no mode controls built yet;
-        return;
-      } 
-      var mode = modechoice.attr("value");
-      d3.select("div.fit.controls").style("visibility", (mode == "edit") ? "hidden" : "visible");
-      var data_table = d3.select("div#sld_table");
-      data_table.selectAll("td.data-cell")
-        .classed("edit-mode", (mode == "edit"))
-        .classed("fit-mode",  (mode == "fit"));
-      data_table.selectAll("div#sld_table input.data-value")
-        .attr("readonly", (mode == "fit") ? "readonly" : null);
-        
-      if (mode == "fit") {
-        data_table.selectAll("td.data-cell").on("click.select", function() {
-          var target = d3.select(this);
-          target.classed("selected", (!target.classed("selected")));
-        })
-      }
-      else { // "edit mode"
-        data_table.selectAll("td.data-cell").on("click.select", null);
-      }
-    }
     
-    makeModeControls('fit_controls');
+    makeFitControls('fit_controls');
     //update_plot_live();
     
     //update_plot(0, initial_sld, 'xy');
@@ -988,16 +943,18 @@ var app_init = function(opts) {
     
     function get_to_fit() {
       var to_fit = [];
+      var num_to_fit = 0;
       var data_table = d3.select("div#sld_table table tbody");
       data_table.selectAll("tr").each(function(layer, l) {
         var layer_fit = {};
         d3.select(this).selectAll("td.selected input").each(function(cell) {
           var data_id = d3.select(this).attr("data-id");
           layer_fit[data_id] = true;
+          num_to_fit += 1;
         })
         to_fit.push(layer_fit);
       })
-      return to_fit;
+      return [to_fit, num_to_fit];
     }
     
     function sld_to_params(extra_param_values, to_fit) {
@@ -1082,14 +1039,23 @@ var app_init = function(opts) {
             
     
     function fit() {
-      save_undo();
+      if (!opts.data) {
+        alert("no data loaded - can't fit");
+        return
+      }
       var extra_params = opts.fitting.extra_params.map(function(e,i) { 
         var input = d3.select("input#" + e.label);
         return (input.empty()) ? 0 : +(input.node().value);
       });
       //var H = 0; // for now
       //var AGUIDE = +d3.select("input#AGUIDE").node().value;
-      var to_fit = get_to_fit().reverse();
+      let [to_fit, num_to_fit] = get_to_fit();
+      to_fit.reverse();
+      if (num_to_fit == 0) {
+        alert("no parameters to fit - use Ctrl-click to select cells for fitting");
+        return
+      }
+      save_undo();
       opts.to_fit = to_fit;
       var params = sld_to_params(extra_params, to_fit);
       var xs = JSON.stringify(opts.data.kz_list); // qz to kz
