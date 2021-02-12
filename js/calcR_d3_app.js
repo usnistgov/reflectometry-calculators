@@ -1113,7 +1113,13 @@ var app_init = function(opts) {
     })
 
     function undo() {
-      initial_sld.splice(0, initial_sld.length + 1, ...undo_sld);
+      if (initial_sld.length != undo_sld.length) {
+        initial_sld.splice(0, initial_sld.length + 1, ...undo_sld);
+        table_draw(initial_sld);
+      }
+      else {
+        $.extend(true, initial_sld, undo_sld);
+      }
       update_all();
     }
 
