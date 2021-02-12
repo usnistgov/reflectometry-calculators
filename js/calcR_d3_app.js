@@ -498,7 +498,7 @@ var app_init = function(opts) {
               .classed("data-cell", true)
               .classed("meaningless", function(d) { return row[col].meaningless })
               .on("mousedown", function() {
-                if (d3.event.ctrlKey) {
+                if (d3.event.ctrlKey || d3.event.altKey) {
                   this.classList.toggle("selected");
                 }
                 //console.log(d3.event, this, row_index, col_index);
