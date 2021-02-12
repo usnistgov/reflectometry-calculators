@@ -136,6 +136,7 @@ var app_init = function(opts) {
       }
     }
     
+    var fit_dialog;
     var datafilename = "";
     var sld_plot = null;
     var refl_plot = null;
@@ -153,21 +154,28 @@ var app_init = function(opts) {
     save_undo();
     var to_fit = opts.to_fit;
     var current_choice = Object.keys(opts.plot_choices)[0];
-    
-    var fitworker = new Worker('js/fit_worker.js');
-    fitworker.onmessage = function(event) {
+
+    function on_fit_message(event) {
       let result = event.data;
       let new_sld = params_to_sld(result);
-      initial_sld.splice(0, initial_sld.length + 1, ...new_sld.sld);
-      table_update(initial_sld);
-      update_profile_limits(initial_sld);
-      profile_interactor.update();
-      sld_plot.resetzoom();
-      update_plot_live();
-      
-      d3.select("pre.fit.log").text(fit_report(result, to_fit));
-      d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
+      $.extend(true, initial_sld, new_sld.sld);
+      update_all();
+      if (result.type == "fit_result") {
+        d3.select("pre.fit.log").text(fit_report(result, opts.to_fit));
+        d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
+        fit_dialog.dialog("close");
+      }
+      else {
+        let chisq = Math.sqrt(result.f / opts.data.R_list.length);
+        d3.select("h4.status").text(`steps completed: ${result.step}, chisq: ${chisq.toFixed(8)}`);
+      }
     }
+    function create_fitworker() {
+      let fw = new Worker(`js/fit_worker.js?date=${Date.now()}`);
+      fw.onmessage = on_fit_message;
+      return fw;
+    }
+    var fitworker = create_fitworker();
 
     function autofit() {
         //console.log("fitting west");
@@ -442,6 +450,11 @@ var app_init = function(opts) {
       // Also, the "roughness" is defined on the top (higher-z) interface for each row, 
       // so it is meaningful for the first row but not the last.
       
+      // first remove all meaningless tags:
+      data.forEach((d) => {
+        Object.values(d).forEach((v) => { if (v.meaningless) {v.meaningless = false}});
+      })
+
       // first row:
       var first_row = data[0] || {};
       (first_row.thickness = new Number(0)).meaningless = true;
@@ -1077,6 +1090,7 @@ var app_init = function(opts) {
       //var H = 0; // for now
       //var AGUIDE = +d3.select("input#AGUIDE").node().value;
       var to_fit = get_to_fit().reverse();
+      opts.to_fit = to_fit;
       var params = sld_to_params(extra_params, to_fit);
       var xs = JSON.stringify(opts.data.kz_list); // qz to kz
       var ys = JSON.stringify(opts.data.R_list);
@@ -1093,7 +1107,9 @@ var app_init = function(opts) {
         xs, ys, ws, cs, ss, lower_bound, upper_bound
       }
       d3.select("pre.fit.log").text("fitting started...");
-      d3.select("button#start_fit").property("disabled", true).classed("ui-disabled ui-button-disabled ui-state-disabled", true);
+      d3.select("h4.status").text("");
+      fit_dialog.dialog("open");
+      //d3.select("button#start_fit").property("disabled", true).classed("ui-disabled ui-button-disabled ui-state-disabled", true);
       fitworker.postMessage(message);
     }
     
@@ -1106,6 +1122,7 @@ var app_init = function(opts) {
         modal: true,
         autoOpen: true,
         title: "NCNR online reflectivity calculators",
+        classes: {"ui-dialog": "help"},
         buttons: {
           Ok: function() {
             $( this ).dialog( "close" );
@@ -1114,18 +1131,38 @@ var app_init = function(opts) {
       });
     });
 
+    fit_dialog = $("div#fit_popup").dialog({
+      modal: true,
+      autoOpen: false,
+      title: "Fitting",
+      width: 600,
+      buttons: {
+        Cancel: function() {
+          $(this).dialog("close");
+          fitworker.terminate();
+          // start a new one!
+          fitworker = create_fitworker();
+        }
+      }
+    })
+
     function undo() {
       initial_sld.splice(0, initial_sld.length + 1, ...undo_sld);
-      table_draw(initial_sld);
+      update_all();
+    }
+
+    function update_all() {
+      table_update(initial_sld);
       update_profile_limits(initial_sld);
       profile_interactor.update();
       sld_plot.resetzoom();
       update_plot_live();
     }
+
     $("button#undo").on("click", undo);
     document.addEventListener('keydown', function(event) {
       if (event.ctrlKey && event.key === 'z') {
-        undo()
+        undo();
       }
     });
 }
