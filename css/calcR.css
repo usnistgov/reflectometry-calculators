@@ -149,7 +149,7 @@ table td.data-cell.parse-error {
     background-color: pink !important;
 }
 
-table input {
+table span.data-value {
   padding: 2px;
   border: 1px;
   color: inherit;
