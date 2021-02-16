@@ -130,11 +130,11 @@ table, th, td {
     border: 2px solid green;
 }
 
-table td.data-cell.meaningless input {
+table td.data-cell.meaningless span {
     opacity: 0.25;
     pointer-events: none;
     user-select: none;
-}    
+}
 
 table td.data-cell {
     background-color: white;
@@ -143,6 +143,10 @@ table td.data-cell {
 
 table td.data-cell.selected:not(.meaningless) {
     background-color: lightgreen;
+}
+
+table td.data-cell.parse-error {
+    background-color: pink !important;
 }
 
 table input {

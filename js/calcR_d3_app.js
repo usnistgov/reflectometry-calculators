@@ -487,6 +487,18 @@ var app_init = function(opts) {
       });
       table.append("tbody")
       var sel = target.select("table tbody").selectAll("tr").data(data);
+      var fitSelect = {mode: true, active: false};
+      d3.select("body").on("mouseup.fitselectmode", function() {fitSelect.active = false});
+      d3.select("body").on("keydown.fitselectmode", function() {
+        if (d3.event.keyCode == 17) {
+          //table.selectAll("td.data-cell input").attr("readonly", "readonly");
+        }
+      });
+      d3.select("body").on("keyup.fitselectmode", function() {
+        if (d3.event.keyCode == 17) {
+          //table.selectAll("td.data-cell input").property("readonly", false);
+        }
+      });
       sel.enter()
         .append("tr")
       target.select("table tbody").selectAll("tr")
@@ -495,17 +507,41 @@ var app_init = function(opts) {
           var tr = d3.select(this);
           colids.forEach(function(col, col_index) {
             var cell = tr.append("td")
-              .classed("data-cell", true)
+              .classed("data-cell", function(d) { return col != "name" })
               .classed("meaningless", function(d) { return row[col].meaningless })
               .on("mousedown", function() {
                 if (d3.event.ctrlKey || d3.event.altKey) {
-                  this.classList.toggle("selected");
+                  let target = d3.select(this);
+                  fitSelect.mode = !(target.classed("selected"));
+                  fitSelect.active = true;
+                  target.classed("selected", fitSelect.mode);
                 }
                 //console.log(d3.event, this, row_index, col_index);
               })
-              .on("contextmenu", function() {d3.event.preventDefault()})
+              .on("mouseenter", function() {
+                if (!fitSelect.active) { return }
+                d3.select(this).classed("selected", fitSelect.mode);
+              })
+              //.on("contextmenu", function() {d3.event.preventDefault()})
+            let onchange = function() {
+              save_undo();
+              let newVal = +this.innerText;
+              if (isNaN(newVal)) {
+                this.parentNode.classList.add("parse-error");
+                return;
+              }
+              else {
+                this.parentNode.classList.remove("parse-error");
+              }
+              row[col] = newVal;
+              this.innerText = newVal.toPrecision(5);
+              profile_interactor.update();
+              update_profile_limits(data);
+              update_roughnesses();
+              update_plot_live();
+            }
             var entry = cell
-              .append("input")
+              .append("span")
                 .classed("data-value", true)
                 .attr("data-id", col)
                 .attr("type", "text")
@@ -513,14 +549,15 @@ var app_init = function(opts) {
                 .style("background-color", "inherit")
                 .style("font-family", "inherit")
                 .property("value", row[col].toPrecision(5))
-                .on("change", function() {
-                  save_undo();
-                  row[col] = parseFloat(this.value);
-                  this.value = parseFloat(this.value).toPrecision(5);
-                  profile_interactor.update();
-                  update_profile_limits(data);
-                  update_roughnesses();
-                  update_plot_live();
+                .text(row[col].toPrecision(5))
+                .attr("contenteditable", true)
+                .on("focusout", onchange)
+                .on("keydown.submit", function() {
+                  if (d3.event.keyCode == 13) {
+                    console.log("enter pressed");
+                    d3.event.preventDefault();
+                    onchange.call(this);
+                  }
                 })
                 
           })
@@ -566,11 +603,12 @@ var app_init = function(opts) {
         return
       }
       else {
-        target.select("table tbody").selectAll("tr td input.data-value")
-          .property("value", function(d) { 
-            var data_id = d3.select(this).attr("data-id"); 
-            return d[data_id].toPrecision(5); 
+        target.select("table tbody").selectAll("tr td span.data-value")
+          .text(function(d) { 
+            var data_id = d3.select(this).attr("data-id");
+            return d[data_id].toPrecision(5);
           })
+        target.select("table tbody").selectAll("tr td.data-cell").classed("parse-error", false);
       }
     }
     
@@ -948,7 +986,7 @@ var app_init = function(opts) {
       var data_table = d3.select("div#sld_table table tbody");
       data_table.selectAll("tr").each(function(layer, l) {
         var layer_fit = {};
-        d3.select(this).selectAll("td.selected input").each(function(cell) {
+        d3.select(this).selectAll("td.selected span").each(function(cell) {
           var data_id = d3.select(this).attr("data-id");
           layer_fit[data_id] = true;
           num_to_fit += 1;
