@@ -149,6 +149,11 @@ table td.data-cell.parse-error {
     background-color: pink !important;
 }
 
+table td.data-cell:focus-within {
+    outline: 3px solid green;
+    outline-offset: -3px;
+}
+
 table span.data-value {
   padding: 2px;
   border: 1px;
