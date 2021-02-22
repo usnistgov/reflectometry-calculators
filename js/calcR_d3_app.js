@@ -67,7 +67,7 @@ var app_options = {
     },
     columns: [
       {"label": "thickness", "scale": 10, "minimum": 0},
-      {"label": "roughness", "scale": 0.1, "miniumum": 0},
+      {"label": "roughness", "scale": 0.1, "minimum": 0.0},
       {"label": "sld", "scale": 0.1},
       {"label": "mu", "scale": 0.1, "minimum": 0}, // no radiation sources allowed in sample!
       {"label": "sldm", "scale": 0.1},
@@ -1103,8 +1103,8 @@ var app_init = function(opts) {
       var cs = JSON.stringify(params.c);
       var ss = JSON.stringify(params.s);
       
-      var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-Inf");
-      var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+Inf");
+      var lower_bound = JSON.stringify(params.bndl).replace(/null/g, "-INF");
+      var upper_bound = JSON.stringify(params.bndu).replace(/null/g, "+INF");
       //console.log({xs: xs, ys: ys, ws: ws, cs: cs, ss: ss, upp: upper_bound, low: lower_bound});
       var fit_func = opts.fit_func
       let message = {
