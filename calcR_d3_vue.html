@@ -1,0 +1,273 @@
+<html>
+<meta charset="utf-8">
+<title>Reflectivity Calculator</title>
+<link rel="stylesheet" href="https://unpkg.com/vue-material/dist/vue-material.min.css">
+<link rel="stylesheet" href="https://unpkg.com/vue-material@beta/dist/theme/default.css">
+<link rel="stylesheet" href="./css/calcR.css">
+<style>
+  @import url("https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons");
+
+  table {
+    display: inline-block;
+    border-collapse: collapse;
+  }
+
+  table {
+    border: none;
+  }
+
+  th,
+  td {
+    border: 2px solid lightblue;
+  }
+
+  table td.data-cell.meaningless span {
+    opacity: 0.25;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  table td.data-cell {
+    background-color: white;
+    /* color: DarkBlue; */
+    width: 5em;
+  }
+
+  table td.data-cell.selected:not(.meaningless) {
+    background-color: lightgreen;
+  }
+
+  table td.data-cell.parse-error {
+    background-color: pink !important;
+  }
+
+  table td.data-cell:focus-within {
+    outline: 3px solid blue;
+    outline-offset: -3px;
+  }
+
+  table span.data-value {
+    padding: 2px;
+    border: 1px;
+    color: inherit;
+    user-select: inherit;
+    outline: none;
+  }
+
+  table span.data-value.numeric {
+    color: DarkBlue;
+  }
+
+  table span.data-value.string {
+    color: purple;
+    font-style: italic;
+  }
+  table td.actions {
+    border: none;
+    cursor: pointer;
+  }
+</style>
+<script type="text/x-template" id="split-template">
+    <div class="splitstuff">
+        <split>
+            <split-area :size="75">
+                <split direction="vertical">
+                    <split-area :size="50">
+                        reflectivity plot
+                    </split-area>
+                    <split-area :size="50">
+                        profile plot
+                    </split-area>
+                </split>
+            </split-area>
+            <split-area :size="25">
+                <data-table :columns="columns" :rows="sld" @cellValueChanged="cellValueChanged"></data-table>
+                <!-- <md-table v-model="sld" md-card>
+                    <md-table-toolbar>
+                        <h2 class="md-title">Slabs</h2>
+                    </md-table-toolbar>
+
+                    <md-table-row slot="md-table-row" slot-scope="{ item }">
+                        <md-table-cell v-for="column in columns" :md-label="column.label">{{item[column.id]}}</md-table-cell>
+                    </md-table-row>
+                </md-table> -->
+
+
+            </split-area>
+        </split>
+    </div>
+</script>
+<script type="text/x-template" id="table-template">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th v-for="col in columns" :key="col.label" v-html="col.label"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(row, row_index) in rows" :key="JSON.stringify(row)">
+                <td 
+                    v-for="col in columns"
+                    :key="col.id"
+                    class="data-cell"
+                >
+                    <span 
+                        :class="['data-value', col.type]" 
+                        :contenteditable="editable"
+                        @focusout="cellChanged(row_index, col, $event.target)"
+                        @keydown.enter="cellChanged(row_index, col, $event.target.innerText)"
+                        >{{displayValue(row, col, row_index)}}</span>
+                </td>
+                <td class="add-row actions"><md-icon class="md-primary" title="add below">playlist_add</md-icon></td>
+                <td class="remove-row actions"><md-icon class="md-accent" title="remove">delete</md-icon></td>
+            </tr>
+        </tbody>
+    </table>
+</script>
+<script type="module">
+  import { default as Vue } from 'https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.esm.browser.js';
+  import { default as VueMaterial } from 'https://cdn.skypack.dev/vue-material@latest';
+  import { default as VueSplit } from "https://cdn.skypack.dev/vue-split-panel/";
+  Vue.use(VueSplit);
+  Vue.use(VueMaterial);
+
+  window.onload = function () {
+    let template = `
+    <div class="splitstuff">
+      <split>
+        <split-area :size="25">
+            panel left
+        </split-area>
+        <split-area :size="75">
+            <split direction="vertical">
+              <split-area :size="25">
+                  panel right top
+              </split-area>
+              <split-area :size="75">
+                  panel right bottom
+              </split-area>
+            </split>
+
+        </split-area>
+      </split>
+    </div>
+    `;
+
+    let app_data = {
+      sld: [
+        { thickness: 0, sld: 2.069, mu: 0, roughness: 10 },
+        { thickness: 1250, sld: 4, mu: 0, roughness: 10 },
+        { thickness: 0, sld: 0.0, mu: 0, roughness: 0 }
+      ],
+      to_fit: [
+        { roughness: true },
+        { sld: true, thickness: true, roughness: true },
+        {}
+      ],
+      plot_choices: {
+        'reflectivity': { data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title: 'Reflectivity R=|Ψ←(z=-∞)|²' },
+        'phase': { data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)' },
+      },
+      sldplot_series_opts: [
+        //{label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+        //{label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+        { label: "SLDn x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue" },
+        { label: "iSLDn x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral" },
+      ],
+      worker_script: "js/calc_r.js",
+      series_lookup: { "unpolarized": 1 },
+      reflplot_series_opts: [
+        { label: "theory", show_points: false },
+        { label: "data", show_points: true, show_line: false }
+      ],
+      constraints: [
+        function (p, d, i) { p[0].thickness = 0 },
+        function (p, d, i) { p.slice(-1)[0].mu = 0 },
+        function (p, d, i) { p.slice(-1)[0].thickness = 0 },
+        function (p, d, i) { p[i].thickness = Math.max(p[i].thickness, 0) }
+      ],
+      east_size: 450,
+      columns: [
+        { "id": "name", "label": "name", "type": "string" },
+        { "id": "thickness", "label": "thickness (&Aring;)", "scale": 10, "minimum": 0 },
+        { "id": "roughness", "label": "roughness (above, &Aring;)", "scale": 0.1, "minimum": 0 },
+        { "id": "sld", "label": "SLDn x10⁻⁶", "scale": 0.1 },
+        { "id": "mu", "label": "iSLDn x10⁻⁶", "scale": 0.1, "minimum": 0 } // no radiation sources allowed in sample!
+      ],
+      fitting: {
+        funcname: "fit_refl",
+        columns: [
+          { "id": "thickness", "label": "thickness (&Aring;)", "scale": 10, "minimum": 0 },
+          { "id": "roughness", "label": "roughness (above, &Aring;)", "scale": 0.1, "minimum": 0 },
+          { "id": "sld", "label": "sld", "scale": 0.1 },
+          { "id": "mu", "label": "iSLDn x10<sup>-6</sup>", "scale": 0.1, "minimum": 0 } // no radiation sources allowed in sample!
+        ],
+        extra_params: [
+          { "label": "bkg", "default": 0.0, "step": 1e-7, "minimum": 0, "scale": 1e-7 },
+        ],
+        xs_order: { 'unpolarized': 0 }
+      }
+    }
+
+    let dataTable = Vue.component('data-table', {
+      template: '#table-template',
+      props: ["columns", "rows"],
+      methods: {
+        displayValue(row, col, row_index) {
+          //let col = this.columnsById(colid);
+          let rawVal = row[col.id];
+          if (col.type == "string") {
+            return rawVal || `layer${row_index}`;
+          }
+          else {
+            return rawVal.toPrecision(5);
+          }
+        },
+        cellChanged(row_index, col, target) {
+          let targetVal = target.innerText;
+          let { valid, value } = this.validate(col.type, targetVal);
+          if (valid) {
+            this.$emit('cellValueChanged', row_index, col.id, value);
+            target.classList.remove("parse-error");
+          }
+          else {
+            target.classList.add("parse-error");
+          }
+        },
+        validate(type, value) {
+          if (type == "string") { return { valid: true, value } }
+          else {
+            return { valid: !(isNaN(+value)), value: +value }
+          }
+        }
+      },
+      computed: {
+        columnsById() {
+          return Object.fromEntries(this.columns.map((c, i) => [c.id, c]));
+        },
+        editable(a, b, c) {
+          return true;
+        }
+      }
+    });
+    let app = new Vue({
+      el: "#app",
+      data: app_data,
+      template: '#split-template',
+      methods: {
+        cellValueChanged(row_index, col_id, newVal) {
+          console.log(row_index, col_id, newVal);
+          this.$set(this.sld[row_index], col_id, newVal);
+        }
+      }
+    });
+    window.app = app;
+  }
+</script>
+
+<body>
+  <div id="app">
+  </div>
+</body>
+
+</html>
