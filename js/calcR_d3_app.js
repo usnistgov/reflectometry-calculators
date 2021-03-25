@@ -28,10 +28,10 @@ var app_options = {
     //{label: "SLDₘ x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
     //{label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
     //{label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
-    {label: "SLDn x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
-    {label: "SLDm x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
+    {label: "SLDn (Å⁻²) x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+    {label: "SLDm (Å⁻²) x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
     {label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
-    {label: "iSLDn x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+    {label: "iSLDn (Å⁻²) x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
   ],
   worker_script: "js/calc_r_mag.js",
   series_lookup: {
