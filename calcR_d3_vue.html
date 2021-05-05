@@ -70,7 +70,7 @@
 <script type="text/x-template" id="split-template">
     <div class="splitstuff">
         <split>
-            <split-area :size="75">
+            <split-area :size="65">
                 <split direction="vertical">
                     <split-area :size="50">
                         reflectivity plot
@@ -80,19 +80,23 @@
                     </split-area>
                 </split>
             </split-area>
-            <split-area :size="25">
-                <data-table :columns="columns" :rows="sld" @cellValueChanged="cellValueChanged"></data-table>
-                <!-- <md-table v-model="sld" md-card>
-                    <md-table-toolbar>
-                        <h2 class="md-title">Slabs</h2>
-                    </md-table-toolbar>
+            <split-area :size="35">
+                <data-table 
+                  :columns="columns" 
+                  :rows="sld" 
+                  @cellValueChanged="cellValueChanged"
+                  @addRow="onAddRow"
+                  @removeRow="onRemoveRow"
+                  ></data-table>
+                <md-tabs>
+                  <md-tab id="tab-log" md-label="Fit Log">
+                    {{fit_log}}
+                  </md-tab>
+                  <md-tab id="tab-parameters" md-label="Fit Parameters">
+                    
+                  </md-tab>
 
-                    <md-table-row slot="md-table-row" slot-scope="{ item }">
-                        <md-table-cell v-for="column in columns" :md-label="column.label">{{item[column.id]}}</md-table-cell>
-                    </md-table-row>
-                </md-table> -->
-
-
+                </md-tabs>
             </split-area>
         </split>
     </div>
@@ -110,21 +114,26 @@
                     v-for="col in columns"
                     :key="col.id"
                     class="data-cell"
+                    @click.self="cellClicked"
                 >
                     <span 
                         :class="['data-value', col.type]" 
                         :contenteditable="editable"
                         @focusout="cellChanged(row_index, col, $event.target)"
-                        @keydown.enter="cellChanged(row_index, col, $event.target.innerText)"
+                        @keydown.enter.prevent="cellChanged(row_index, col, $event.target)"
                         >{{displayValue(row, col, row_index)}}</span>
                 </td>
-                <td class="add-row actions"><md-icon class="md-primary" title="add below">playlist_add</md-icon></td>
-                <td class="remove-row actions"><md-icon class="md-accent" title="remove">delete</md-icon></td>
+                <td class="test actions" @mousedown.prevent="test"><md-icon class="md-primary">stop</md-icon></td>
+                <td class="add-row actions" @click="$emit('addRow', row_index)"><md-icon class="md-primary" title="add below">playlist_add</md-icon></td>
+                <td class="remove-row actions" @click="$emit('removeRow', row_index)"><md-icon class="md-accent" title="remove">delete</md-icon></td>
             </tr>
         </tbody>
     </table>
 </script>
 <script type="module">
+  //import { default as deepmerge } from 'https://cdn.skypack.dev/deepmerge';
+  import { default as rdfc } from 'https://cdn.skypack.dev/rfdc';
+  let clone = rdfc({circles: true});
   import { default as Vue } from 'https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.esm.browser.js';
   import { default as VueMaterial } from 'https://cdn.skypack.dev/vue-material@latest';
   import { default as VueSplit } from "https://cdn.skypack.dev/vue-split-panel/";
@@ -135,10 +144,10 @@
     let template = `
     <div class="splitstuff">
       <split>
-        <split-area :size="25">
+        <split-area :size="35">
             panel left
         </split-area>
-        <split-area :size="75">
+        <split-area :size="65">
             <split direction="vertical">
               <split-area :size="25">
                   panel right top
@@ -164,6 +173,7 @@
         { sld: true, thickness: true, roughness: true },
         {}
       ],
+      fit_log: "",
       plot_choices: {
         'reflectivity': { data: 'xy', xlabel: 'Q (Å⁻¹)', ylabel: 'R (I/I₀)', title: 'Reflectivity R=|Ψ←(z=-∞)|²' },
         'phase': { data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)' },
@@ -217,7 +227,7 @@
           //let col = this.columnsById(colid);
           let rawVal = row[col.id];
           if (col.type == "string") {
-            return rawVal || `layer${row_index}`;
+            return rawVal ?? `layer_${row_index}`;
           }
           else {
             return rawVal.toPrecision(5);
@@ -228,16 +238,22 @@
           let { valid, value } = this.validate(col.type, targetVal);
           if (valid) {
             this.$emit('cellValueChanged', row_index, col.id, value);
-            target.classList.remove("parse-error");
+            target.parentNode.classList.remove("parse-error");
           }
           else {
-            target.classList.add("parse-error");
+            target.parentNode.classList.add("parse-error");
           }
         },
         validate(type, value) {
           if (type == "string") { return { valid: true, value } }
           else {
             return { valid: !(isNaN(+value)), value: +value }
+          }
+        },
+        cellClicked(ev) {
+          let realTarget = ev.target.querySelector("span.data-value");
+          if (realTarget) {
+            realTarget.focus();
           }
         }
       },
@@ -258,6 +274,20 @@
         cellValueChanged(row_index, col_id, newVal) {
           console.log(row_index, col_id, newVal);
           this.$set(this.sld[row_index], col_id, newVal);
+        },
+        onAddRow(index) {
+          // add a row below the index specified.  Copy everything but
+          // thickness (make it zero)
+          //let old_row = this.rows[index];
+          //let new_row = Object.fromEntries(this.columns.map((c, i) => [c.id, old_row[c.id]]));
+          let new_row = clone(this.sld[index]);
+          new_row.thickness = 0.0;
+          delete new_row.name;
+          //let new_row = JSON.parse(JSON.stringify(this.rows[index]));
+          this.sld.splice(index+1, 0, new_row);
+        },
+        onRemoveRow(index) {
+          this.sld.splice(index, 1);
         }
       }
     });
