@@ -21,6 +21,7 @@
 </head>
 
 <body>
+  <div id="error"></div>
   <div id="container">
     <canvas id="webcam" width="300" height="150"></canvas>
     <canvas id="fft-canvas" width="300" height="150"></canvas>
@@ -292,6 +293,9 @@
       navigator.mediaDevices.enumerateDevices().then((devices) =>  {
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         // grab the last one
+        if (videoDevices.length < 1) {
+          throw("No video devices found.")
+        }
         //alert(JSON.stringify(videoDevices.map(v => v.deviceID)));
         console.log(JSON.stringify(videoDevices.map(v => v.deviceId)));
         //alert(JSON.stringify(videoDevices.map(v => v.label)));
@@ -313,8 +317,12 @@
           processor.video.srcObject = stream;
         })
         .catch(function (err0r) {
-          console.log("Something went wrong!");
+          console.log("Something went wrong!", err0r);
+          document.getElementById("error").innerHTML = `<h1>Error</h1>\n${err0r}`;
         });
+    }
+    else {
+      document.getElementById("error").innerHTML = `<h1>Error</h1>\nNo camera found`;
     }
 
   </script>
