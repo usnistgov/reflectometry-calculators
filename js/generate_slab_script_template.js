@@ -134,7 +134,7 @@ function make_rho_range(sld, layernum) {
 function make_irho_range(sld, layernum) {
   var l = layernum.toFixed(0);
   var range_span = 1.0;
-  var lower = (sld.mu*1e6 - range_span).toPrecision(prec);
+  var lower = (Math.max(sld.mu*1e6 - range_span, 0.0)).toPrecision(prec);
   var upper = (sld.mu*1e6 + range_span).toPrecision(prec);
   var output = `sld${l}.irho.range(${lower}, ${upper})`
   return output
