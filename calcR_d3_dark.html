@@ -61,7 +61,8 @@
         function(p, d, i) {p[0].thickness = 0},
         function(p, d, i) {p.slice(-1)[0].mu = 0},
         function(p, d, i) {p.slice(-1)[0].thickness = 0},
-        function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)}
+        function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)},
+        function(p, d, i) {p[i].mu = Math.max(p[i].mu, 0)}
       ],
       east_size: 450,
       fitting: {
