@@ -54,7 +54,8 @@ var app_options = {
     function(p, d, i) {p[0].thickness = 0},
     function(p, d, i) {p.slice(-1)[0].mu = 0},
     function(p, d, i) {p.slice(-1)[0].thickness = 0},
-    function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)}
+    function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)},
+    function(p, d, i) {p[i].mu = Math.max(p[i].mu, 0)}
   ],
   east_size: 550,
   fitting: {
@@ -75,12 +76,14 @@ var app_options = {
     ],
     extra_params: [
       {"label": "H", "default": 0.0, "step": 0.001, "minimum": null, "scale": 0.01},
-      {"label": "AGUIDE", "default": 270, "step": 30, "minimum": null, "scale": 5.0}
+      {"label": "AGUIDE", "default": 270, "step": 30, "minimum": null, "scale": 5.0},
+      {"label": "I0", "default": 1.0, "step": 0.1, "minimum": 0, "scale": 0.01}
     ]
   }
 };
 
 var app_init = function(opts) {
+    window.addEventListener("wheel", ()=> {passive: false});
     var layout = $('body').layout({
            west__size:          0
         ,  east__size:          opts.east_size
