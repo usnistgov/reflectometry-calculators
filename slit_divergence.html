@@ -263,7 +263,6 @@
                             x: xvals,
                             y: divergences,
                             mode: 'lines+markers',
-                            height: 400
                         }
                         this.plotUpdateRequested = true;
                         return {upper_points: [], lower_points: [], trace};
@@ -456,7 +455,10 @@
                 },
                 mounted() {
                     this.svg = this.$refs.svg;
-                    let layout = {title: "divergence (intensity) vs. sample x"};
+                    let layout = {
+                        title: "divergence (intensity) vs. sample x",
+                        yaxis: {rangemode: "tozero"}
+                    };
                     this.plot = Plotly.newPlot('plot', [this.divergence.trace], layout);
                     this.plotUpdateRequested = false;
                     window.requestAnimationFrame(this.update_plot);  
