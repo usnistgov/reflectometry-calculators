@@ -860,7 +860,7 @@ var app_init = function(opts) {
                   }
                 }
             }
-            var series_num = series_lookup[metadata.polarization];
+            var series_num = series_lookup[metadata.polarization ?? "unpolarized"];
             series_num = (series_num == null) ? Object.keys(series_lookup).length : series_num;
             sd[series_num] = output_data;
             
