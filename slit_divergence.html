@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            html, body {
+                font-family: Arial, Helvetica, sans-serif;
+            }
+            text {
+                user-select: none;
+            }
+            .label {
+                font: normal 0.2em sans-serif;
+            }
+            .subscript {
+                font: normal 0.1em sans-serif;
+            }
+            .model-values td input[type="number"] {
+                width: 15em;
+            }
+            .model-values td.description {
+                user-select: none;
+            }
+            div.split {
+                display: flex;
+                flex-direction: row;
+            }
+            div.split-content.plot {
+                flex: 1;
+                min-height: 400px;
+                text-align: left;
+            }
+        </style>
+        <link rel="stylesheet" href="">
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <div id="app"></div>
+        <script type="module">
+            import * as Vue from "https://unpkg.com/vue@3.2.30/dist/vue.esm-browser.js";
+            import "https://cdn.plot.ly/plotly-2.9.0.min.js";
+
+            let template = `
+            <div>
+                <svg ref="svg" viewBox="-200 -50 300 100" xmlns="http://www.w3.org/2000/svg" >
+                    <defs>
+                        <!-- arrowhead marker definition -->
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
+                            markerWidth="6" markerHeight="6"
+                            orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" />
+                        </marker>
+
+                        <marker id="bar" viewBox="0 0 10 10" refX="5" refY="5" orient="auto" markerWidth="10">
+                        <path d="M 4 0 L 4 10 L 6 10 L 6 0 z" />
+                        </marker>
+
+                        <!-- simple dot marker definition -->
+                        <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5"
+                            markerWidth="5" markerHeight="5">
+                        <circle cx="5" cy="5" r="5" fill="red" />
+                        </marker>
+                    </defs>
+                    <g @mousemove="drag" @mouseup="dragend">
+                        <rect class="draglayer" x="-200" y="-50" width="300" height="100" style="visibility:hidden;pointer-events:all;"></rect>
+                        <rect 
+                          fill="yellow" 
+                          stroke="black"
+                          stroke-width="0.4"
+                          height="6" 
+                          :width="sample.length"
+                          style="cursor:grab;"
+                          x="0" 
+                          y="0" 
+                          :transform="sample_transform"
+                          @mousedown="dragsamplestart($event, sample)"
+                          />
+                        <polygon style="pointer-events:none;" :points="outer_envelope.points" stroke="orange" fill="orange" fill-opacity="0.2" stroke-width="0.5"/>
+                        <polygon style="pointer-events:none;" :points="inner_envelope.points" stroke="salmon" fill="salmon" fill-opacity="0.2" stroke-width="0.5"/>
+                        <polygon style="pointer-events:none;" :points="divergence.upper_points" stroke="blue" fill="blue" fill-opacity="0.2" stroke-width="0.25"/>
+                        <text class="label" :x="slit1.offset - 1" :y="-slit1.aperture/2 - 16">Slit 1</text>
+                        <text class="label" :x="slit2.offset - 1" :y="-slit2.aperture/2 - 16">Slit 2</text>
+                        <rect 
+                          fill="blue" width="1.5" height="15"
+                          :style="{cursor: slit_cursor(slit1)}"
+                          :x="slit1.offset" 
+                          :y="slit1.aperture/2" 
+                          @mousedown="dragslitstart($event, slit1, 1)" 
+                        />
+                        <rect 
+                          fill="blue" width="1.5" height="15" 
+                          :style="{cursor: slit_cursor(slit1)}"
+                          :x="slit1.offset" 
+                          :y="-slit1.aperture/2 - 15" 
+                          @mousedown="dragslitstart($event, slit1, -1)" 
+                        />
+                        <line :x1="slit1.offset - 1" :y1="slit1.aperture/2" :x2="slit1.offset-1" :y2="-slit1.aperture/2" stroke="black" marker-start="url(#bar)" marker-end="url(#bar)" stroke-width="0.25"/>
+                        <text class="label" :x="slit1.offset - 5" y="0">w</text>
+                        <text class="subscript" :x="slit1.offset - 2.5" y="0.5">1</text>
+                        <line :x1="slit1.offset" :y1="45" :x2="0" :y2="45" stroke="black" marker-start="url(#bar)" marker-end="url(#bar)" stroke-width="0.25"/>
+                        <text class="label" :x="slit1.offset/2 - 5" y="43.5">L</text>
+                        <text class="subscript" :x="slit1.offset/2 - 2.5" y="44">1s</text>
+                        <line :x1="slit2.offset" :y1="40" :x2="0" :y2="40" stroke="black" marker-start="url(#bar)" marker-end="url(#bar)" stroke-width="0.25"/>
+                        <text class="label" :x="slit2.offset/2 - 5" y="38.5">L</text>
+                        <text class="subscript" :x="slit2.offset/2 - 2.5" y="39">2s</text>
+                        <line :x1="slit1.offset" :y1="20" :x2="slit2.offset" :y2="20" stroke="black" marker-start="url(#bar)" marker-end="url(#bar)" stroke-width="0.25"/>
+                        <text class="label" :x="(slit1.offset + slit2.offset)/2 - 5" y="18.5">L</text>
+                        <text class="subscript" :x="(slit1.offset + slit2.offset)/2 - 2.5" y="19">12</text>
+                        <rect 
+                          fill="blue" width="1.5" height="15" 
+                          :style="{cursor: slit_cursor(slit2)}"
+                          :x="slit2.offset" 
+                          :y="slit2.aperture/2" 
+                          @mousedown="dragslitstart($event, slit2, 1)" 
+                        />
+                        <rect 
+                          fill="blue" width="1.5" height="15" 
+                          :style="{cursor: slit_cursor(slit2)}"
+                          :x="slit2.offset" 
+                          :y="-slit2.aperture/2 - 15" 
+                          @mousedown="dragslitstart($event, slit2, -1)" 
+                        />
+                        <line :x1="slit2.offset - 1" :y1="slit2.aperture/2" :x2="slit2.offset-1" :y2="-slit2.aperture/2" stroke="black" marker-start="url(#bar)" marker-end="url(#bar)" stroke-width="0.25"/>
+                        <text class="label" :x="slit2.offset - 5" y="0">w</text>
+                        <text class="subscript" :x="slit2.offset - 2.5" y="0.5">2</text>
+
+                        
+                    </g>
+                </svg>
+                <div class="split">
+                    <div class="split-content">
+                        <table class="model-values">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Value</th>
+                                    <th>Locked</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="description">Slit 1 aperture (w<sub>1</sub>, mm)</td>
+                                    <td><input type="number" step="0.1" v-model="slit1.aperture"></td>
+                                    <td align="center"><input type="checkbox" v-model="slit1.aperture_locked"></td>
+                                </tr>
+                                <tr>
+                                    <td class="description">Slit 2 aperture (w<sub>2</sub>, mm)</td>
+                                    <td><input type="number" step="0.1" v-model="slit2.aperture"></td>
+                                    <td align="center"><input type="checkbox" v-model="slit2.aperture_locked"></td>
+                                </tr>
+                                <tr>
+                                    <td class="description">Slit 1 offset (mm)</td>
+                                    <td><input type="number" step="0.1" v-model="slit1.offset"></td>
+                                    <td align="center"><input type="checkbox" v-model="slit1.offset_locked"></td>
+                                </tr>
+                                <tr>
+                                    <td class="description">Slit 2 offset (mm)</td>
+                                    <td><input type="number" step="0.1" v-model="slit2.offset"></td>
+                                    <td align="center"><input type="checkbox" v-model="slit2.offset_locked"></td>
+                                </tr>
+                                <tr>
+                                    <td class="description">Sample length (mm)</td>
+                                    <td><input type="number" step="1" v-model="sample.length"></td>
+                                    <td align="center"><input type="checkbox" disabled></td>
+                                </tr>
+                                <tr>
+                                    <td class="description">Sample angle (deg)</td>
+                                    <td><input type="number" step="1" max="180" min="0" v-model="sample.angle"></td>
+                                    <td align="center"><input type="checkbox" disabled></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="split-content plot" id="plot">
+                    </div>
+                </div>
+                <div>
+                    <!-- 
+                    <label>Show back-propagated divergence
+                        <input type="checkbox" v-model="back_propagate">
+                    </label>
+                    -->
+                </div>
+            </div>
+            `
+            const s = `:style="{'pointer-events': (dragging) ? 'none' : 'all'}"`
+
+            function microstep(value, precision=6) {
+                return parseFloat(value.toPrecision(precision))
+            }
+            window.app = Vue.createApp({
+                template: template,
+                data: () => ({
+                    slit1: {
+                        offset: -180,
+                        aperture: 8,
+                        offset_locked: true,
+                        aperture_locked: false
+                    },
+                    slit2: {
+                        offset: -100,
+                        aperture: 6,
+                        offset_locked: false,
+                        aperture_locked: false
+                    },
+                    sample: {
+                        length: 75,
+                        angle: 40,
+                        cx: 0,
+                        cy: 0
+                    },
+                    back_propagate: false,
+                    dragging: false,
+                    drag_reference: null,
+                    svg: null,
+                    plot: null,
+                    plotUpdateRequested: false,
+                    view: {
+                        far_plane: -300,
+                        back_plane: 200
+                    }
+                }),
+                computed: {
+                    outer_envelope() {
+                        let beam_slope = (this.slit2.aperture + this.slit1.aperture)/ (2 * (this.slit2.offset - this.slit1.offset));
+                        let y0 = -this.slit1.aperture/2;
+                        let x0 = this.slit1.offset;
+                        return this.beam_points(beam_slope, x0, y0);
+                        return {points};
+                    },
+                    inner_envelope() {
+                                                
+                        let beam_slope = (this.slit2.aperture - this.slit1.aperture)/ (2 * (this.slit2.offset - this.slit1.offset));
+                        let y0 = this.slit1.aperture/2;
+                        let x0 = this.slit1.offset;
+                        return this.beam_points(beam_slope, x0, y0);
+                    },
+                    plus_divergence() {
+                        // extrema are determined by the sample edges or inner_envelope, whichever is smaller.
+                        let points = [];
+
+                    },
+                    divergence() {
+                        let {sample_intersections: inner_intersections, sample_edge} = this.inner_envelope;
+                        let {sample_intersections: outer_intersections} = this.outer_envelope;
+                        let neg_sample_edge = sample_edge.map((x) => -x);
+                        let sample_inflections = [...inner_intersections, ...outer_intersections, neg_sample_edge, sample_edge].sort(
+                            (a,b) => (a[0] - b[0])
+                        );
+                        let divergences = sample_inflections.map(xy => {
+                            let {upper, lower} = this.calc_divergence(...xy);
+                            return Math.max(0, lower-upper);
+                        });
+                        let sa = this.sample.angle * Math.PI / 180;
+                        let xvals = sample_inflections.map(([x,y]) => (Math.cos(sa) * x - Math.sin(sa) * y));
+                        let trace = {
+                            x: xvals,
+                            y: divergences,
+                            mode: 'lines+markers',
+                            height: 400
+                        }
+                        this.plotUpdateRequested = true;
+                        return {upper_points: [], lower_points: [], trace};
+                    },
+                    sample_transform() {
+                        return `rotate(${-this.sample.angle})translate(-${this.sample.length/2}, 0)`;
+                    },
+                    sample_angle: {
+                        // not used...
+                        get: function() {
+                            return this.sample.angle;
+                        },
+                        set: function(value) {
+                            if (value < -Math.PI/2) {
+                                value = Math.PI;
+                            }
+                            else if (value < 0) {
+                                value = 0;
+                            }
+                            this.sample.angle = value;
+                        }
+                    }
+                },
+                methods: {
+                    dragstart(ev, item) {
+                        let p = new DOMPoint(ev.layerX, ev.layerY);
+                        let {x, y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
+                        // this.drag_reference = {x, y, cx: this.circle.cx, cy: this.circ.dragslit(new_x, new_y, this.drag_reference);e.cy};
+                        this.drag_reference = {x, y, item, cx: item.cx, cy: item.cy};
+                        this.dragging = true;
+                    },
+                    dragslitstart(ev, item, direction) {
+                        let p = new DOMPoint(ev.layerX, ev.layerY);
+                        let {x, y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
+                        this.drag_reference = {x, y, item_type: 'slit', item, orig_item: { ... item }, direction};
+                        this.dragging = true;
+                    },
+                    dragsamplestart(ev, item) {
+                        let p = new DOMPoint(ev.layerX, ev.layerY);
+                        let {x, y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
+                        let offset_angle = Math.atan2(item.cy - y, x - item.cx) - item.angle * Math.PI / 180;
+                        this.drag_reference = {offset_angle, item_type: 'sample', item, orig_item: { ... item }};
+                        this.dragging = true;
+                    },
+                    dragend(ev) {
+                        this.dragging = false;
+                    },
+                    dragslit({x, y, new_x, new_y}) {
+
+                    },
+                    drag(ev) {
+                        if (this.dragging) {
+                            let p = new DOMPoint(ev.layerX, ev.layerY);
+                            let {x: new_x, y: new_y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
+                            if (this.drag_reference.item_type == 'slit') {
+                                let {x, y, item, orig_item, direction} = this.drag_reference;
+                                if (!item.aperture_locked) {
+                                    item.aperture = microstep(Math.max(0, (2*direction*(new_y - y) + orig_item.aperture)));
+                                }
+                                if (!item.offset_locked) {
+                                    item.offset = microstep(new_x - x + orig_item.offset);
+                                }
+                            }
+                            else if (this.drag_reference.item_type == 'sample') {
+                                let {offset_angle, item, orig_item} = this.drag_reference;
+                                let handle_angle = Math.atan2(orig_item.cy - new_y, new_x - orig_item.cx);
+                                //let new_angle = microstep((handle_angle - offset_angle) * 180 / Math.PI);
+                                let new_angle = handle_angle - offset_angle;
+                                let before_clamping = new_angle;
+                                if (new_angle > Math.PI || new_angle < -Math.PI/2) {
+                                    new_angle = Math.PI;
+                                }
+                                else if (new_angle < 0) {
+                                    new_angle = 0;
+                                }
+                                item.angle =  microstep(new_angle * 180 / Math.PI);
+                            }
+                        }
+                    },
+                    calc_divergence(x,y) {
+                        // get the max angles that can pass through slits 1 and 2
+                        let bounds = [this.slit1, this.slit2].map((slit) => {
+                            let upper_angle = Math.atan2(y - slit.aperture/2, x - slit.offset);
+                            let lower_angle = Math.atan2(y + slit.aperture/2, x - slit.offset);
+                            return {upper_angle, lower_angle};
+                        });
+                        let upper_angles = [this.slit1, this.slit2].map((slit) => (Math.atan2(y - slit.aperture/2, x - slit.offset)));
+                        let lower_angles = [this.slit1, this.slit2].map((slit) => (Math.atan2(y + slit.aperture/2, x - slit.offset)));
+                        // console.log(x, y, upper_angles, lower_angles);
+                        let upper = Math.max(...upper_angles);
+                        let lower = Math.min(...lower_angles);
+                        return {upper, lower};
+                    },
+                    beam_points(beam_slope, x0, y0) {
+                        // beam_slope is the slope, x0, y0 is the origin for a line
+                        let s_angle_rad = this.sample.angle * Math.PI/180;
+                        let sample_slope = -Math.tan(s_angle_rad);
+                        // the ends of the sample, at [xs, ys] and [-xs, -ys]
+                        // ys will always be negative, as y is inverted in this coordinate system.
+                        let [xs, ys] = [Math.cos(s_angle_rad) * this.sample.length / 2, -Math.sin(s_angle_rad) * this.sample.length / 2];
+
+                        let {far_plane, back_plane} = this.view;
+                        let beam_y = (x) => y0 + beam_slope * (x - x0);
+                        let y_far = beam_y(far_plane);
+                        let y_plus = beam_y(xs);
+                        let y_minus = beam_y(-xs);
+                        let points = [far_plane, y_far];
+                        let sample_intersections = [];
+                        // first the points for +beam_y line
+                        if (y_plus < ys) {
+                            points = [
+                                ...points,
+                                back_plane, beam_y(back_plane),
+                                back_plane, ys,
+                                xs,         ys
+                            ];
+                            sample_intersections.push([xs, ys]);
+                        }
+                        else if (y_minus > -ys) {
+                            points = [
+                                ...points,
+                                back_plane, beam_y(back_plane),
+                                back_plane, -ys,
+                                -xs,        -ys
+                            ];
+                            sample_intersections.push([-xs, -ys]);
+                        }
+                        else {
+                            let xi = beam_y(0) / (sample_slope - beam_slope);
+                            let yi = beam_y(xi);
+                            points = [
+                                ...points,
+                                xi,         yi
+                            ];
+                            sample_intersections.push([xi, yi]);
+                        }
+
+                        // then the points for -beam_y line
+                        if (-y_plus < ys) {
+                            points = [
+                                ...points,
+                                xs,         ys,
+                                back_plane, ys,
+                                back_plane, -beam_y(back_plane),
+                            ];
+                            sample_intersections.push([xs, ys]);
+                        }
+                        else if (-y_minus > -ys) {
+                            points = [
+                                ...points,
+                                -xs, -ys,
+                                back_plane, -ys,
+                                back_plane, -beam_y(back_plane),
+                            ]
+                            sample_intersections.push([-xs, -ys]);
+                        }
+                        else {
+                            let xi = -beam_y(0) / (sample_slope + beam_slope);
+                            let yi = -beam_y(xi);
+                            points = [
+                                ...points,
+                                xi,         yi
+                            ];
+                            sample_intersections.push([xi, yi]);
+                        }
+                        points = [...points, far_plane, -y_far, far_plane, y_far];        
+                        return {points, sample_intersections, sample_edge: [xs, ys]};
+                    },
+                    slit_cursor(slit_data) {
+                        let cursor = 'default';
+                        if (!slit_data.aperture_locked && !slit_data.offset_locked) {
+                            cursor = 'grab';
+                        }
+                        else if (!slit_data.aperture_locked) {
+                            cursor = 'row-resize';
+                        }
+                        else if (!slit_data.offset_locked) {
+                            cursor = 'col-resize';
+                        }
+                        return cursor;
+                    },
+                    update_plot() {
+                        if (this.plotUpdateRequested) {
+                            this.plotUpdateRequested = false;
+                            let trace = this.divergence.trace;
+                            Plotly.update('plot', {y: [trace.y], x: [trace.x]});
+                        }
+                        window.requestAnimationFrame(this.update_plot);
+                    }
+                },
+                mounted() {
+                    this.svg = this.$refs.svg;
+                    let layout = {title: "divergence (intensity) vs. sample x"};
+                    this.plot = Plotly.newPlot('plot', [this.divergence.trace], layout);
+                    this.plotUpdateRequested = false;
+                    window.requestAnimationFrame(this.update_plot);  
+                },
+                watch: {
+                    // divergence: function({trace}) {
+                    //     Plotly.update('plot', {y: [trace.y], x: [trace.x]});
+                    // }
+                }
+
+            }).mount("#app");
+
+        </script>
+    </body>
+</html>
