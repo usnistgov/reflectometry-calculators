@@ -456,7 +456,7 @@
                 mounted() {
                     this.svg = this.$refs.svg;
                     let layout = {
-                        title: "divergence (intensity) vs. sample x",
+                        title: "Intensity vs. sample x",
                         yaxis: {rangemode: "tozero", range: [0,0.1]}
                     };
                     this.plot = Plotly.newPlot('plot', [this.divergence.trace], layout, {scrollZoom: true, displayModeBar: true});
