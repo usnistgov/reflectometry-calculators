@@ -1,4 +1,4 @@
-const LIB_PATH = "../../webalglib/lib/";
+const LIB_PATH = "./refl/";
 
 self.Module = {
   locateFile: function (s) {
