@@ -841,11 +841,14 @@ var app_init = function(opts) {
                   //row.split(' ');
                   if (rowdata.length >= 2) {
                       x = Number(rowdata[0]);
+                      y = Number(rowdata[1]);
+                      if (!(isFinite(x) && isFinite(y))) {
+                        continue;
+                      }
                       kz_list.push([x/2.0, xs_num]);
+                      R_list.push(y);
                       xmax = Math.max(xmax, x);
                       xmin = Math.min(xmin, x);
-                      y = Number(rowdata[1]);
-                      R_list.push(y);
                       if (rowdata.length > 2) {
                         var dy = Number(rowdata[2]);
                         dR_list.push(dy);
