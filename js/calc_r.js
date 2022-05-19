@@ -1,15 +1,8 @@
 const LIB_PATH = "./refl/";
-
-self.Module = {
-  locateFile: function (s) {
-      return LIB_PATH + s;
-  },
-  postRun: function() {
-    postMessage({"ready": true});
-  }
-};
+let refl_module;
 
 self.importScripts('complex.js', LIB_PATH + 'refl.js');
+Module().then(result => { refl_module = result; self.postMessage({"ready": true}) });
 
 calc_r = function(sld, qmin, qmax, qstep, bkg) {
     var depth = [],
@@ -38,8 +31,8 @@ calc_r = function(sld, qmin, qmax, qstep, bkg) {
     var xy = [[]],
         phase = [[]];
         
-    if (Module && Module.refl) {
-      var r = Module.refl(depth, sigma, rho, irho, kz);
+    if (refl_module && refl_module.refl) {
+      var r = refl_module.refl(depth, sigma, rho, irho, kz);
       r.forEach(function(rr,i) {
         var q = 2*kz[i];
         var rc = new Complex();

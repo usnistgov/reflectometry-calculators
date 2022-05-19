@@ -1,16 +1,9 @@
 "use strict";
 const LIB_PATH = "./refl/";
-
-self.Module = {
-  locateFile: function (s) {
-      return LIB_PATH + s;
-  },
-  postRun: function() {
-    postMessage({"ready": true});
-  }
-};
+let refl_module;
 
 self.importScripts('complex.js', 'magnetic_wf_B3.js', LIB_PATH + 'magrefl.js');
+Module().then(result => { refl_module = result; self.postMessage({"ready": true}) });
 
 var minimum_intensity = 1e-15;
 
@@ -169,7 +162,7 @@ var calc_r_cpplib_localU1U3 = function(sld, qmin, qmax, qstep, H, AGUIDE) {
       kz[i++] = q/2.0;
     }
     // run calculation with AGUIDE set to zero, as we are rotating M in u1, u3 calculation.
-    var R = Module.magrefl(depth, sigma, rho, irho, rhoM, u1Real, u1Imag, u3Real, u3Imag, 0, kz);
+    var R = refl_module.magrefl(depth, sigma, rho, irho, rhoM, u1Real, u1Imag, u3Real, u3Imag, 0, kz);
     
     
     R.Ra.forEach(function(_,i) {
@@ -219,7 +212,7 @@ var calc_r_cpplib = function(sld, qmin, qmax, qstep, H, AGUIDE) {
       kz[i++] = q/2.0;
     }
     // run calculation with AGUIDE set to zero, as we are rotating M in u1, u3 calculation.
-    var R = Module.magrefl_less(depth, sigma, rho, irho, rhoM, thetaM, H, AGUIDE, kz);
+    var R = refl_module.magrefl_less(depth, sigma, rho, irho, rhoM, thetaM, H, AGUIDE, kz);
     
     
     R.Ra.forEach(function(_,i) {
