@@ -6,3 +6,4 @@ Examples:
 * [Polarized neutron reflectivity calculator](./magnetic-reflectivity-calculator.html)
 * [Wavelength and velocity distributions of thermal neutrons](./cold_source.html)
 * [Off-specular experiment planner (Qx-Qz space to Th-2Th coords)](./offspec_planner.html)
+* [Beam divergence from slits](./slit_divergence.html)
