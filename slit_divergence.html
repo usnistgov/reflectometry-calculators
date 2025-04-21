@@ -288,20 +288,20 @@
                 },
                 methods: {
                     dragstart(ev, item) {
-                        let p = new DOMPoint(ev.layerX, ev.layerY);
+                        let p = new DOMPoint(ev.clientX, ev.clientY);
                         let {x, y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
                         // this.drag_reference = {x, y, cx: this.circle.cx, cy: this.circ.dragslit(new_x, new_y, this.drag_reference);e.cy};
                         this.drag_reference = {x, y, item, cx: item.cx, cy: item.cy};
                         this.dragging = true;
                     },
                     dragslitstart(ev, item, direction) {
-                        let p = new DOMPoint(ev.layerX, ev.layerY);
+                        let p = new DOMPoint(ev.clientX, ev.clientY);
                         let {x, y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
                         this.drag_reference = {x, y, item_type: 'slit', item, orig_item: { ... item }, direction};
                         this.dragging = true;
                     },
                     dragsamplestart(ev, item) {
-                        let p = new DOMPoint(ev.layerX, ev.layerY);
+                        let p = new DOMPoint(ev.clientX, ev.clientY);
                         let {x, y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
                         let offset_angle = Math.atan2(item.cy - y, x - item.cx) - item.angle * Math.PI / 180;
                         this.drag_reference = {offset_angle, item_type: 'sample', item, orig_item: { ... item }};
@@ -315,7 +315,7 @@
                     },
                     drag(ev) {
                         if (this.dragging) {
-                            let p = new DOMPoint(ev.layerX, ev.layerY);
+                            let p = new DOMPoint(ev.clientX, ev.clientY);
                             let {x: new_x, y: new_y} = p.matrixTransform(this.svg.getScreenCTM().inverse());
                             if (this.drag_reference.item_type == 'slit') {
                                 let {x, y, item, orig_item, direction} = this.drag_reference;
