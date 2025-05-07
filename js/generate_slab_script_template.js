@@ -1,12 +1,14 @@
-var prec = 5; // precision
+const prec = 5; // precision
 
-generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, bkg) {
-    var template = `\
+function generate_slab_script({sldarray, filename, qmin, qmax, nPts, bkg, I0}) {
+    const template = `\
 from refl1d.names import *
 from copy import copy
 ## === Data files ===
-${make_probe(filename, tmin, tmax, nPts, L)}
+${make_probe(filename, qmin, qmax, nPts)}
 
+# Intensity parameter
+probe.intensity.value = ${((I0 == null) ? 1.0 : I0).toPrecision(prec)}
 # Background parameter
 probe.background.value = ${((bkg == null) ? 0 : bkg).toPrecision(prec)}
 # probe.background.range(1e-9, 1e-5)
@@ -95,14 +97,13 @@ problem.name = "${filename}"
 
 // Helper functions //
 
-function make_probe(filename, tmin, tmax, nPts, L) {
-  var tmin_str = ((tmin == null) ? 0.0001 : tmin).toPrecision(prec);
-  var tmax_str = ((tmax == null) ? 0.1000 : tmax).toPrecision(prec);
+function make_probe(filename, qmin, qmax, nPts) {
+  var qmin_str = ((qmin == null) ? 0.0001 : qmin).toPrecision(prec);
+  var qmax_str = ((qmax == null) ? 0.1000 : qmax).toPrecision(prec);
   var nPts_str = ((nPts == null) ? 251 : nPts).toFixed(0);
-  var L_str = ((L == null) ? 5.0 : L).toPrecision(prec);
   var output = `\
 ${(filename == "") ? '#' : ''}probe = load4('${filename}', back_reflectivity=False)
-${(filename != "") ? '#' : ''}probe = Probe(T=numpy.linspace(${tmin_str}, ${tmax_str}, ${nPts_str}), L=${L_str})`
+${(filename != "") ? '#' : ''}probe = QProbe(Q=numpy.linspace(${qmin_str}, ${qmax_str}, ${nPts_str}), dQ=numpy.full(${nPts_str}, 0.00001))`
   return output
 }
 

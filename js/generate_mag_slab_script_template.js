@@ -1,8 +1,8 @@
-var prec = 5;
+const prec = 5;
 
-var generate_slab_script = function(sldarray, filename, tmin, tmax, nPts, L, H, Aguide) {
+function generate_slab_script({sldarray, filename, qmin, qmax, nPts, H, AGUIDE}) {
 
-  var template = `
+  const template = `
 from refl1d.names import *
 from copy import copy
 
@@ -14,7 +14,7 @@ from copy import copy
 # instrument = NCNR.NG1(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.2) 
 
 # probe object combines instrument and data
-${make_probe(filename, tmin, tmax, nPts, L, H, Aguide)}
+${make_probe(filename, qmin, qmax, nPts, H, AGUIDE)}
     
 # === Stack ===
 # the roughnesses of each layer are set to zero to begin with
@@ -43,9 +43,9 @@ ${sldarray.map(add_layer).join('\n')}
 
 # INTENSITY: check to see if cross-section is included in the probe defined by data files;
 # if so, set the intensity for that cross-section to be equal to the pp intensity
-if hasattr(probe, 'pm'): probe.pm.intensity = probe.pp.intensity
-if hasattr(probe, 'mp'): probe.mp.intensity = probe.pp.intensity
-if hasattr(probe, 'mm'): probe.mm.intensity = probe.pp.intensity
+if hasattr(probe, 'pm') and probe.pm: probe.pm.intensity = probe.pp.intensity
+if hasattr(probe, 'mp') and probe.mp: probe.mp.intensity = probe.pp.intensity
+if hasattr(probe, 'mm') and probe.mm: probe.mm.intensity = probe.pp.intensity
 probe.pp.intensity.range(0.9,1.1)
 probe.pp.intensity.value = 1.0
 
@@ -96,17 +96,16 @@ problem.name = "${filename}"
 
 // Helper functions //
 
-function make_probe(filename, tmin, tmax, nPts, L, H, Aguide) {
-  var tmin_str = ((tmin == null) ? 0.0001 : tmin).toPrecision(prec);
-  var tmax_str = ((tmax == null) ? 0.1000 : tmax).toPrecision(prec);
+function make_probe(filename, qmin, qmax, nPts, H, Aguide) {
+  var qmin_str = ((qmin == null) ? 0.0001 : qmin).toPrecision(prec);
+  var qmax_str = ((qmax == null) ? 0.1000 : qmax).toPrecision(prec);
   var nPts_str = ((nPts == null) ? 251 : nPts).toFixed(0);
-  var L_str = ((L == null) ? 5.0 : L).toPrecision(prec);
   var Aguide_str = Aguide.toPrecision(prec);
   var H_str = H.toPrecision(prec); 
   var output = `
 ${(filename == "") ? '#' : ''}probe = load4('${filename}', back_reflectivity=False)
-${(filename != "") ? '#' : ''}xs_probes = [Probe(T=numpy.linspace(${tmin_str}, ${tmax_str}, ${nPts_str}), L=${L_str}) for xs in range(4)]
-${(filename != "") ? '#' : ''}probe = PolarizedNeutronProbe(xs_probes, Aguide=${Aguide_str}, H=${H_str})
+${(filename != "") ? '#' : ''}xs_probes = [QProbe(Q=numpy.linspace(${qmin_str}, ${qmax_str}, ${nPts_str}), dQ=numpy.full(${nPts_str}, 0.00001)) for xs in range(4)]
+${(filename != "") ? '#' : ''}probe = PolarizedQProbe(xs_probes, Aguide=${Aguide_str}, H=${H_str}, name="")
 `
   return output
 }
