@@ -929,21 +929,17 @@ var app_init = function(opts) {
         var qmin = parseFloat($("input#qmin").val()),
             qmax = parseFloat($("input#qmax").val()),
             nPts = parseInt($("input#nPts").val());
-        var extra_params = opts.fitting.extra_params.map(function(e,i) { 
-          var input = d3.select("input#" + e.label);
-          return (input.empty()) ? 0 : +(input.node().value);
-        });
-        // have to specify the probe in terms of theta rather than Q for refl1d...
-        // we'll use a fake wavelength of 5.0 Angstroms.
-        var L = 5.0,
-            k0z = 2*Math.PI/L,
-            tmin = (180.0/Math.PI) * Math.asin(qmin/(2.0 * k0z)),
-            tmax = (180.0/Math.PI) * Math.asin(qmax/(2.0 * k0z));
+        const extra_params = Object.fromEntries(
+          opts.fitting.extra_params.map(({label}) => {
+            const input = document.querySelector(`input#${label}`);
+            return [label, +input.value];
+          })
+        );
         // sldarray order is based on the old reflpak ordering (beam source side first)
         // while refl1d builds the slab model from the "bottom", with the substrate slab first
-        var script_params = [sldarray, datafilename, tmin, tmax, nPts, L].concat(extra_params);
+        const script_params = {sldarray, filename: datafilename, qmin, qmax, nPts, ...extra_params};
         try {
-          var pyscript = generate_slab_script.apply(null, script_params);
+          const pyscript = generate_slab_script(script_params);
           var filename = document.getElementById("scriptname").value;
           saveData(pyscript, filename);
         } catch(e) {
