@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Reflectometer alignment</title>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script>
-  <script src="//rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script>
-  <script src="//d3js.org/d3.v4.js" charset="utf-8"></script>
-  <script src="Pizzicato.min.js"></script>
-  <script src="tickplay.js"></script>
-  <script src="../lib/linePolygonIntersect.js"></script>
-  <script src="../lib/jquery-extend.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.178.0/three.core.min.js" integrity="sha512-QLO9058XEp9uTiJaO7aYyU94YdDWaaMNT2DON53cP4JSNg08ILwaJ26YJlGPnWHSsaW4FUvgcPJeWHZ1Xi9hNg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  <script src="//rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script> -->
+  <script src="https://d3js.org/d3.v4.js" charset="utf-8"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzicato/0.6.4/Pizzicato.min.js" integrity="sha512-K+cPWcoDCr2JFFfe912LrvRUQbVJuWNfeWK5r/HrmpDs8ELrsjVib8Fs5oAxzu76fG66ajGhDLvvcxBbeEzl9g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- <script src="Pizzicato.min.js"></script> -->
+  <script src="./js/tickplay.js"></script>
+  <script src="./js/linePolygonIntersect.js"></script>
   <style type="text/css">
     svg, body {
       margin: 0px;
@@ -48,15 +48,21 @@
   </style>
 </head>
 <body>
-  <script>
-    SHOW_STATS = false;
+  <script type="module">
+    // import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.178.0/three.core.min.js";
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.module.js';
+
+    window.THREE = THREE;
+    const SHOW_STATS = false;
     window.onload = function() {
+      /*
+      // AUDIO DISABLED
       var sound_toggle = d3.select("input.sound-toggle");
       if (window.ticker == null) { 
         sound_toggle.property("disabled", true); 
         sound_toggle.attr("title", "Web audio not supported in this browser");
       }
-      var sound_active = sound_toggle.property("checked");
+      var sound_active = sound_toggle?.property?.("checked") ?? false;
       d3.select("input.sound-toggle").on("change", function() {
         sound_active = this.checked;
         if (sound_active) {
@@ -66,7 +72,8 @@
           window.ticker.stop();
         }
       })
-      var extend = jqueryExtend.extend;
+      */
+      const sound_active = false; // disable sound for now
       var linePolygonIntersects = linePolygonIntersect.linePolygonIntersects;
       var width = 960,
         height = 800,
@@ -190,15 +197,16 @@
       function render_slit_blade(above) {
         var renderer = function(d) {
           var sign = (above) ? 1 : -1;
-          var s = Math.sin(d.angle), 
-              c = Math.cos(d.angle),
-              x = d.cx + c * d.r,
-              y = d.cy + s * d.r,
-              dax =  sign*s*d.aperture/2.0,
-              day = -sign*c*d.aperture/2.0,
-              dbx =  sign*s*d.blade_width,
-              dby = -sign*c*d.blade_width;
-              points = "";
+          const s = Math.sin(d.angle);
+          const c = Math.cos(d.angle);
+          const x = d.cx + c * d.r;
+          const y = d.cy + s * d.r;
+          const dax = sign * s * d.aperture / 2.0;
+          const day = -sign * c * d.aperture / 2.0;
+          const dbx = sign * s * d.blade_width;
+          const dby = -sign * c * d.blade_width;
+          let points = "";
+
           points += (x + dax + (c*d.thickness/2.0)).toFixed() + ",";
           points += (y + day + (s*d.thickness/2.0)).toFixed() + " ";
           
@@ -245,12 +253,13 @@
       function dragopen_slit(d) {
         var above = d3.select(this).classed("above");
         var sign = (above) ? 1 : -1;
-        var s = Math.sin(d.angle), 
-            c = Math.cos(d.angle),
-            x = d.cx + c * d.r,
-            y = d.cy + s * d.r,
-            dxr = sign * s * d3.event.dx,
-            dyr = sign * c * d3.event.dy;
+        const s = Math.sin(d.angle);
+        const c = Math.cos(d.angle);
+        const x = d.cx + c * d.r;
+        const y = d.cy + s * d.r;
+        const dxr = sign * s * d3.event.dx;
+        const dyr = sign * c * d3.event.dy;
+
         d.aperture += (dxr - dyr);
         d.aperture = Math.max(d.aperture, 0);
         svg.selectAll("g.slit polygon.above")
@@ -265,13 +274,14 @@
       sabove.call(drag_slit);
       
       function render_detector(d){
-        var s = Math.sin(d.angle), 
-            c = Math.cos(d.angle),
-            x = d.cx + c * d.r,
-            y = d.cy + s * d.r,
-            dbx = -s*d.width,
-            dby =  c*d.width;
-            points = "";
+        const s = Math.sin(d.angle);
+        const c = Math.cos(d.angle);
+        const x = d.cx + c * d.r;
+        const y = d.cy + s * d.r;
+        const dbx = -s * d.width;
+        const dby = c * d.width;
+        let points = "";
+
         points += (x - dbx/2 + (c*d.thickness/2.0)).toFixed() + ",";
         points += (y - dby/2 + (s*d.thickness/2.0)).toFixed() + " ";
         
@@ -410,7 +420,7 @@
           .on("mouseout", function(d) {svg.selectAll("path.translator").remove()})
       
       function render_sample_smaller(d) {
-        var dd = extend(true, {}, d);
+        const dd = structuredClone(d);
         dd.width -= 75;
         return render_detector(dd);
       }
@@ -560,19 +570,20 @@
 
     let pointsMaterial;
 
-    pointsGeometry = new THREE.Geometry();
+    const pointsGeometry = new THREE.BufferGeometry();
     let sprite = new THREE.TextureLoader().load( "./disc.png" );
 
     const colors = [];
-    disabled_vertices = [];
-    active_vertices = [];
+    const disabled_vertices = [];
+    const active_vertices = [];
+    const vertices = [];
 
     for (var i=0; i<particleCount; i++) {
       let vertex = new THREE.Vector3(-width/2.0 - 100, 0, 0);
       vertex.speed = 0;
       vertex.angle = 0;
       vertex.disabled = true;
-      pointsGeometry.vertices.push(vertex);
+      vertices.push(vertex);
       disabled_vertices.push(i);
       
       const color = new THREE.Color();
@@ -580,6 +591,7 @@
       color.setRGB(0, 0, 1);
       colors.push(color);
     }
+    pointsGeometry.setFromPoints(vertices);
     pointsGeometry.colors = colors;
     pointsMaterial = new THREE.PointsMaterial({
       map: sprite,
@@ -587,14 +599,15 @@
       transparent: true,
       // blending: THREE.AdditiveBlending,
       sizeAttenuation: false,
-      vertexColors: THREE.VertexColors,
+      vertexColors: true,
     });
-    rpoints = new THREE.Points(pointsGeometry, pointsMaterial);
-    pointsContainer = new THREE.Object3D();
+    const rpoints = new THREE.Points(pointsGeometry, pointsMaterial);
+    const pointsContainer = new THREE.Object3D();
     pointsContainer.add(rpoints);
     scene.add(pointsContainer);
     var start_time = Date.now();
     var before;
+
 
     // Three.js render loop
     function animate() {
@@ -609,10 +622,15 @@
       var number = Math.ceil(500.0/dt * rate);
       for (var i=0; i<number; i++) {
         let index = disabled_vertices.pop();
-        let vertex = pointsGeometry.vertices[index];
+
+        const vertex = vertices[index];
         active_vertices.push(index);
         vertex.x = -width/2.0 + (Math.random() - 1) * speed * dt;
         vertex.y = (Math.random() - 0.5)*apertureHeight;
+        const offset = 3 * index;
+        pointsGeometry.attributes.position.array[offset] = vertex.x;
+        pointsGeometry.attributes.position.array[offset + 1] = vertex.y;
+
         vertex.old_x = vertex.x;
         vertex.old_y = vertex.y;
         //let vertex = new THREE.Vector3(10*(Math.random()-0.5), 10*(Math.random()-0.5), 0);
@@ -637,8 +655,8 @@
       while (pCount--) {
         var index = active_vertices[pCount];
         // get the particle
-        var particle =
-          rpoints.geometry.vertices[index];
+        const particle = vertices[index];
+        // var particle = rpoints.geometry.vertices[index];
 
         let d = particle;
         let step_x = particle.vx * elapsed;
@@ -647,6 +665,9 @@
         let line = [{x: particle.x + width/2, y: -particle.y+height/2}, {x: particle.x + step_x + width/2, y: -particle.y - step_y + height/2}];
         particle.x += step_x;
         particle.y += step_y;
+        const offset = 3 * index;
+        pointsGeometry.attributes.position.array[offset] = particle.x;
+        pointsGeometry.attributes.position.array[offset + 1] = particle.y;
         let x = particle.x + width/2;
         let y = -particle.y + height/2;
         //if (pCount == 1) { console.log(particle.x, particle.y, particle.vx, particle.vy, step_x, step_y) }
@@ -719,9 +740,7 @@
 
       // flag to the particle system
       // that we've changed its vertices.
-      rpoints.
-        geometry.
-          verticesNeedUpdate = true;
+      rpoints.geometry.attributes.position.needsUpdate = true;
       
       renderer.render(scene, camera);
       if (SHOW_STATS) { stats.update(); }
@@ -737,6 +756,6 @@
   }
   </script>
   <div class="sim"></div>
-  <label>Play detection sounds<input type="checkbox" class="sound-toggle" name="sound_toggle" value="value" size="12" /></label>
+  <!-- <label>Play detection sounds<input type="checkbox" class="sound-toggle" name="sound_toggle" value="value" size="12" /></label> -->
 </body>
 </html>
