@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Reflectometer alignment</title>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script>
+  <script src="//rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script>
+  <script src="//d3js.org/d3.v4.js" charset="utf-8"></script>
+  <script src="Pizzicato.min.js"></script>
+  <script src="tickplay.js"></script>
+  <script src="../lib/linePolygonIntersect.js"></script>
+  <script src="../lib/jquery-extend.js"></script>
+  <style type="text/css">
+    svg, body {
+      margin: 0px;
+      padding: 0px;
+      font-family: Arial, Helvetica, sans-serif !important;
+    }
+    svg circle.neutron {
+      fill: blue;
+    }
+    svg polygon.detector {
+      fill: LightGrey;
+      cursor: move;
+    }
+    svg polygon.sample {
+      fill: green;
+      fill-opacity: 0.5;
+      cursor: move;
+    }
+    svg polygon.sample-translate {
+      fill: green;
+      fill-opacity: 0;
+      cursor: move;
+    }
+    
+    svg polygon.slit {
+      cursor: move;
+    }
+    
+    canvas {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      z-index: -10;
+    }
+    
+  </style>
+</head>
+<body>
+  <script>
+    SHOW_STATS = false;
+    window.onload = function() {
+      var sound_toggle = d3.select("input.sound-toggle");
+      if (window.ticker == null) { 
+        sound_toggle.property("disabled", true); 
+        sound_toggle.attr("title", "Web audio not supported in this browser");
+      }
+      var sound_active = sound_toggle.property("checked");
+      d3.select("input.sound-toggle").on("change", function() {
+        sound_active = this.checked;
+        if (sound_active) {
+          window.ping = [];
+          window.ticker.play();
+        } else {
+          window.ticker.stop();
+        }
+      })
+      var extend = jqueryExtend.extend;
+      var linePolygonIntersects = linePolygonIntersect.linePolygonIntersects;
+      var width = 960,
+        height = 800,
+        xOffset = 0,
+        yOffset = 400,
+        apertureHeight = 60,
+        r = 2,
+        rate = 0.5, // per second
+        speed = 0.25,
+        wavelength = 5.0,
+        k_0 = 2*Math.PI/wavelength,
+        max_angle = 5.0 * Math.PI/180.0, // 5 degree
+        cx = 480,
+        cy = yOffset;
+        
+
+      var sample_def = [{
+        "name": "sample",
+        "cx": cx,
+        "cy": cy,
+        "r": 7.5,
+        "angle": Math.PI*(0.5 - 1/30),
+        "thickness": 15,
+        "width": 125,
+        "sld": 1e-2
+      }]
+      
+      var detector_def = [{
+        "name": "detector",
+        "cx": cx, // center of rotation
+        "cy": cy,
+        "r": 450,
+        "angle": Math.PI/8.0,
+        "max_angle": Math.PI/3.0,
+        "thickness": 30,
+        "width": 75
+      }];    
+      
+      var slits_def = [
+        {
+          "name": "slit1",
+          "aperture": 10,
+          "cx": cx, // center of rotation
+          "cy": cy,
+          "r": 400, // distance from center of rot.
+          "angle": Math.PI,
+          "thickness": 8,
+          "blade_width": 75
+        },
+        {
+          "name": "slit2",
+          "aperture": 10,
+          "cx": cx, // center of rotation
+          "cy": cy,
+          "r": 125, // distance from center of rot.
+          "angle": Math.PI,
+          "thickness": 8,
+          "blade_width": 75
+        },
+        {
+          "name": "slit3",
+          "aperture": 10,
+          "cx": cx, // center of rotation
+          "cy": cy,
+          "r": 125, // distance from center of rot.
+          "angle": detector_def[0].angle,
+          "thickness": 8,
+          "blade_width": 75
+        },
+        {
+          "name": "slit4",
+          "aperture": 10,
+          "cx": cx, // center of rotation
+          "cy": cy,
+          "r": 400, // distance from center of rot.
+          "angle": detector_def[0].angle,
+          "thickness": 8,
+          "blade_width": 75
+        }
+      ];
+      
+      
+      var svg = d3.select("div.sim").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+      
+      var defs = svg.append("defs")
+      defs.append("marker")
+        .attr("id", "marker-arrow-end")
+        .attr("markerWidth", 5)
+        .attr("markerHeight", 5)
+        .attr("markerUnits", "strokeWidth")
+        .attr("refx", 0)
+        .attr("refy", 0)
+        .attr("orient", "auto")
+        .attr('viewBox', '-5 -5 10 10')
+        .append("path")
+          .attr("d", "M 0,0 m -5,-5 L 5,0 L -5,5 Z")
+          .classed("marker", true)
+          .attr("fill", "lightGrey")
+          
+      defs.append("marker")
+        .attr("id", "marker-arrow-start")
+        .attr("markerWidth", 5)
+        .attr("markerHeight", 5)
+        .attr("markerUnits", "strokeWidth")
+        .attr("refx", 0)
+        .attr("refy", 0)
+        .attr("orient", "auto")
+        .attr('viewBox', '-5 -5 10 10')
+        .append("path")
+          .attr("d", "M 0,0 m 5,-5 L -5,0 L 5,5 Z")
+          .classed("marker", true)
+          .attr("fill", "lightGrey")
+
+      var slit = svg.selectAll("g.slit")
+        .data(slits_def)
+        .enter().append("g")
+          .classed("slit", true)
+      
+      function render_slit_blade(above) {
+        var renderer = function(d) {
+          var sign = (above) ? 1 : -1;
+          var s = Math.sin(d.angle), 
+              c = Math.cos(d.angle),
+              x = d.cx + c * d.r,
+              y = d.cy + s * d.r,
+              dax =  sign*s*d.aperture/2.0,
+              day = -sign*c*d.aperture/2.0,
+              dbx =  sign*s*d.blade_width,
+              dby = -sign*c*d.blade_width;
+              points = "";
+          points += (x + dax + (c*d.thickness/2.0)).toFixed() + ",";
+          points += (y + day + (s*d.thickness/2.0)).toFixed() + " ";
+          
+          points += (x + dax - (c*d.thickness/2.0)).toFixed() + ",";
+          points += (y + day - (s*d.thickness/2.0)).toFixed() + " ";
+          
+          points += (x + dax + dbx - (c*d.thickness/2.0)).toFixed() + ",";
+          points += (y + day + dby - (s*d.thickness/2.0)).toFixed() + " ";
+          
+          points += (x + dax + dbx + (c*d.thickness/2.0)).toFixed() + ",";
+          points += (y + day + dby + (s*d.thickness/2.0)).toFixed() + " ";
+          return points
+        }
+        return renderer;
+      }
+      var render_slit_above = render_slit_blade(true);
+      var render_slit_below = render_slit_blade(false);
+      
+      var sabove = slit.append("polygon")
+        .classed("above", true)
+        .classed("slit", true)
+        .attr("points", render_slit_above)
+        
+      var sbelow = slit.append("polygon")
+        .classed("below", true)
+        .classed("slit", true)
+        .attr("points", render_slit_below)
+      
+      var slits_bb = svg.selectAll("g.slit polygon").nodes().map(function(p) {return p.getBBox()});
+        
+      var drag_slit = d3.drag()
+        .on("drag", dragopen_slit)
+        .subject(function(d) {
+          //var above = d3.select(this).classed("above");
+          //var sign = (above) ? 1 : -1;
+          var s = Math.sin(d.angle), 
+              c = Math.cos(d.angle),
+              x = d.cx + c * d.r,
+              y = d.cy + s * d.r;
+          return {x: x, y: y}
+        })
+        
+      
+      function dragopen_slit(d) {
+        var above = d3.select(this).classed("above");
+        var sign = (above) ? 1 : -1;
+        var s = Math.sin(d.angle), 
+            c = Math.cos(d.angle),
+            x = d.cx + c * d.r,
+            y = d.cy + s * d.r,
+            dxr = sign * s * d3.event.dx,
+            dyr = sign * c * d3.event.dy;
+        d.aperture += (dxr - dyr);
+        d.aperture = Math.max(d.aperture, 0);
+        svg.selectAll("g.slit polygon.above")
+          .attr("points", render_slit_above)
+        svg.selectAll("g.slit polygon.below")
+          .attr("points", render_slit_below)
+        slits_bb = svg.selectAll("g.slit polygon").nodes().map(function(p) {return p.getBBox()});
+        //console.log(dxr + dyr)
+      }
+      
+      sbelow.call(drag_slit);
+      sabove.call(drag_slit);
+      
+      function render_detector(d){
+        var s = Math.sin(d.angle), 
+            c = Math.cos(d.angle),
+            x = d.cx + c * d.r,
+            y = d.cy + s * d.r,
+            dbx = -s*d.width,
+            dby =  c*d.width;
+            points = "";
+        points += (x - dbx/2 + (c*d.thickness/2.0)).toFixed() + ",";
+        points += (y - dby/2 + (s*d.thickness/2.0)).toFixed() + " ";
+        
+        points += (x - dbx/2 - (c*d.thickness/2.0)).toFixed() + ",";
+        points += (y - dby/2 - (s*d.thickness/2.0)).toFixed() + " ";
+        
+        points += (x + dbx/2 - (c*d.thickness/2.0)).toFixed() + ",";
+        points += (y + dby/2 - (s*d.thickness/2.0)).toFixed() + " ";
+        
+        points += (x + dbx/2 + (c*d.thickness/2.0)).toFixed() + ",";
+        points += (y + dby/2 + (s*d.thickness/2.0)).toFixed() + " ";
+        return points
+      }
+      var detector = svg.selectAll(".detector")
+        .data(detector_def)
+        .enter().append("polygon")
+          .classed("detector", true)
+          .attr("points", render_detector)
+      
+      var detector_bb = svg.selectAll("polygon.detector").nodes().map(function(p) {return p.getBBox()});
+      
+      var drag_detector = d3.drag()
+        .on("drag", dragmove_detector)
+        .subject(function(d) { 
+          var s = Math.sin(d.angle), 
+              c = Math.cos(d.angle),
+              x = d.cx + c * d.r,
+              y = d.cy + s * d.r;
+          return {x: x, y: y}
+        })
+        
+      function dragmove_detector(d) {
+        //if (!d3.select(this).classed("draggable")) {return}
+        var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx)
+        if (d.max_angle != null) {
+          new_angle = Math.max(-d.max_angle, Math.min(new_angle, d.max_angle));
+        } 
+        d.angle = new_angle;
+        slits_def[2].angle = slits_def[3].angle = new_angle;
+        d3.select(this).attr("points", render_detector);
+        svg.selectAll("g.slit polygon.above")
+          .attr("points", render_slit_above)
+        svg.selectAll("g.slit polygon.below")
+          .attr("points", render_slit_below)
+        detector_bb = svg.selectAll("polygon.detector").nodes().map(function(p) {return p.getBBox()});
+        slits_bb = svg.selectAll("g.slit polygon").nodes().map(function(p) {return p.getBBox()});
+      }
+      
+      detector.call(drag_detector);
+      
+      var show_rotators = function(d) {
+        if (d._translating) {return}
+        var s = Math.sin(d.angle), 
+            c = Math.cos(d.angle),
+            dw = (d.width + 30)/2;
+            
+        var path = "M";
+        path += (d.cx - s*dw + c*dw*0.75).toFixed() + " ";
+        path += (d.cy + c*dw + s*dw*0.75).toFixed() + " ";
+        path += "A ";
+        path += dw.toFixed() + " ";
+        path += dw.toFixed() + " ";
+        path += "0 0 1 ";
+        path += (d.cx - s*dw - c*dw*0.75).toFixed() + " ";
+        path += (d.cy + c*dw - s*dw*0.75).toFixed() + " ";
+        var indicator1 = svg.append("path")
+          .classed("rotator", true)
+          .attr("d", function() {return path})
+          .attr("marker-start", "url(#marker-arrow-start)")
+          .attr("marker-end", "url(#marker-arrow-end)")
+          .style("stroke-width", "5")
+          .style("stroke", "lightGrey")
+          .style("fill", "none")
+          
+        var path = "M";
+        path += (d.cx + s*dw - c*dw*0.75).toFixed() + " ";
+        path += (d.cy - c*dw - s*dw*0.75).toFixed() + " ";
+        path += "A ";
+        path += dw.toFixed() + " ";
+        path += dw.toFixed() + " ";
+        path += "0 0 1 ";
+        path += (d.cx + s*dw + c*dw*0.75).toFixed() + " ";
+        path += (d.cy - c*dw + s*dw*0.75).toFixed() + " ";
+        var indicator2 = svg.append("path")
+          .classed("rotator", true)
+          .attr("d", function() {return path})
+          .attr("marker-start", "url(#marker-arrow-start)")
+          .attr("marker-end", "url(#marker-arrow-end)")
+          .style("stroke-width", "5")
+          .style("stroke", "lightGrey")
+          .style("fill", "none")
+      }
+      
+      var sample = svg.selectAll(".sample")
+        .data(sample_def)
+        .enter().append("polygon")
+          .classed("sample", true)
+          .attr("points", render_detector)
+          .on("mouseover", show_rotators)
+          .on("mouseout", function(d) {svg.selectAll("path.rotator").remove()})
+      
+      var sample_bb = svg.selectAll("polygon.sample").nodes().map(function(p) {return p.getBBox()});
+          
+      var dragr_sample = d3.drag()
+        .on("drag", dragrotate_sample)
+        .on("start", function(d) {d._rotating = true})
+        .on("end", function(d) {
+          d.ref_angle = null;
+          d._rotating = false;
+          svg.selectAll("path.rotator").remove();
+        }) 
+        
+      function dragrotate_sample(d) {
+        //if (!d3.select(this).classed("draggable")) {return}
+        var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx);
+        if (d.ref_angle == null) { 
+          d.ref_angle = new_angle - d.angle; 
+          return 
+        }
+        d.angle = new_angle - d.ref_angle;
+        d3.select(this).attr("points", render_detector);
+        svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
+        svg.selectAll("path.rotator").remove();
+        show_rotators(d);
+        sample_bb = svg.selectAll("polygon.sample").nodes().map(function(p) {return p.getBBox()});
+      }
+      
+      sample.call(dragr_sample);
+      
+      var sample_translator = svg.selectAll(".sample-translate")
+        .data(sample_def)
+        .enter().append("polygon")
+          .classed("sample-translate", true)
+          .attr("points", render_sample_smaller)
+          .on("mouseover", show_translators)
+          .on("mouseout", function(d) {svg.selectAll("path.translator").remove()})
+      
+      function render_sample_smaller(d) {
+        var dd = extend(true, {}, d);
+        dd.width -= 75;
+        return render_detector(dd);
+      }
+      
+      var dragt_sample = d3.drag()
+        .on("drag", dragtranslate_sample)
+        .on("start", function(d) {d._translating = true})
+        .on("end", function(d) {
+          svg.selectAll("path.translator").remove();
+          d._translating = false;
+        }) 
+        
+      function dragtranslate_sample(d) {
+        //if (!d3.select(this).classed("draggable")) {return}
+        var s = Math.sin(d.angle), 
+            c = Math.cos(d.angle),
+            new_r = s*(d3.event.y - d.cy) + c*(d3.event.x - d.cx);
+
+        d.r = new_r;
+        svg.select("polygon.sample").attr("points", render_detector);
+        svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
+        svg.selectAll("path.translator").remove();
+        show_translators(d);
+        sample_bb = svg.selectAll("polygon.sample").nodes().map(function(p) {return p.getBBox()});
+      }
+      
+      sample_translator.call(dragt_sample);
+      
+      function show_translators(d) {
+        if (d._rotating) { return }
+        var s = Math.sin(d.angle), 
+            c = Math.cos(d.angle),
+            x = d.cx + c * d.r,
+            y = d.cy + s * d.r;
+            dw = (d.width + 30)/2;
+            
+        var path = "M";
+        path += (x + c*(d.thickness/2 + 30)).toFixed() + " ";
+        path += (y + s*(d.thickness/2 + 30)).toFixed() + " ";
+        path += "L ";
+        path += (x + c*(d.thickness/2 + 130)).toFixed() + " ";
+        path += (y + s*(d.thickness/2 + 130)).toFixed() + " ";
+        var indicator1 = svg.append("path")
+          .classed("translator", true)
+          .attr("d", function() {return path})
+          .attr("marker-end", "url(#marker-arrow-end)")
+          .style("stroke-width", "5")
+          .style("stroke", "lightGrey")
+          .style("fill", "none")
+        
+        var path = "M";
+        path += (x - c*(d.thickness/2 + 30)).toFixed() + " ";
+        path += (y - s*(d.thickness/2 + 30)).toFixed() + " ";
+        path += "L ";
+        path += (x - c*(d.thickness/2 + 130)).toFixed() + " ";
+        path += (y - s*(d.thickness/2 + 130)).toFixed() + " ";
+        var indicator2 = svg.append("path")
+          .classed("translator", true)
+          .attr("d", function() {return path})
+          .attr("marker-end", "url(#marker-arrow-end)")
+          .style("stroke-width", "5")
+          .style("stroke", "lightGrey")
+          .style("fill", "none")
+        
+      }
+      
+      function reflection_probability(angle, outer, sld, k_0) {
+        var k_0z = Math.sin(angle) * k_0,
+            k_0z_sq = k_0z * k_0z,
+            potential = 4*Math.PI*sld;
+        if (outer) {
+          if (k_0z_sq < potential) {
+            return 1.0;
+          }
+          else {
+            var n1 = Math.sqrt(1.0 - potential/k_0z_sq),
+                n0 = 1;
+            var r = (n1 - n0) / (n1 + n0);
+            return r*r;
+          }
+        } else {
+          var n1 = Math.sqrt(1.0 + potential/k_0z_sq),
+              n0 = 1;
+          var r = (n1 - n0) / (n1 + n0);
+          return r*r;
+        }
+      }
+      
+      svg.append("circle")
+        .classed("center-point", true)
+        .attr("r", r)
+        .attr("cx", cx)
+        .attr("cy", cy)
+        .style("fill", "red")
+          
+    var gauss = d3.randomNormal(0,1);
+    //var t = d3.timer(tick);
+    //var td = d3.timer(draw);
+    //var ticker; // = setInterval(tick, 20);
+    var particles = [];
+    var part_id = 0,
+        prev_elapsed = 0,
+        detected = [];
+    
+    function detection_handler(elapsed) {
+      if (sound_active) { window.ping.push(elapsed); }
+      //detected.push(elapsed);
+    }
+    
+    
+    // three.js stuff
+    const twidth = window.innerWidth;
+    const theight = window.innerHeight;
+    const particleCount = 5000;
+
+    // Add canvas
+    let renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    document.body.appendChild(renderer.domElement);
+
+    // Add stats box
+    if (SHOW_STATS) {
+      stats = new Stats();
+      stats.dom.style.position = 'absolute';
+      stats.dom.style.top = '0px';
+      stats.dom.style.right = '0px'
+      document.body.appendChild(stats.dom);
+    }
+
+    const near_plane = 1;
+    const far_plane = 100;
+    
+    var dt = 1000.0/60.0;
+
+    // Set up camera and scene
+    let ocamera = new THREE.PerspectiveCamera(
+      20,
+      width / height,
+      near_plane,
+      far_plane 
+    );
+    var camera = new THREE.OrthographicCamera( -width/2, width/2, height/2, -height/2, 1, 100 );
+    camera.position.set(0, 0, far_plane);
+    camera.lookAt(new THREE.Vector3(0,0,0));
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+
+    let pointsMaterial;
+
+    pointsGeometry = new THREE.Geometry();
+    let sprite = new THREE.TextureLoader().load( "./disc.png" );
+
+    const colors = [];
+    disabled_vertices = [];
+    active_vertices = [];
+
+    for (var i=0; i<particleCount; i++) {
+      let vertex = new THREE.Vector3(-width/2.0 - 100, 0, 0);
+      vertex.speed = 0;
+      vertex.angle = 0;
+      vertex.disabled = true;
+      pointsGeometry.vertices.push(vertex);
+      disabled_vertices.push(i);
+      
+      const color = new THREE.Color();
+      //color.setHSL(Math.random(), 1.0, 0.5);
+      color.setRGB(0, 0, 1);
+      colors.push(color);
+    }
+    pointsGeometry.colors = colors;
+    pointsMaterial = new THREE.PointsMaterial({
+      map: sprite,
+      size: 2*r,
+      transparent: true,
+      // blending: THREE.AdditiveBlending,
+      sizeAttenuation: false,
+      vertexColors: THREE.VertexColors,
+    });
+    rpoints = new THREE.Points(pointsGeometry, pointsMaterial);
+    pointsContainer = new THREE.Object3D();
+    pointsContainer.add(rpoints);
+    scene.add(pointsContainer);
+    var start_time = Date.now();
+    var before;
+
+    // Three.js render loop
+    function animate() {
+      var now = Date.now();
+      before = before || now;
+      var total_time = now - start_time;
+      var elapsed = now - before;
+      global_elapsed = total_time;
+      before = now;
+      
+      var dt = elapsed || 1000.0/60.0;
+      var number = Math.ceil(500.0/dt * rate);
+      for (var i=0; i<number; i++) {
+        let index = disabled_vertices.pop();
+        let vertex = pointsGeometry.vertices[index];
+        active_vertices.push(index);
+        vertex.x = -width/2.0 + (Math.random() - 1) * speed * dt;
+        vertex.y = (Math.random() - 0.5)*apertureHeight;
+        vertex.old_x = vertex.x;
+        vertex.old_y = vertex.y;
+        //let vertex = new THREE.Vector3(10*(Math.random()-0.5), 10*(Math.random()-0.5), 0);
+          
+        vertex.angle = (Math.random() - 0.5) * max_angle;
+        vertex.speed = speed*(1.0 + 0.05*(Math.random() - 0.5))
+        vertex.vx = vertex.speed * Math.cos(vertex.angle);
+        vertex.vy = vertex.speed * Math.sin(vertex.angle);
+        vertex.velocity = {x: (Math.random()-0.5), y: (Math.random()-0.5), z: 0}
+      }
+      
+      //var pCount = pointsGeometry.vertices.length;
+      var sample_poly = svg.selectAll("polygon.sample").nodes();
+      var det_poly = svg.selectAll("polygon.detector").nodes();
+      var slits_poly = svg.selectAll("g.slit polygon").nodes();
+      
+      var step_x, step_y, line, p, poly_points, bb, slit_intersects, det, detector_intersect, sam, sample_intersect, intersect, sld, prob;
+      
+      var pCount = active_vertices.length;
+      
+      check_interactions:
+      while (pCount--) {
+        var index = active_vertices[pCount];
+        // get the particle
+        var particle =
+          rpoints.geometry.vertices[index];
+
+        let d = particle;
+        let step_x = particle.vx * elapsed;
+        let step_y = particle.vy * elapsed;
+        //let line = [{x: d.old_x+width/2, y: -d.old_y+height/2}, {x: d.x+width/2, y: -d.y+height/2}];
+        let line = [{x: particle.x + width/2, y: -particle.y+height/2}, {x: particle.x + step_x + width/2, y: -particle.y - step_y + height/2}];
+        particle.x += step_x;
+        particle.y += step_y;
+        let x = particle.x + width/2;
+        let y = -particle.y + height/2;
+        //if (pCount == 1) { console.log(particle.x, particle.y, particle.vx, particle.vy, step_x, step_y) }
+        
+        for (p=0; p<slits_poly.length; p++) {
+          poly_points = slits_poly[p].points;
+          bb = slits_bb[p];
+          if (x > (bb.x - step_x) &&
+              x < (bb.x + bb.width + step_x) &&
+              y > (bb.y - step_y) &&
+              y < (bb.y + bb.height + step_y)) {
+            slit_intersects = linePolygonIntersects(line, poly_points, true);
+            if (slit_intersects.length > 0) {
+              reap(particle, index, pCount);
+              
+              continue check_interactions;
+            }
+          }
+        }
+        
+        for (det=0; det<det_poly.length; det++) {
+          bb = detector_bb[det];
+          if (x > (bb.x - step_x) &&
+              x < (bb.x + bb.width + step_x) &&
+              y > (bb.y - step_y) &&
+              y < (bb.y + bb.height + step_y)) {
+            detector_intersect = linePolygonIntersects(line, det_poly[det].points, true);
+            if (detector_intersect.length > 0) {
+              reap(particle, index, pCount);
+              var u = detector_intersect[0].u;
+              //console.log('u:', u/60);
+              detection_handler(total_time + dt*u);
+              //detection_handler(total_time + );
+              continue check_interactions;
+            }
+          }
+        }
+        
+        for (sam=0; sam<sample_bb.length; sam++) {
+          bb = sample_bb[sam];
+          if (x > (bb.x - step_x) &&
+              x < (bb.x + bb.width + step_x) &&
+              y > (bb.y - step_y) &&
+              y < (bb.y + bb.height + step_y)) {
+            //console.log('in the box', x, y);
+            sample_intersect = linePolygonIntersects(line, sample_poly[sam].points, true, true);
+            if (sample_intersect.length > 0) { 
+              intersect = sample_intersect[0];
+              sld = sample_def[0].sld;
+              prob = reflection_probability(intersect.rel_angle, intersect.outer, sld, k_0);
+              if (Math.random() < prob) {
+                //particle.x = intersect.x - width/2;
+                //particle.y = intersect.y - height/2;
+                //d.t0 = elapsed;
+                particle.vx = intersect.reflection.x * particle.speed;
+                particle.vy = -intersect.reflection.y * particle.speed;
+                particle.x = intersect.x + particle.vx * (1-intersect.v) * particle.speed - width/2;
+                particle.y = -intersect.y + particle.vy * (1-intersect.v) * particle.speed + height/2;
+              }
+              continue;
+            }
+          }
+        }
+        
+        if (particle.x > width/2.0 || particle.y < -height/2.0 || particle.y > height/2.0) {
+          reap(particle, index, pCount);
+        }
+        
+      }
+
+      // flag to the particle system
+      // that we've changed its vertices.
+      rpoints.
+        geometry.
+          verticesNeedUpdate = true;
+      
+      renderer.render(scene, camera);
+      if (SHOW_STATS) { stats.update(); }
+      requestAnimationFrame(animate);
+    }
+    animate();
+    function reap(particle, index, active_index) {
+      particle.x = -width/2.0 - 100;
+      particle.y = 0;
+      disabled_vertices.push(index);
+      var out = active_vertices.splice(active_index, 1);
+    }
+  }
+  </script>
+  <div class="sim"></div>
+  <label>Play detection sounds<input type="checkbox" class="sound-toggle" name="sound_toggle" value="value" size="12" /></label>
+</body>
+</html>
