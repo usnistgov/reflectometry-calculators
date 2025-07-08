@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Reflectometer alignment</title>
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.178.0/three.core.min.js" integrity="sha512-QLO9058XEp9uTiJaO7aYyU94YdDWaaMNT2DON53cP4JSNg08ILwaJ26YJlGPnWHSsaW4FUvgcPJeWHZ1Xi9hNg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  <script src="//rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script> -->
   <script src="https://d3js.org/d3.v4.js" charset="utf-8"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzicato/0.6.4/Pizzicato.min.js" integrity="sha512-K+cPWcoDCr2JFFfe912LrvRUQbVJuWNfeWK5r/HrmpDs8ELrsjVib8Fs5oAxzu76fG66ajGhDLvvcxBbeEzl9g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- <script src="Pizzicato.min.js"></script> -->
-  <script src="./js/tickplay.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzicato/0.6.4/Pizzicato.min.js" integrity="sha512-K+cPWcoDCr2JFFfe912LrvRUQbVJuWNfeWK5r/HrmpDs8ELrsjVib8Fs5oAxzu76fG66ajGhDLvvcxBbeEzl9g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+  <!-- <script src="./js/tickplay.js"></script> -->
   <script src="./js/linePolygonIntersect.js"></script>
   <style type="text/css">
     svg, body {
@@ -49,7 +46,6 @@
 </head>
 <body>
   <script type="module">
-    // import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.178.0/three.core.min.js";
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.module.js';
 
     window.THREE = THREE;
@@ -615,7 +611,6 @@
       before = before || now;
       var total_time = now - start_time;
       var elapsed = now - before;
-      global_elapsed = total_time;
       before = now;
       
       var dt = elapsed || 1000.0/60.0;
