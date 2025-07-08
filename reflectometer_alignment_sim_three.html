@@ -417,6 +417,7 @@
       
       function render_sample_smaller(d) {
         const dd = structuredClone(d);
+        console.log();
         dd.width -= 75;
         return render_detector(dd);
       }
@@ -447,19 +448,19 @@
       
       function show_translators(d) {
         if (d._rotating) { return }
-        var s = Math.sin(d.angle), 
-            c = Math.cos(d.angle),
-            x = d.cx + c * d.r,
-            y = d.cy + s * d.r;
-            dw = (d.width + 30)/2;
+        const s = Math.sin(d.angle);
+        const c = Math.cos(d.angle);
+        const x = d.cx + c * d.r;
+        const y = d.cy + s * d.r;
+        const dw = (d.width + 30)/2;
             
-        var path = "M";
+        let path = "M";
         path += (x + c*(d.thickness/2 + 30)).toFixed() + " ";
         path += (y + s*(d.thickness/2 + 30)).toFixed() + " ";
         path += "L ";
         path += (x + c*(d.thickness/2 + 130)).toFixed() + " ";
         path += (y + s*(d.thickness/2 + 130)).toFixed() + " ";
-        var indicator1 = svg.append("path")
+        const indicator1 = svg.append("path")
           .classed("translator", true)
           .attr("d", function() {return path})
           .attr("marker-end", "url(#marker-arrow-end)")
@@ -467,13 +468,13 @@
           .style("stroke", "lightGrey")
           .style("fill", "none")
         
-        var path = "M";
+        path = "M";
         path += (x - c*(d.thickness/2 + 30)).toFixed() + " ";
         path += (y - s*(d.thickness/2 + 30)).toFixed() + " ";
         path += "L ";
         path += (x - c*(d.thickness/2 + 130)).toFixed() + " ";
         path += (y - s*(d.thickness/2 + 130)).toFixed() + " ";
-        var indicator2 = svg.append("path")
+        const indicator2 = svg.append("path")
           .classed("translator", true)
           .attr("d", function() {return path})
           .attr("marker-end", "url(#marker-arrow-end)")
