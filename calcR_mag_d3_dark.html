@@ -1,46 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="author" content="Brian B. Maranville">
-<title>Reflectivity and wavefunction for a slab profile</title>
-<!--
-    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
--->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="author" content="Brian B. Maranville">
+    <title>Reflectivity and wavefunction for a slab profile</title>
     <link rel="stylesheet" href="css/layout-default-latest.css" />
     <link rel="stylesheet" type="text/css" href="css/calcR.css" />
     <link href="//code.jquery.com/ui/1.12.0/themes/ui-darkness/jquery-ui.css" type="text/css" rel="stylesheet" />
-<!-- Reference jQuery and jQuery UI from the CDN. Remember that the order of these two elements is important -->
+    <!-- Reference jQuery and jQuery UI from the CDN. Remember that the order of these two elements is important -->
     <script src="//code.jquery.com/jquery-1.12.4.min.js" type="text/javascript"></script>
     <script src="//code.jquery.com/ui/1.12.0/jquery-ui.min.js" type="text/javascript"></script>
     <script type="text/javascript" src="js/jquery.layout-latest.js"></script>
-    
-    <script type="text/javascript" src="js/complex.js"></script>
-    <script type="text/javascript" src="js/wavefunction.js"></script>
-    <script type="text/javascript" src="js/generate_mag_slab_script_template.js"></script>
-    
-    <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
-    <script src="https://cdn.jsdelivr.net/gh/usnistgov/d3-science@0.2.17/lib/jquery-extend.js" charset="utf-8"></script>
-    <script src="https://cdn.jsdelivr.net/gh/usnistgov/d3-science@0.2.17/lib/generate-id.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/usnistgov/d3-science@0.2.17/lib/xy-chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/usnistgov/d3-science@0.2.17/lib/profile-interactor.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/usnistgov/d3-science@0.2.17/lib/monotonic-function-interactor.js"></script>
-    
-    <script src="js/calcR_d3_app.js"></script>
-    
-<script type="text/javascript">
-    window.onload = function() {
-        //app_init(app_options);
-        var author = d3.select("meta[name='author']");
-        d3.select("footer")
-    }
-    var Module = Module || {};
-    Module.postRun = Module.postRun || [];
-    Module.postRun.push(function() { app_init(app_options); });
-</script>   
-<script src="./js/refl/reflfit.js"></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm",
+          "jquery": "https://cdn.jsdelivr.net/npm/jquery@3.7.1/+esm",
+          "jquery-ui": "https://code.jquery.com/ui/1.12.0/jquery-ui.min.js",
+          "d3-science": "https://cdn.jsdelivr.net/gh/usnistgov/d3-science@52eb0cab3d029b00c240bdae0b9c7697b712ff34/src/index.js"
+        }
+      }
+    </script>
+   
+    <script type="module">
+        import {app_init} from './js/calcR_d3_app.js';
+        import ReflModule from './js/refl/reflfit.js';
+        import { generate_slab_script } from './js/generate_mag_slab_script_template.js';
+        const THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
+        const AGUIDE = 270;
+
+        const app_options = {
+        initial_sld: [
+            {thickness: 0, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 10},
+            {thickness: 200, sld: 2.0, mu: 0, thetaM: 0.0, sldm: 1.0, sldi: 0.0, roughness: 10},
+            {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0, roughness: 10},
+            {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 0}
+        ],
+        to_fit: [{roughness: true}, {thickness: true, sldm: true}, {}, {}],
+        plot_choices: {
+            'reflectivity':   {data: 'xy', xlabel: '2*k_in (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
+            'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
+            'spin asymmetry': {data: 'sa', xlabel: 'Q (Å⁻¹)', ylabel: '(R++ - R--)/(R++ + R--)', title: 'Asymmetry'}
+        },
+        sldplot_series_opts: [
+            //{label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+            //{label: "SLDₘ x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
+            //{label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
+            //{label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+            {label: "SLDn (Å⁻²) x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
+            {label: "SLDm (Å⁻²) x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
+            {label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
+            {label: "iSLDn (Å⁻²) x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
+        ],
+        worker_script: "js/calc_r_mag.js",
+        generate_slab_script: generate_slab_script,
+        series_lookup: {
+            '--': 4, 
+            '-+': 5,
+            '+-': 6,
+            '++': 7
+        },
+        reflplot_series_opts: [
+            {label: "- -", show_points: false, color: "RoyalBlue"},
+            {label: "- +", show_points: false, color: "DarkGreen"},
+            {label: "+ -", show_points: false, color: "Maroon"},
+            {label: "+ +", show_points: false, color: "LightSeaGreen"},
+            {label: "data - -", show_points: true, show_line: false, color: "RoyalBlue"},
+            {label: "data - +", show_points: true, show_line: false, color: "DarkGreen"},
+            {label: "data + -", show_points: true, show_line: false, color: "Maroon"},
+            {label: "data + +", show_points: true, show_line: false, color: "LightSeaGreen"}
+        ],
+        constraints: [
+            function(p, d, i) {p[0].thickness = 0},
+            function(p, d, i) {p.slice(-1)[0].mu = 0},
+            function(p, d, i) {p.slice(-1)[0].thickness = 0},
+            function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)},
+            function(p, d, i) {p[i].mu = Math.max(p[i].mu, 0)}
+        ],
+        east_size: 550,
+        fitting: {
+            funcname: "fit_magrefl",
+            xs_order: {
+            "++": 3, 
+            "+-": 2, 
+            "-+": 1, 
+            "--": 0
+            },
+            columns: [
+            {"label": "thickness", "scale": 10, "minimum": 0},
+            {"label": "roughness", "scale": 0.1, "minimum": 0.0},
+            {"label": "sld", "scale": 0.1},
+            {"label": "mu", "scale": 0.1, "minimum": 0}, // no radiation sources allowed in sample!
+            {"label": "sldm", "scale": 0.1},
+            {"label": "thetaM", "scale": 0.05}
+            ],
+            extra_params: [
+            {"label": "H", "default": 0.0, "step": 0.001, "minimum": null, "scale": 0.01},
+            {"label": "AGUIDE", "default": 270, "step": 30, "minimum": null, "scale": 5.0},
+            {"label": "I0", "default": 1.0, "step": 0.1, "minimum": 0, "scale": 0.01}
+            ]
+        }
+        };
+        window.onload = function() {
+        // document.querySelector("#AGUIDE_label")?.style?.display = "none";
+        }
+
+        const ready = await ReflModule();
+        app_init(app_options);
+    </script>
+ 
 </head>
-<body bgcolor="#ffffcc"> 
+<body style="background-color: #ffffcc;"> 
     <div id="top_panel" class="ui-layout-north">
         Load (*.refl) datafile: <input type="file" multiple="false" id="datafile" name="datafile" />
         <a href="" id="pyscript_data_uri"></a>
@@ -65,7 +136,7 @@
           <footer></footer>
       </div>
     </div>
-    <div id="bottom_controls" align='center'></div>
+    <div id="bottom_controls" style="text-align: center;"></div>
     <div id="documentation_popup"></div>
     <div id="fit_popup">
         <h3>Fit started...</h3>
