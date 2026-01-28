@@ -1,88 +1,13 @@
-//import * as d3 from 'd3';
-//import $ from 'jquery';
-//import {layout} from 'jquery-layout';
-//import XYChart from '../../d3-science/lib/xy-chart';
-//import default as profileInteractor from '../../d3-science/profile-interactor';
-"use strict";
+import * as d3 from 'd3';
+// import $ from 'jquery';
+// import {layout} from 'jquery-layout';
+import { xyChart } from 'd3-science';
+import { profileInteractor, monotonicFunctionInteractor } from 'd3-science';
+import ModulePromise from './refl/reflfit.js';
 
+const Module = await ModulePromise();
 
-//var THETA_M = Math.PI * 3.0 / 2.0; // 270 degrees by default
-var THETA_M = 1.0/2.0; // 90 degrees by default.
-var AGUIDE = 270;
-
-var app_options = {
-  initial_sld: [
-    {thickness: 0, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 10},
-    {thickness: 200, sld: 2.0, mu: 0, thetaM: 0.0, sldm: 1.0, sldi: 0.0, roughness: 10},
-    {thickness: 200, sld: 4.0, mu: 0, thetaM: THETA_M, sldm: 1.0, sldi: 0.0, roughness: 10},
-    {thickness: 0, sld: 0.0, mu: 0, thetaM: THETA_M, sldm: 0, sldi: 0.0, roughness: 0}
-  ],
-  to_fit: [{roughness: true}, {thickness: true, sldm: true}, {}, {}],
-  plot_choices: {
-    'reflectivity':   {data: 'xy', xlabel: '2*k_in (Å⁻¹)', ylabel: 'R (I/I₀)', title:'Reflectivity R=|Ψ←(z=-∞)|²'},
-    'phase':          {data: 'phase', xlabel: 'Q (Å⁻¹)', ylabel: 'phase (radians)', title: 'Phase of r in complex plane (r = Ψ←)'},
-    'spin asymmetry': {data: 'sa', xlabel: 'Q (Å⁻¹)', ylabel: '(R++ - R--)/(R++ + R--)', title: 'Asymmetry'}
-  },
-  sldplot_series_opts: [
-    //{label: "SLDₙ x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
-    //{label: "SLDₘ x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
-    //{label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
-    //{label: "iSLDₙ x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
-    {label: "SLDn (Å⁻²) x10⁻⁶", id: "sld", color: "DodgerBlue", color1: "DodgerBlue"},
-    {label: "SLDm (Å⁻²) x10⁻⁶", id: "sldm", color: "LightGray", color1: "LightGray"},
-    {label: "θ (π rad)", id: "thetaM", color: "LightGreen", color1: "LightGreen"},
-    {label: "iSLDn (Å⁻²) x10⁻⁶", id: "mu", color: "LightCoral", color1: "LightCoral"},
-  ],
-  worker_script: "js/calc_r_mag.js",
-  series_lookup: {
-      '--': 4, 
-      '-+': 5,
-      '+-': 6,
-      '++': 7
-  },
-  reflplot_series_opts: [
-    {label: "- -", show_points: false, color: "RoyalBlue"},
-    {label: "- +", show_points: false, color: "DarkGreen"},
-    {label: "+ -", show_points: false, color: "Maroon"},
-    {label: "+ +", show_points: false, color: "LightSeaGreen"},
-    {label: "data - -", show_points: true, show_line: false, color: "RoyalBlue"},
-    {label: "data - +", show_points: true, show_line: false, color: "DarkGreen"},
-    {label: "data + -", show_points: true, show_line: false, color: "Maroon"},
-    {label: "data + +", show_points: true, show_line: false, color: "LightSeaGreen"}
-  ],
-  constraints: [
-    function(p, d, i) {p[0].thickness = 0},
-    function(p, d, i) {p.slice(-1)[0].mu = 0},
-    function(p, d, i) {p.slice(-1)[0].thickness = 0},
-    function(p, d, i) {p[i].thickness = Math.max(p[i].thickness, 0)},
-    function(p, d, i) {p[i].mu = Math.max(p[i].mu, 0)}
-  ],
-  east_size: 550,
-  fitting: {
-    funcname: "fit_magrefl",
-    xs_order: {
-      "++": 3, 
-      "+-": 2, 
-      "-+": 1, 
-      "--": 0
-    },
-    columns: [
-      {"label": "thickness", "scale": 10, "minimum": 0},
-      {"label": "roughness", "scale": 0.1, "minimum": 0.0},
-      {"label": "sld", "scale": 0.1},
-      {"label": "mu", "scale": 0.1, "minimum": 0}, // no radiation sources allowed in sample!
-      {"label": "sldm", "scale": 0.1},
-      {"label": "thetaM", "scale": 0.05}
-    ],
-    extra_params: [
-      {"label": "H", "default": 0.0, "step": 0.001, "minimum": null, "scale": 0.01},
-      {"label": "AGUIDE", "default": 270, "step": 30, "minimum": null, "scale": 5.0},
-      {"label": "I0", "default": 1.0, "step": 0.1, "minimum": 0, "scale": 0.01}
-    ]
-  }
-};
-
-var app_init = function(opts) {
+export function app_init(opts) {
     window.addEventListener("wheel", ()=> {passive: false});
     var layout = $('body').layout({
            west__size:          0
@@ -117,7 +42,7 @@ var app_init = function(opts) {
     }
     window.addEventListener("message", function (event) { api.call(event.data) }, false);
 
-    var webworker = new Worker(opts.worker_script);
+    var webworker = new Worker(opts.worker_script, {type: 'module'});
     var webworker_queue = [],
         webworker_busy = false;
     webworker.onerror = function(error) {
@@ -174,7 +99,7 @@ var app_init = function(opts) {
       }
     }
     function create_fitworker() {
-      let fw = new Worker(`js/fit_worker.js?date=${Date.now()}`);
+      let fw = new Worker(`js/fit_worker.js?date=${Date.now()}`, {type: 'module'});
       fw.onmessage = on_fit_message;
       return fw;
     }
@@ -233,7 +158,7 @@ var app_init = function(opts) {
       
       var col_ids = sld_plot_opts.series.map(function(s) {return s.id});
       jQuery.extend(true, sld_plot_opts, get_limits(initial_sld, col_ids));
-      sld_plot = new xyChart.default(sld_plot_opts);
+      sld_plot = new xyChart(sld_plot_opts);
   
       var sld_buttons_div = d3.select("#sldplot").append("div")
         .style("right", "0px")
@@ -299,9 +224,9 @@ var app_init = function(opts) {
         }
       });
             
-      profile_interactor = new profileInteractor.default(profile_opts);
+      profile_interactor = new profileInteractor(profile_opts);
       roughness_interactors = roughness_opts.map(function(o) {
-        var ri = new monotonicFunctionInteractor.default(o); 
+        var ri = new monotonicFunctionInteractor(o); 
         sld_plot.interactors(ri);
         return ri;
       });
@@ -315,7 +240,7 @@ var app_init = function(opts) {
 
       sld_plot.zoomScroll(true);
       
-      refl_plot = xyChart.default({
+      refl_plot = xyChart({
         show_line: true,
         show_points: false,
         show_errorbars: true,
@@ -351,8 +276,8 @@ var app_init = function(opts) {
       refl_plot.ytransform("log");
       
       refl_plot.svg.on("mouseover.setLogLinHandler", function() {
-        d3.select("body").on("keydown.toggleLogLin", function() {
-          if (d3.event.key.toLowerCase() == "l") {
+        d3.select("body").on("keydown.toggleLogLin", function(event) {
+          if (event.key.toLowerCase() == "l") {
             var transform_now = refl_plot.ytransform();
             if (transform_now == "log") {
               refl_plot.ytransform("linear");
@@ -492,13 +417,13 @@ var app_init = function(opts) {
       var sel = target.select("table tbody").selectAll("tr").data(data);
       var fitSelect = {mode: true, active: false};
       d3.select("body").on("mouseup.fitselectmode", function() {fitSelect.active = false});
-      d3.select("body").on("keydown.fitselectmode", function() {
-        if (d3.event.keyCode == 17) {
+      d3.select("body").on("keydown.fitselectmode", function(event) {
+        if (event.keyCode == 17) {
           //table.selectAll("td.data-cell input").attr("readonly", "readonly");
         }
       });
-      d3.select("body").on("keyup.fitselectmode", function() {
-        if (d3.event.keyCode == 17) {
+      d3.select("body").on("keyup.fitselectmode", function(event) {
+        if (event.keyCode == 17) {
           //table.selectAll("td.data-cell input").property("readonly", false);
         }
       });
@@ -512,8 +437,8 @@ var app_init = function(opts) {
             var cell = tr.append("td")
               .classed("data-cell", function(d) { return col != "name" })
               .classed("meaningless", function(d) { return row[col].meaningless })
-              .on("mousedown", function() {
-                if (d3.event.ctrlKey || d3.event.altKey) {
+              .on("mousedown", function(event) {
+                if (event.ctrlKey || event.altKey) {
                   let target = d3.select(this);
                   fitSelect.mode = !(target.classed("selected"));
                   fitSelect.active = true;
@@ -555,10 +480,10 @@ var app_init = function(opts) {
                 .text(row[col].toPrecision(5))
                 .attr("contenteditable", true)
                 .on("focusout", onchange)
-                .on("keydown.submit", function() {
-                  if (d3.event.keyCode == 13) {
+                .on("keydown.submit", function(event) {
+                  if (event.keyCode == 13) {
                     console.log("enter pressed");
-                    d3.event.preventDefault();
+                    event.preventDefault();
                     onchange.call(this);
                   }
                 })
@@ -872,7 +797,7 @@ var app_init = function(opts) {
             
         }
         
-        app_options.data = {kz_list: kz_list, R_list: R_list, dR_list: dR_list};
+        opts.data = {kz_list: kz_list, R_list: R_list, dR_list: dR_list};
         $("input#qmin").val(xmin);
         $("input#qmax").val(xmax);
         refl_plot.source_data(sd);
@@ -896,7 +821,7 @@ var app_init = function(opts) {
     var test_show_script = function() {
         var sldarray = get_sld(plot2.plugins.interactors.profile1);
         //var datafilename = datafilename || "";
-        var pyscript = generate_slab_script(sldarray, datafilename);
+        var pyscript = opts.generate_slab_script(sldarray, datafilename);
         var data_uri = "data:application/octet-stream,"+encodeURIComponent(pyscript);
         var a = document.getElementById('pyscript_data_uri');
         a.href = data_uri;
@@ -939,7 +864,7 @@ var app_init = function(opts) {
         // while refl1d builds the slab model from the "bottom", with the substrate slab first
         const script_params = {sldarray, filename: datafilename, qmin, qmax, nPts, ...extra_params};
         try {
-          const pyscript = generate_slab_script(script_params);
+          const pyscript = opts.generate_slab_script(script_params);
           var filename = document.getElementById("scriptname").value;
           saveData(pyscript, filename);
         } catch(e) {
