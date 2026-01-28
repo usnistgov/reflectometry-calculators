@@ -1,6 +1,6 @@
 const prec = 5;
 
-function generate_slab_script({sldarray, filename, qmin, qmax, nPts, H, AGUIDE}) {
+export function generate_slab_script({sldarray, filename, qmin, qmax, nPts, H, AGUIDE}) {
 
   const template = `
 from refl1d.names import *

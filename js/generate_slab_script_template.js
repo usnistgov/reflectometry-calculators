@@ -1,6 +1,6 @@
 const prec = 5; // precision
 
-function generate_slab_script({sldarray, filename, qmin, qmax, nPts, bkg, I0}) {
+export function generate_slab_script({sldarray, filename, qmin, qmax, nPts, bkg, I0}) {
     const template = `\
 from refl1d.names import *
 from copy import copy
