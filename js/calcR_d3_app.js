@@ -42,7 +42,7 @@ export function app_init(opts) {
     }
     window.addEventListener("message", function (event) { api.call(event.data) }, false);
 
-    var webworker = new Worker(opts.worker_script, {type: 'module'});
+    var webworker = new Worker(`${opts.worker_script}?date=${Date.now()}`, {type: 'module'});
     var webworker_queue = [],
         webworker_busy = false;
     webworker.onerror = function(error) {
