@@ -1,17 +1,12 @@
-const LIB_PATH = "./refl/";
+import ModulePromise from "./refl/reflfit.js";
+const Module = await ModulePromise();
 
-self.Module = {
-  locateFile: function (s) {
-      return LIB_PATH + s;
-  }
-};
-
-self.importScripts(LIB_PATH + 'reflfit.js');
+// self.postMessage({ ready: true });
 
 function progress_callback(val) {
   let result = JSON.parse(val);
   result.type = "fit_progress";
-  postMessage(result);
+  self.postMessage(result);
 }
 
 self.onmessage = function(event) {
@@ -20,6 +15,6 @@ self.onmessage = function(event) {
   let str_result = Module[funcname].call(null, xs, ys, ws, cs, ss, lower_bound, upper_bound, progress_callback);
   let result = JSON.parse(str_result);
   result.type = "fit_result";
-  postMessage(result);
+  self.postMessage(result);
   return;
 }
