@@ -85,22 +85,26 @@ export function app_init(opts) {
 
     function on_fit_message(event) {
       let result = event.data;
-      let new_sld = params_to_sld(result);
-      $.extend(true, initial_sld, new_sld.sld);
-      update_all();
-      if (result.type == "fit_result") {
-        d3.select("pre.fit.log").text(fit_report(result, opts.to_fit));
-        d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
-        fit_dialog.dialog("close");
-      }
-      else if (result.type == "fit_error") {
+      if (result.type == "fit_error") {
         d3.select("h4.status").text(`error: ${result.error}`);
+        d3.select("pre.fit.log").text("fitting stopped due to error");
         d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
         fit_dialog.dialog("close");
+        return;
       }
       else {
-        let chisq = Math.sqrt(result.f / opts.data.R_list.length);
-        d3.select("h4.status").text(`steps completed: ${result.step}, chisq: ${chisq.toFixed(8)}`);
+        let new_sld = params_to_sld(result);
+        $.extend(true, initial_sld, new_sld.sld);
+        update_all();
+        if (result.type == "fit_result") {
+          d3.select("pre.fit.log").text(fit_report(result, opts.to_fit));
+          d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
+          fit_dialog.dialog("close");
+        }
+        else {
+          let chisq = Math.sqrt(result.f / opts.data.R_list.length);
+          d3.select("h4.status").text(`steps completed: ${result.step}, chisq: ${chisq.toFixed(8)}`);
+        }
       }
     }
     function create_fitworker() {
