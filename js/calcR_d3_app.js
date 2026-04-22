@@ -93,6 +93,11 @@ export function app_init(opts) {
         d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
         fit_dialog.dialog("close");
       }
+      else if (result.type == "fit_error") {
+        d3.select("h4.status").text(`error: ${result.error}`);
+        d3.select("button#start_fit").property("disabled", false).classed("ui-disabled ui-button-disabled ui-state-disabled", false);
+        fit_dialog.dialog("close");
+      }
       else {
         let chisq = Math.sqrt(result.f / opts.data.R_list.length);
         d3.select("h4.status").text(`steps completed: ${result.step}, chisq: ${chisq.toFixed(8)}`);
