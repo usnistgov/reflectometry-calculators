@@ -9,3 +9,4 @@ Examples:
 * [Beam divergence from slits](./slit_divergence.html)
 * [Reflectometer alignment simulation](./reflectometer-alignment.html)
 * [Scattering Periodic Table](./Periodic.html)
+* [CANDOR Q-coverage](./candor_q.html)
