@@ -895,7 +895,9 @@ export function app_init(opts) {
       file_input.value = "";
       var reader = new FileReader();
       reader.onload = function(e) {
-        var new_sld = d3.tsvParse(this.result);
+        const rawResult = this.result;
+        const comma_separated = rawResult.trim().replace(/[ \t]+/g, ",");
+        var new_sld = d3.csvParse(comma_separated);
         new_sld.forEach(function(d) {
           for (var key in d) {
             if (d.hasOwnProperty(key)) {
