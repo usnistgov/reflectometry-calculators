@@ -34,6 +34,10 @@
                 min-height: 400px;
                 text-align: left;
             }
+            svg.interactive {
+                max-height: 50vh;
+                width: 100%;
+            }
         </style>
         <link rel="stylesheet" href="">
     </head>
@@ -48,7 +52,7 @@
 
             let template = `
             <div>
-                <svg ref="svg" viewBox="-200 -50 300 100" xmlns="http://www.w3.org/2000/svg" >
+                <svg ref="svg" viewBox="-200 -50 300 100" xmlns="http://www.w3.org/2000/svg" class="interactive" >
                     <defs>
                         <!-- arrowhead marker definition -->
                         <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
