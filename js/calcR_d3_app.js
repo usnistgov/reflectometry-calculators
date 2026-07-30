@@ -489,11 +489,25 @@ export function app_init(opts) {
                 .text(row[col].toPrecision(5))
                 .attr("contenteditable", true)
                 .on("focusout", onchange)
-                .on("keydown.submit", function(event) {
+                .on("keydown", function(event) {
                   if (event.keyCode == 13) {
                     console.log("enter pressed");
                     event.preventDefault();
                     onchange.call(this);
+                  }
+                  else if (event.code == "ArrowUp"){
+                    let oldVal = +this.innerText;
+                    if (!(isNaN(oldVal))) {
+                      this.innerText = `${oldVal + 1.0}`;
+                      onchange.call(this);
+                    }
+                  }
+                  else if (event.code == "ArrowDown"){
+                    let oldVal = +this.innerText;
+                    if (!(isNaN(oldVal))) {
+                      this.innerText = `${oldVal - 1.0}`;
+                      onchange.call(this);
+                    }
                   }
                 })
                 
